@@ -663,6 +663,49 @@ def load_data_regression(args, dataset, subgraph_list):
 
     return new_graphs
 
+
+def load_graph_data(data, C_LIST, GC_LIST, candidate):
+    features = data.x
+    number = 0
+    coarsen_node = 0
+    coarsen_row = None
+    coarsen_col = None
+    coarsen_features = torch.Tensor([])
+    while number < len(candidate):
+        H = candidate[number]
+        keep = H.info['orig_idx']
+        if len(keep)>1:
+            C = C_LIST[number]
+            GC = GC_LIST[number]
+            H_features = features[keep]
+
+            coarsen_features = torch.cat([coarsen_features, torch.FloatTensor(C.dot(H_features))], dim=0)
+
+            if coarsen_row is None:
+                coarsen_row = GC.W.tocoo().row
+                coarsen_col = GC.W.tocoo().col
+            else:
+                current_row = GC.W.tocoo().row + coarsen_node
+                current_col = GC.W.tocoo().col + coarsen_node
+                coarsen_row = np.concatenate([coarsen_row, current_row], axis=0)
+                coarsen_col = np.concatenate([coarsen_col, current_col], axis=0)
+            coarsen_node += GC.W.shape[0]
+        else:
+            coarsen_features = torch.cat([coarsen_features, features[keep]], dim=0)
+            if coarsen_row is None:
+                raise Exception('The graph does not need coarsening.')
+            else:
+                current_row = H.W.tocoo().row + coarsen_node
+                current_col = H.W.tocoo().col + coarsen_node
+                coarsen_row = np.concatenate([coarsen_row, current_row], axis=0)
+                coarsen_col = np.concatenate([coarsen_col, current_col], axis=0)
+            coarsen_node += H.W.shape[0]
+        number += 1
+    
+    coarsen_edge = torch.LongTensor(np.array([coarsen_row, coarsen_col]))
+    Gc = Data(x=coarsen_features, edge_index=coarsen_edge, y=data.y)
+    return Gc
+
 def adj_matrix_2_edge_index(adj_matrix):
     edge_index = []
     for i in range(adj_matrix.shape[0] - 1):
@@ -684,7 +727,6 @@ def extract_masks(data):
         for subgraph in data:
             masks.append(subgraph.mask)
     return masks
-
 
 
 def load_data(Gc_dict, Gs_dict, y, args):

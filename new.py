@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
 from torch_geometric.data import Data
 from torch.utils.tensorboard import SummaryWriter
-from new_utils import load_data_classification, load_data_regression, coarsening_classification, coarsening_regression, create_distribution_tensor, adj_matrix_2_edge_index, load_data
+from new_utils import load_data_classification, load_data_regression, coarsening_classification, coarsening_regression, load_graph_data
 
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM7b
 from pprint import pprint
@@ -106,24 +106,11 @@ if __name__ == "__main__":
             Gc_dict = dict()
             Gs_dict = dict()
             y = []
-            for i in range(len(data)):
+            for i in tqdm(range(len(data))):
                 y.append(data[i].y)
                 args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, data[i], 1-args.coarsening_ratio, args.coarsening_method)
-                # GC_LIST = []
-                # if len(C_list) > 1:
-                #     temp = []
-                #     for j in range(len(C_list)):
-                #         edge_index = torch.tensor(np.array(Gc_list[j].A.nonzero()), dtype=torch.long)
-                #         coarsen_features = torch.tensor(C_list[j].toarray() @ data[i].x.numpy()[candidate[j].info["orig_idx"]], dtype=torch.float)
-                #         temp.append(Data(x = coarsen_features, edge_index = edge_index, y = data[i].y))
-                #     GC_LIST.append(temp)
-                # elif len(C_list) == 1:
-                #     edge_index = torch.tensor(np.array(Gc_list[0].A.nonzero()), dtype=torch.long)
-                #     coarsen_features = torch.tensor(C_list[0].toarray() @ data[i].x.numpy()[candidate[0].info["orig_idx"]], dtype=torch.float)
-                #     GC_LIST.append(Data(x = coarsen_features, edge_index = edge_index, y = data[i].y))
-                    
-                # Gc_dict[i] = GC_LIST if len(C_list) <= 1 else GC_LIST[0]
-                # Gs_dict[i] = list(component_2_subgraphs.values()) if len(component_2_subgraphs) > 1 else subgraph_list
+                Gc_dict[i] = load_graph_data(data[i], CLIST, GcLIST, candidate)
+                Gs_dict[i] = list(component_2_subgraphs.values())
         case 'graph_reg':
             Gc_dict = dict()
             Gs_dict = dict()
@@ -131,21 +118,8 @@ if __name__ == "__main__":
             for i in range(len(data)):
                 y.append(data[i].y)
                 args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, data[i], 1-args.coarsening_ratio, args.coarsening_method)
-                # GC_LIST = []
-                # if len(C_list) > 1:
-                #     temp = []
-                #     for j in range(len(C_list)):
-                #         edge_index = torch.tensor(np.array(Gc_list[j].A.nonzero()), dtype=torch.long)
-                #         coarsen_features = torch.tensor(C_list[j].toarray() @ data[i].x.numpy()[candidate[j].info["orig_idx"]], dtype=torch.float)
-                #         temp.append(Data(x = coarsen_features, edge_index = edge_index, y = data[i].y))
-                #     GC_LIST.append(temp)
-                # elif len(C_list) == 1:
-                #     edge_index = torch.tensor(np.array(Gc_list[0].A.nonzero()), dtype=torch.long)
-                #     coarsen_features = torch.tensor(C_list[0].toarray() @ data[i].x.numpy()[candidate[0].info["orig_idx"]], dtype=torch.float)
-                #     GC_LIST.append(Data(x = coarsen_features, edge_index = edge_index, y = data[i].y))
-                    
-                # Gc_dict[i] = GC_LIST if len(C_list) <= 1 else GC_LIST[0]
-                # Gs_dict[i] = list(component_2_subgraphs.values()) if len(component_2_subgraphs) > 1 else subgraph_list
+                Gc_dict[i] = load_graph_data(data[i], CLIST, GcLIST, candidate)
+                Gs_dict[i] = list(component_2_subgraphs.values())
     
 
     match(args.task):
@@ -154,6 +128,6 @@ if __name__ == "__main__":
         case 'node_reg':
             graphs = load_data_regression(args, data, subgraph_list)
         case 'graph_cls':
-            train, val, test = load_data(Gc_dict, Gs_dict, y, args)
+            pass
         case 'graph_reg':
-            train, val, test = load_data(Gc_dict, Gs_dict, y, args)
+            pass
