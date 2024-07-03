@@ -4,7 +4,7 @@ import torch
 from torch import tensor
 from network import Net1, TransferNet
 import numpy as np
-from utils import load_data, coarsening, create_distribution_tensor
+from old_utils import load_data, coarsening, create_distribution_tensor
 import os
 from tqdm import tqdm
 import time

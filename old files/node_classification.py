@@ -8,7 +8,7 @@ from network import Classify_node
 import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from utils import load_data_classification, coarsening_classification, coarsening_regression, create_distribution_tensor
+from old_utils import load_data_classification, coarsening_classification, coarsening_regression, create_distribution_tensor
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
