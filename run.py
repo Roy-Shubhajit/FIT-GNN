@@ -1,14 +1,15 @@
-from torch.utils.tensorboard import SummaryWriter
-from utils import load_data_classification, load_data_regression, train_test_val_split, colater
-import torch.nn.functional as F
-from torch_geometric.loader import DataLoader as G_DataLoader
-from torch.utils.data import DataLoader as T_DataLoader
-import torch
-from network import Classify_node, Regress_node, Classify_graph_gc, Classify_graph_gs, Regress_graph_gc, Regress_graph_gs
-from tqdm import tqdm 
 import os
-import numpy as np 
 import time
+import torch
+import numpy as np
+from tqdm import tqdm
+import torch.nn.functional as F
+from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import DataLoader as T_DataLoader
+from torch_geometric.loader import DataLoader as G_DataLoader
+from utils import load_data_classification, load_data_regression, train_test_val_split, colater
+from network import Classify_node, Regress_node, Classify_graph_gc, Classify_graph_gs, Regress_graph_gc, Regress_graph_gs
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -519,7 +520,6 @@ def graph_regression(args, path, writer, dataset):
         best_val_loss_Gs = val_loss
         writer.add_scaler('Gs_val_loss', val_loss, epoch)
         writer.add_scaler('Gs_test_loss', test_loss, epoch)
-
 
     elif args.exp_setup == "Gs_train_2_Gs_infer":
         best_val_loss_Gs =  float('inf')

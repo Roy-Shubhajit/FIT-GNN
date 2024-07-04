@@ -1,11 +1,10 @@
 import os
 import torch
 import argparse
-from tqdm import tqdm
-
 from run import *
+from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
-from utils import coarsening_classification, coarsening_regression, load_graph_data, train_test_val_split, colater
+from utils import coarsening_classification, coarsening_regression, load_graph_data
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM7b, QM9
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -136,9 +135,11 @@ if __name__ == "__main__":
     if args.task == 'node_cls':
         args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
         node_classification(args, path, dataset, writer, candidate, C_list, Gc_list, subgraph_list)
+        
     elif args.task == 'node_reg':
         args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
         node_regression(args, path, writer, subgraph_list)
+        
     elif args.task == 'graph_cls':
         new_dataset = []
         for i in tqdm(range(len(dataset))):
@@ -146,8 +147,8 @@ if __name__ == "__main__":
             Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
             Gs = list(component_2_subgraphs.values())
             new_dataset.append((dataset[i], Gc, Gs))
-
         graph_classification(args, path, writer, new_dataset)
+        
     else:
         new_dataset = []
         for i in range(len(dataset)):
@@ -155,8 +156,4 @@ if __name__ == "__main__":
             Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
             Gs = list(component_2_subgraphs.values())
             new_dataset.append((dataset[i], Gc, Gs))
-        
         graph_regression(args, path, writer, new_dataset)
-        
-
-    
