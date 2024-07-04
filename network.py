@@ -163,7 +163,6 @@ class Regress_graph_gs(torch.nn.Module):
         x = self.lt1(x)
         return x    
                   
-
 class TransferNet(torch.nn.Module):
     def __init__(self, args, model1):
         super(TransferNet, self).__init__()
