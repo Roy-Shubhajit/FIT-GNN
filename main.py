@@ -148,8 +148,14 @@ if __name__ == "__main__":
             Gs = subgraph_list
             new_dataset.append((dataset[i], Gc, Gs))
             classes.add(dataset[i].y.item())
+            sub = 0
+            for j in range(len(subgraph_list)):
+                sub += torch.sum(subgraph_list[j].mask)
+            if sub != dataset[i].x.shape[0]:
+                print(i)
+                print(dataset[i].x.shape[0], len(subgraph_list))
         args.num_classes = len(classes)                         ### Added num_classs
-        graph_classification(args, path, writer, new_dataset)
+        # graph_classification(args, path, writer, new_dataset)
         
     else:
         new_dataset = []
