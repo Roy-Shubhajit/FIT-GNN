@@ -15,10 +15,17 @@ def train_test_val_split(dataset, shuffle=True):
         idx = torch.randperm(N)
     else:
         idx = torch.arange(N)
-    train = idx[:N//2]
-    test = idx[N//2:3*N//4]
-    val = idx[3*N//4:]
-    return dataset[train], dataset[test], dataset[val]
+    train = []                                  ### Modified method of splitting data as earlier method was shooting errors.
+    val = []
+    test = []
+    for i in range(N):
+        if i < N//2:
+            train.append(dataset[idx[i]])
+        elif i < 3*N//4 and i >= N//2:
+            val.append(dataset[idx[i]])
+        else:
+            test.append(dataset[idx[i]])
+    return train, test, val
 
 def create_super_graph(dataset, component_2_subgraphs, CLIST, GcLIST):
     # super_graph is the final data object which has combined graphs of all components
@@ -620,7 +627,7 @@ def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, sub
     coarsen_train_labels = coarsen_train_labels.long()
     coarsen_val_labels = coarsen_val_labels.long()
 
-    return coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, new_graphs
+    return n_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, new_graphs
     
 def load_data_regression(args, dataset, subgraph_list):
     data = splits_regression(dataset, args.train_ratio, args.val_ratio)
