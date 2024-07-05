@@ -40,24 +40,19 @@ def process_dataset(args):
     elif args.dataset == 'ENZYMES':
         dataset = TUDataset(root='./dataset', name=args.dataset)
         args.task = 'graph_cls'
-        args.num_features = dataset[0].x.shape[1]
     elif args.dataset == 'PROTEINS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
         args.task = 'graph_cls'
-        args.num_features = dataset[0].x.shape[1]
     elif args.dataset == 'AIDS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
         args.task = 'graph_cls'
-        args.num_features = dataset[0].x.shape[1]
     #Graph Regression
     elif args.dataset == 'QM7b':
         dataset = QM7b(root='./dataset/QM7b')
         args.task = 'graph_reg'
-        args.num_features = dataset[0].x.shape[1]
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
         args.task = 'graph_reg'
-        args.num_features = dataset[0].x.shape[1]
 
     
     '''if args.task == 'node_cls':
