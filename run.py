@@ -73,7 +73,7 @@ def node_infer_Gs(args, model, graph_data, loss_fn, infer_type):
                 continue
         n = n + 1
     if args.task == 'node_cls':
-        loss = loss_fn(all_out, all_label) ### node_cls ERROR
+        loss = loss_fn(all_out, all_label.type(torch.long)) ### node_cls ERROR
         total_loss += loss.item()
         acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
     else:
@@ -114,7 +114,7 @@ def graph_train_Gc(model, loader, optimizer, loss_fn):
     optimizer.zero_grad()
     for batch in loader:
         gc = batch[0].to(device)
-        y = batch[2].to(device)
+        y = batch[2].to(device).type(torch.long)
         out = model(gc)
         loss = loss_fn(out, y)
         loss.backward()
@@ -127,7 +127,7 @@ def graph_val_Gc(model, loader, loss_fn):
     model.eval()
     for batch in loader:
         gc = batch[0].to(device)
-        y = batch[2].to(device)
+        y = batch[2].to(device).type(torch.long)
         out = model(gc)
         loss = loss_fn(out, y)
         total_loss += loss.item()
@@ -154,7 +154,7 @@ def graph_infer_Gs(args, model, loader, loss_fn):
     all_labels = torch.tensor([], dtype=torch.float32).to(device)
     for batch in loader:
         set_gs = batch[1]
-        y = batch[2].to(device)
+        y = batch[2].to(device).type(torch.long)
         batch_tensor = batch[3].to(device)
         out = model(set_gs, batch_tensor)
         loss = loss_fn(out, y)
@@ -383,9 +383,9 @@ def graph_classification(args, path, writer, dataset):
         best_val_acc = 0
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(model_gc, train_loader, optimizer_gc, loss_fn)
-            writer.add_scaler('Gc_train_loss', train_loss, epoch)
+            writer.add_scalar('Gc_train_loss', train_loss, epoch)
             val_loss = graph_val_Gc(model_gc, val_loader, loss_fn)
-            writer.add_scaler('Gc_val_loss', val_loss, epoch)
+            writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss
                 torch.save(model_gc.state_dict(), path+'model.pt')
@@ -395,11 +395,11 @@ def graph_classification(args, path, writer, dataset):
             train_loss = graph_train_Gs(model_gs, train_loader, optimizer_gs, loss_fn)
             val_loss, val_acc = graph_infer_Gs(args, model_gs, val_loader, loss_fn)
             test_loss, test_acc = graph_infer_Gs(args, model_gs, test_loader, loss_fn)
-            writer.add_scaler('Gs_train_loss', train_loss, epoch)
-            writer.add_scaler('Gs_val_loss', val_loss, epoch)
-            writer.add_scaler('Gs_test_loss', test_loss, epoch)
-            writer.add_scaler('Gs_val_acc', val_acc, epoch)
-            writer.add_scaler('Gs_test_acc', test_acc, epoch)
+            writer.add_scalar('Gs_train_loss', train_loss, epoch)
+            writer.add_scalar('Gs_val_loss', val_loss, epoch)
+            writer.add_scalar('Gs_test_loss', test_loss, epoch)
+            writer.add_scalar('Gs_val_acc', val_acc, epoch)
+            writer.add_scalar('Gs_test_acc', test_acc, epoch)
 
             if val_loss < best_val_loss_Gs or epoch == 0:
                 best_val_loss_Gs = val_loss
@@ -416,9 +416,9 @@ def graph_classification(args, path, writer, dataset):
         best_val_acc = 0
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(model_gc, train_loader, optimizer_gc, loss_fn)
-            writer.add_scaler('Gc_train_loss', train_loss, epoch)
+            writer.add_scalar('Gc_train_loss', train_loss, epoch)
             val_loss = graph_val_Gc(model_gc, val_loader, loss_fn)
-            writer.add_scaler('Gc_val_loss', val_loss, epoch)
+            writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss
                 torch.save(model_gc.state_dict(), path+'model.pt')
@@ -429,10 +429,10 @@ def graph_classification(args, path, writer, dataset):
         best_val_loss_Gs = val_loss
         best_test_loss = test_loss
         best_test_acc = test_acc
-        writer.add_scaler('Gs_val_loss', val_loss, epoch)
-        writer.add_scaler('Gs_test_loss', test_loss, epoch)
-        writer.add_scaler('Gs_val_acc', val_acc, epoch)
-        writer.add_scaler('Gs_test_acc', test_acc, epoch)
+        writer.add_scalar('Gs_val_loss', val_loss, epoch)
+        writer.add_scalar('Gs_test_loss', test_loss, epoch)
+        writer.add_scalar('Gs_val_acc', val_acc, epoch)
+        writer.add_scalar('Gs_test_acc', test_acc, epoch)
 
     elif args.exp_setup == "Gs_train_2_Gs_infer":
         best_val_loss_Gs =  float('inf')
@@ -443,11 +443,11 @@ def graph_classification(args, path, writer, dataset):
             train_loss = graph_train_Gs(model_gs, train_loader, optimizer_gs, loss_fn)
             val_loss, val_acc = graph_infer_Gs(args, model_gs, val_loader, loss_fn)
             test_loss, test_acc = graph_infer_Gs(args, model_gs, test_loader, loss_fn)
-            writer.add_scaler('Gs_train_loss', train_loss, epoch)
-            writer.add_scaler('Gs_val_loss', val_loss, epoch)
-            writer.add_scaler('Gs_test_loss', test_loss, epoch)
-            writer.add_scaler('Gs_val_acc', val_acc, epoch)
-            writer.add_scaler('Gs_test_acc', test_acc, epoch)
+            writer.add_scalar('Gs_train_loss', train_loss, epoch)
+            writer.add_scalar('Gs_val_loss', val_loss, epoch)
+            writer.add_scalar('Gs_test_loss', test_loss, epoch)
+            writer.add_scalar('Gs_val_acc', val_acc, epoch)
+            writer.add_scalar('Gs_test_acc', test_acc, epoch)
 
             if val_loss < best_val_loss_Gs or epoch == 0:
                 best_val_loss_Gs = val_loss
@@ -497,9 +497,9 @@ def graph_regression(args, path, writer, dataset):
         best_test_loss = float('inf')
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(model_gc, train_loader, optimizer_gc, loss_fn)
-            writer.add_scaler('Gc_train_loss', train_loss, epoch)
+            writer.add_scalar('Gc_train_loss', train_loss, epoch)
             val_loss = graph_val_Gc(model_gc, val_loader, loss_fn)
-            writer.add_scaler('Gc_val_loss', val_loss, epoch)
+            writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss
                 torch.save(model_gc.state_dict(), path+'model.pt')
@@ -509,9 +509,9 @@ def graph_regression(args, path, writer, dataset):
             train_loss = graph_train_Gs(model_gs, train_loader, optimizer_gs, loss_fn)
             val_loss, val_acc = graph_infer_Gs(args, model_gs, val_loader, loss_fn)
             test_loss, test_acc = graph_infer_Gs(args, model_gs, test_loader, loss_fn)
-            writer.add_scaler('Gs_train_loss', train_loss, epoch)
-            writer.add_scaler('Gs_val_loss', val_loss, epoch)
-            writer.add_scaler('Gs_test_loss', test_loss, epoch)
+            writer.add_scalar('Gs_train_loss', train_loss, epoch)
+            writer.add_scalar('Gs_val_loss', val_loss, epoch)
+            writer.add_scalar('Gs_test_loss', test_loss, epoch)
 
             if val_loss < best_val_loss_Gs or epoch == 0:
                 best_val_loss_Gs = val_loss
@@ -526,9 +526,9 @@ def graph_regression(args, path, writer, dataset):
         best_test_loss = float('inf')
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(model_gc, train_loader, optimizer_gc, loss_fn)
-            writer.add_scaler('Gc_train_loss', train_loss, epoch)
+            writer.add_scalar('Gc_train_loss', train_loss, epoch)
             val_loss = graph_val_Gc(model_gc, val_loader, loss_fn)
-            writer.add_scaler('Gc_val_loss', val_loss, epoch)
+            writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss
                 torch.save(model_gc.state_dict(), path+'model.pt')
@@ -537,8 +537,8 @@ def graph_regression(args, path, writer, dataset):
         val_loss, val_acc = graph_infer_Gs(args, model_gs, val_loader, loss_fn)
         test_loss, test_acc = graph_infer_Gs(args, model_gs, test_loader, loss_fn)
         best_val_loss_Gs = val_loss
-        writer.add_scaler('Gs_val_loss', val_loss, epoch)
-        writer.add_scaler('Gs_test_loss', test_loss, epoch)
+        writer.add_scalar('Gs_val_loss', val_loss, epoch)
+        writer.add_scalar('Gs_test_loss', test_loss, epoch)
 
     elif args.exp_setup == "Gs_train_2_Gs_infer":
         best_val_loss_Gs =  float('inf')
@@ -547,9 +547,9 @@ def graph_regression(args, path, writer, dataset):
             train_loss = graph_train_Gs(model_gs, train_loader, optimizer_gs, loss_fn)
             val_loss, val_acc = graph_infer_Gs(args, model_gs, val_loader, loss_fn)
             test_loss, test_acc = graph_infer_Gs(args, model_gs, test_loader, loss_fn)
-            writer.add_scaler('Gs_train_loss', train_loss, epoch)
-            writer.add_scaler('Gs_val_loss', val_loss, epoch)
-            writer.add_scaler('Gs_test_loss', test_loss, epoch)
+            writer.add_scalar('Gs_train_loss', train_loss, epoch)
+            writer.add_scalar('Gs_val_loss', val_loss, epoch)
+            writer.add_scalar('Gs_test_loss', test_loss, epoch)
 
             if val_loss < best_val_loss_Gs or epoch == 0:
                 best_val_loss_Gs = val_loss

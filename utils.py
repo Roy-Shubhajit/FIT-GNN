@@ -286,7 +286,8 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                     M.y = torch.cat((M.y, torch.zeros(len(new_features)).long()))
                     for new_node in actual_ext:
                         mappiing[new_node.item()] = new_node.item()
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool))
+                M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool)
+                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 M.map_dict = mappiing
                 new_subgraph_list.append(M_t)
                 subgraph_list.append(M)
@@ -306,8 +307,9 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                 for i in range(len(value)):
                     mappiing[value[i].item()] = i
                 M.map_dict = mappiing
+                M.mask = torch.tensor([True], dtype=torch.bool)
                 subgraph_list.append(M)
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool))
+                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 new_subgraph_list.append(M_t)
         component_2_subgraphs[number] = new_subgraph_list
         number += 1
@@ -417,7 +419,8 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                     for new_node in actual_ext:
                         mappiing[new_node.item()] = new_node.item()
                 M.map_dict = mappiing
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool))
+                M.mask = torch.tensor([True], dtype=torch.bool)
+                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 new_subgraph_list.append(M_t)
                 subgraph_list.append(M)
         else:
@@ -434,8 +437,9 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                 for i in range(len(value)):
                     mappiing[value[i].item()] = i
                 M.map_dict = mappiing
+                M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool)
                 subgraph_list.append(M)
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool))
+                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 new_subgraph_list.append(M_t)
         component_2_subgraphs[number] = new_subgraph_list
         number += 1

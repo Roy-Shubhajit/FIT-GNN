@@ -40,19 +40,24 @@ def process_dataset(args):
     elif args.dataset == 'ENZYMES':
         dataset = TUDataset(root='./dataset', name=args.dataset)
         args.task = 'graph_cls'
+        args.num_features = dataset[0].x.shape[1]
     elif args.dataset == 'PROTEINS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
         args.task = 'graph_cls'
+        args.num_features = dataset[0].x.shape[1]
     elif args.dataset == 'AIDS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
         args.task = 'graph_cls'
+        args.num_features = dataset[0].x.shape[1]
     #Graph Regression
     elif args.dataset == 'QM7b':
         dataset = QM7b(root='./dataset/QM7b')
         args.task = 'graph_reg'
+        args.num_features = dataset[0].x.shape[1]
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
         args.task = 'graph_reg'
+        args.num_features = dataset[0].x.shape[1]
 
     
     '''if args.task == 'node_cls':
@@ -145,7 +150,7 @@ if __name__ == "__main__":
         for i in tqdm(range(len(dataset))):
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
-            Gs = list(component_2_subgraphs.values())
+            Gs = subgraph_list
             new_dataset.append((dataset[i], Gc, Gs))
             classes.add(dataset[i].y.item())
         args.num_classes = len(classes)                         ### Added num_classs
@@ -156,6 +161,6 @@ if __name__ == "__main__":
         for i in range(len(dataset)):
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
-            Gs = list(component_2_subgraphs.values())
+            Gs = subgraph_list
             new_dataset.append((dataset[i], Gc, Gs))
         graph_regression(args, path, writer, new_dataset)
