@@ -1,0 +1,4 @@
+dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers,batch_size,lr,best_test_loss,best_test_acc
+ENZYMES,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,False,False,512,2,128,0.01,1.9827491641044617,0.2727272727272727
+ENZYMES,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,False,False,512,2,128,0.01,1.89282888174057,0.09090909090909091
+ENZYMES,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,False,False,512,2,128,0.01,1.8928882479667664,0.045454545454545456

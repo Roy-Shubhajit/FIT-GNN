@@ -33,7 +33,7 @@ def process_dataset(args):
     elif args.dataset == 'squirrel':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
         args.task = 'node_reg'
-    elif args.dataset == 'chrocodile':
+    elif args.dataset == 'crocodile':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
         args.task = 'node_reg'
     #Graph Classification
@@ -48,10 +48,10 @@ def process_dataset(args):
         args.task = 'graph_cls'
     #Graph Regression
     elif args.dataset == 'QM7b':
-        dataset = QM7b(root='./dataset', name=args.dataset)
+        dataset = QM7b(root='./dataset/QM7b')
         args.task = 'graph_reg'
     elif args.dataset == 'QM9':
-        dataset = QM9(root='./dataset', name=args.dataset)
+        dataset = QM9(root='./dataset/QM9')
         args.task = 'graph_reg'
 
     
@@ -122,6 +122,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     args = arg_correction(args)
+    dataset, args = process_dataset(args)
 
     path = f"save/{args.task}/"+args.output_dir+"/"
     if not os.path.exists('save'):
@@ -130,23 +131,24 @@ if __name__ == "__main__":
         os.makedirs(path)
     writer = SummaryWriter(path)
 
-    dataset, args = process_dataset(args)
-
     if args.task == 'node_cls':
         args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
         node_classification(args, path, dataset, writer, candidate, C_list, Gc_list, subgraph_list)
         
     elif args.task == 'node_reg':
         args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
-        node_regression(args, path, writer, subgraph_list)
+        node_regression(args, path, dataset, writer, subgraph_list)
         
     elif args.task == 'graph_cls':
         new_dataset = []
+        classes = set()
         for i in tqdm(range(len(dataset))):
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
-            Gs = list(component_2_subgraphs.values())
+            Gs = subgraph_list
             new_dataset.append((dataset[i], Gc, Gs))
+            classes.add(dataset[i].y.item())
+        args.num_classes = len(classes)                         ### Added num_classs
         graph_classification(args, path, writer, new_dataset)
         
     else:
@@ -154,6 +156,6 @@ if __name__ == "__main__":
         for i in range(len(dataset)):
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
-            Gs = list(component_2_subgraphs.values())
+            Gs = subgraph_list
             new_dataset.append((dataset[i], Gc, Gs))
         graph_regression(args, path, writer, new_dataset)

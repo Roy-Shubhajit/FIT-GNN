@@ -73,7 +73,7 @@ def node_infer_Gs(args, model, graph_data, loss_fn, infer_type):
                 continue
         n = n + 1
     if args.task == 'node_cls':
-        loss = loss_fn(all_out, all_label)
+        loss = loss_fn(all_out, all_label.type(torch.long)) ### node_cls ERROR
         total_loss += loss.item()
         acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
     else:
@@ -114,7 +114,7 @@ def graph_train_Gc(model, loader, optimizer, loss_fn):
     optimizer.zero_grad()
     for batch in loader:
         gc = batch[0].to(device)
-        y = batch[2].to(device)
+        y = batch[2].to(device).type(torch.long)
         out = model(gc)
         loss = loss_fn(out, y)
         loss.backward()
@@ -127,7 +127,7 @@ def graph_val_Gc(model, loader, loss_fn):
     model.eval()
     for batch in loader:
         gc = batch[0].to(device)
-        y = batch[2].to(device)
+        y = batch[2].to(device).type(torch.long)
         out = model(gc)
         loss = loss_fn(out, y)
         total_loss += loss.item()
@@ -154,7 +154,7 @@ def graph_infer_Gs(args, model, loader, loss_fn):
     all_labels = torch.tensor([], dtype=torch.float32).to(device)
     for batch in loader:
         set_gs = batch[1]
-        y = batch[2].to(device)
+        y = batch[2].to(device).type(torch.long)
         batch_tensor = batch[3].to(device)
         out = model(set_gs, batch_tensor)
         loss = loss_fn(out, y)
@@ -172,9 +172,10 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
     all_acc = []
     all_time = []
 
-    for run in range(args.run):
+    for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
-        coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset[0], candidate, C_list, Gc_list, args.experiment, subgraph_list)
+        ### Added args.num_classes
+        args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset[0], candidate, C_list, Gc_list, args.experiment, subgraph_list)
         if args.normalize_features:
             coarsen_features = F.normalize(coarsen_features, p=1)
         graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False)
@@ -299,14 +300,14 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
     print(f"best_loss: {top_loss[0]}")
     print("#####################################################################")
 
-def node_regression(args, path, writer, subgraph_list):
+def node_regression(args, path, dataset, writer, subgraph_list):
     all_loss = []
     all_acc = []
     all_time = []
 
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
-        graphs = load_data_regression(args, args.dataset, subgraph_list)
+        graphs = load_data_regression(args, dataset, subgraph_list)
         graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False)
 
         model = Regress_node(args).to(device)
@@ -339,16 +340,14 @@ def node_regression(args, path, writer, subgraph_list):
     top_acc = sorted(all_acc, reverse=True)[:10]
     top_loss = sorted(all_loss)[:10]
 
-    if not os.path.exists(f"results_3/{args.dataset}.csv"):
-        with open(f"results_3/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,coarsening_method,coarsening_ratio,experiment,exp_setup,extra_nodes,cluster_node,hidden,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
+    if not os.path.exists(f"results/{args.dataset}.csv"):
+        with open(f"results/{args.dataset}.csv", 'w') as f:
+            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
 
-    with open(f"results_3/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.experiment},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")
+    with open(f"results/{args.dataset}.csv", 'a') as f:
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")
     print("#####################################################################")
     print(f"dataset: {args.dataset}")
-    print(f"experiment: {args.experiment}")
-    print(f"exp_setup: {args.exp_setup}")
     print(f"extra_nodes: {args.extra_node}")
     print(f"cluster_node: {args.cluster_node}")
     print(f"hidden: {args.hidden}")
@@ -384,9 +383,9 @@ def graph_classification(args, path, writer, dataset):
         best_val_acc = 0
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(model_gc, train_loader, optimizer_gc, loss_fn)
-            writer.add_scaler('Gc_train_loss', train_loss, epoch)
+            writer.add_scalar('Gc_train_loss', train_loss, epoch)
             val_loss = graph_val_Gc(model_gc, val_loader, loss_fn)
-            writer.add_scaler('Gc_val_loss', val_loss, epoch)
+            writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss
                 torch.save(model_gc.state_dict(), path+'model.pt')
@@ -396,11 +395,11 @@ def graph_classification(args, path, writer, dataset):
             train_loss = graph_train_Gs(model_gs, train_loader, optimizer_gs, loss_fn)
             val_loss, val_acc = graph_infer_Gs(args, model_gs, val_loader, loss_fn)
             test_loss, test_acc = graph_infer_Gs(args, model_gs, test_loader, loss_fn)
-            writer.add_scaler('Gs_train_loss', train_loss, epoch)
-            writer.add_scaler('Gs_val_loss', val_loss, epoch)
-            writer.add_scaler('Gs_test_loss', test_loss, epoch)
-            writer.add_scaler('Gs_val_acc', val_acc, epoch)
-            writer.add_scaler('Gs_test_acc', test_acc, epoch)
+            writer.add_scalar('Gs_train_loss', train_loss, epoch)
+            writer.add_scalar('Gs_val_loss', val_loss, epoch)
+            writer.add_scalar('Gs_test_loss', test_loss, epoch)
+            writer.add_scalar('Gs_val_acc', val_acc, epoch)
+            writer.add_scalar('Gs_test_acc', test_acc, epoch)
 
             if val_loss < best_val_loss_Gs or epoch == 0:
                 best_val_loss_Gs = val_loss
@@ -417,9 +416,9 @@ def graph_classification(args, path, writer, dataset):
         best_val_acc = 0
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(model_gc, train_loader, optimizer_gc, loss_fn)
-            writer.add_scaler('Gc_train_loss', train_loss, epoch)
+            writer.add_scalar('Gc_train_loss', train_loss, epoch)
             val_loss = graph_val_Gc(model_gc, val_loader, loss_fn)
-            writer.add_scaler('Gc_val_loss', val_loss, epoch)
+            writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss
                 torch.save(model_gc.state_dict(), path+'model.pt')
@@ -430,10 +429,10 @@ def graph_classification(args, path, writer, dataset):
         best_val_loss_Gs = val_loss
         best_test_loss = test_loss
         best_test_acc = test_acc
-        writer.add_scaler('Gs_val_loss', val_loss, epoch)
-        writer.add_scaler('Gs_test_loss', test_loss, epoch)
-        writer.add_scaler('Gs_val_acc', val_acc, epoch)
-        writer.add_scaler('Gs_test_acc', test_acc, epoch)
+        writer.add_scalar('Gs_val_loss', val_loss, epoch)
+        writer.add_scalar('Gs_test_loss', test_loss, epoch)
+        writer.add_scalar('Gs_val_acc', val_acc, epoch)
+        writer.add_scalar('Gs_test_acc', test_acc, epoch)
 
     elif args.exp_setup == "Gs_train_2_Gs_infer":
         best_val_loss_Gs =  float('inf')
@@ -444,11 +443,11 @@ def graph_classification(args, path, writer, dataset):
             train_loss = graph_train_Gs(model_gs, train_loader, optimizer_gs, loss_fn)
             val_loss, val_acc = graph_infer_Gs(args, model_gs, val_loader, loss_fn)
             test_loss, test_acc = graph_infer_Gs(args, model_gs, test_loader, loss_fn)
-            writer.add_scaler('Gs_train_loss', train_loss, epoch)
-            writer.add_scaler('Gs_val_loss', val_loss, epoch)
-            writer.add_scaler('Gs_test_loss', test_loss, epoch)
-            writer.add_scaler('Gs_val_acc', val_acc, epoch)
-            writer.add_scaler('Gs_test_acc', test_acc, epoch)
+            writer.add_scalar('Gs_train_loss', train_loss, epoch)
+            writer.add_scalar('Gs_val_loss', val_loss, epoch)
+            writer.add_scalar('Gs_test_loss', test_loss, epoch)
+            writer.add_scalar('Gs_val_acc', val_acc, epoch)
+            writer.add_scalar('Gs_test_acc', test_acc, epoch)
 
             if val_loss < best_val_loss_Gs or epoch == 0:
                 best_val_loss_Gs = val_loss
@@ -458,6 +457,26 @@ def graph_classification(args, path, writer, dataset):
                 torch.save(model_gs.state_dict(), path+'/model.pt')
 
     #here we need to print the results and save it in a csv file
+    if not os.path.exists(f"results/{args.dataset}.csv"):
+        with open(f"results/{args.dataset}.csv", 'w') as f:
+            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers,batch_size,lr,best_test_loss,best_test_acc\n')
+
+    with open(f"results/{args.dataset}.csv", 'a') as f:
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
+    print("#####################################################################")
+    print(f"dataset: {args.dataset}")
+    print(f"exp_setup: {args.exp_setup}")
+    print(f"extra_nodes: {args.extra_node}")
+    print(f"cluster_node: {args.cluster_node}")
+    print(f"hidden: {args.hidden}")
+    print(f"num_layers: {args.num_layers1}")
+    print(f"batch_size: {args.batch_size}")
+    print(f"lr: {args.lr}")
+    print(f"coarsening_ratio: {args.coarsening_ratio}")
+    print(f"coarsening_method: {args.coarsening_method}")
+    print(f"best_test_loss: {best_test_loss}")
+    print(f"best_test_acc: {best_test_acc}")
+    print("#####################################################################")
 
 def graph_regression(args, path, writer, dataset):
     train_split, test_split, val_split = train_test_val_split(dataset, shuffle=True)
@@ -478,9 +497,9 @@ def graph_regression(args, path, writer, dataset):
         best_test_loss = float('inf')
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(model_gc, train_loader, optimizer_gc, loss_fn)
-            writer.add_scaler('Gc_train_loss', train_loss, epoch)
+            writer.add_scalar('Gc_train_loss', train_loss, epoch)
             val_loss = graph_val_Gc(model_gc, val_loader, loss_fn)
-            writer.add_scaler('Gc_val_loss', val_loss, epoch)
+            writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss
                 torch.save(model_gc.state_dict(), path+'model.pt')
@@ -490,9 +509,9 @@ def graph_regression(args, path, writer, dataset):
             train_loss = graph_train_Gs(model_gs, train_loader, optimizer_gs, loss_fn)
             val_loss, val_acc = graph_infer_Gs(args, model_gs, val_loader, loss_fn)
             test_loss, test_acc = graph_infer_Gs(args, model_gs, test_loader, loss_fn)
-            writer.add_scaler('Gs_train_loss', train_loss, epoch)
-            writer.add_scaler('Gs_val_loss', val_loss, epoch)
-            writer.add_scaler('Gs_test_loss', test_loss, epoch)
+            writer.add_scalar('Gs_train_loss', train_loss, epoch)
+            writer.add_scalar('Gs_val_loss', val_loss, epoch)
+            writer.add_scalar('Gs_test_loss', test_loss, epoch)
 
             if val_loss < best_val_loss_Gs or epoch == 0:
                 best_val_loss_Gs = val_loss
@@ -507,9 +526,9 @@ def graph_regression(args, path, writer, dataset):
         best_test_loss = float('inf')
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(model_gc, train_loader, optimizer_gc, loss_fn)
-            writer.add_scaler('Gc_train_loss', train_loss, epoch)
+            writer.add_scalar('Gc_train_loss', train_loss, epoch)
             val_loss = graph_val_Gc(model_gc, val_loader, loss_fn)
-            writer.add_scaler('Gc_val_loss', val_loss, epoch)
+            writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss
                 torch.save(model_gc.state_dict(), path+'model.pt')
@@ -518,8 +537,8 @@ def graph_regression(args, path, writer, dataset):
         val_loss, val_acc = graph_infer_Gs(args, model_gs, val_loader, loss_fn)
         test_loss, test_acc = graph_infer_Gs(args, model_gs, test_loader, loss_fn)
         best_val_loss_Gs = val_loss
-        writer.add_scaler('Gs_val_loss', val_loss, epoch)
-        writer.add_scaler('Gs_test_loss', test_loss, epoch)
+        writer.add_scalar('Gs_val_loss', val_loss, epoch)
+        writer.add_scalar('Gs_test_loss', test_loss, epoch)
 
     elif args.exp_setup == "Gs_train_2_Gs_infer":
         best_val_loss_Gs =  float('inf')
@@ -528,9 +547,9 @@ def graph_regression(args, path, writer, dataset):
             train_loss = graph_train_Gs(model_gs, train_loader, optimizer_gs, loss_fn)
             val_loss, val_acc = graph_infer_Gs(args, model_gs, val_loader, loss_fn)
             test_loss, test_acc = graph_infer_Gs(args, model_gs, test_loader, loss_fn)
-            writer.add_scaler('Gs_train_loss', train_loss, epoch)
-            writer.add_scaler('Gs_val_loss', val_loss, epoch)
-            writer.add_scaler('Gs_test_loss', test_loss, epoch)
+            writer.add_scalar('Gs_train_loss', train_loss, epoch)
+            writer.add_scalar('Gs_val_loss', val_loss, epoch)
+            writer.add_scalar('Gs_test_loss', test_loss, epoch)
 
             if val_loss < best_val_loss_Gs or epoch == 0:
                 best_val_loss_Gs = val_loss
@@ -538,10 +557,23 @@ def graph_regression(args, path, writer, dataset):
                 torch.save(model_gs.state_dict(), path+'/model.pt')
 
     #here we need to print the results and save it in a csv file
+    if not os.path.exists(f"results/{args.dataset}.csv"):
+        with open(f"results/{args.dataset}.csv", 'w') as f:
+            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers,batch_size,lr,best_test_loss,best_test_acc\n')
 
-
-
-
-
-
-    
+    with open(f"results/{args.dataset}.csv", 'a') as f:
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
+    print("#####################################################################")
+    print(f"dataset: {args.dataset}")
+    print(f"exp_setup: {args.exp_setup}")
+    print(f"extra_nodes: {args.extra_node}")
+    print(f"cluster_node: {args.cluster_node}")
+    print(f"hidden: {args.hidden}")
+    print(f"num_layers: {args.num_layers1}")
+    print(f"batch_size: {args.batch_size}")
+    print(f"lr: {args.lr}")
+    print(f"coarsening_ratio: {args.coarsening_ratio}")
+    print(f"coarsening_method: {args.coarsening_method}")
+    print(f"best_test_loss: {best_test_loss}")
+    print(f"best_test_acc: {best_test_acc}")
+    print("#####################################################################")

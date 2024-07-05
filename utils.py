@@ -15,10 +15,17 @@ def train_test_val_split(dataset, shuffle=True):
         idx = torch.randperm(N)
     else:
         idx = torch.arange(N)
-    train = idx[:N//2]
-    test = idx[N//2:3*N//4]
-    val = idx[3*N//4:]
-    return dataset[train], dataset[test], dataset[val]
+    train = []                                  ### Modified method of splitting data as earlier method was shooting errors.
+    val = []
+    test = []
+    for i in range(N):
+        if i < N//2:
+            train.append(dataset[idx[i]])
+        elif i < 3*N//4 and i >= N//2:
+            val.append(dataset[idx[i]])
+        else:
+            test.append(dataset[idx[i]])
+    return train, test, val
 
 def create_super_graph(dataset, component_2_subgraphs, CLIST, GcLIST):
     # super_graph is the final data object which has combined graphs of all components
@@ -279,7 +286,8 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                     M.y = torch.cat((M.y, torch.zeros(len(new_features)).long()))
                     for new_node in actual_ext:
                         mappiing[new_node.item()] = new_node.item()
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool))
+                M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool)
+                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 M.map_dict = mappiing
                 new_subgraph_list.append(M_t)
                 subgraph_list.append(M)
@@ -299,8 +307,9 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                 for i in range(len(value)):
                     mappiing[value[i].item()] = i
                 M.map_dict = mappiing
+                M.mask = torch.tensor([True], dtype=torch.bool)
                 subgraph_list.append(M)
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool))
+                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 new_subgraph_list.append(M_t)
         component_2_subgraphs[number] = new_subgraph_list
         number += 1
@@ -410,7 +419,8 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                     for new_node in actual_ext:
                         mappiing[new_node.item()] = new_node.item()
                 M.map_dict = mappiing
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool))
+                M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool)
+                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 new_subgraph_list.append(M_t)
                 subgraph_list.append(M)
         else:
@@ -427,8 +437,9 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                 for i in range(len(value)):
                     mappiing[value[i].item()] = i
                 M.map_dict = mappiing
+                M.mask = torch.tensor([True], dtype=torch.bool)
                 subgraph_list.append(M)
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool))
+                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 new_subgraph_list.append(M_t)
         component_2_subgraphs[number] = new_subgraph_list
         number += 1
@@ -620,7 +631,7 @@ def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, sub
     coarsen_train_labels = coarsen_train_labels.long()
     coarsen_val_labels = coarsen_val_labels.long()
 
-    return coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, new_graphs
+    return n_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, new_graphs
     
 def load_data_regression(args, dataset, subgraph_list):
     data = splits_regression(dataset, args.train_ratio, args.val_ratio)
