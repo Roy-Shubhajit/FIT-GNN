@@ -188,7 +188,7 @@ def metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node):
     return metanode_2_node
 
 def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
-    G = gsp.graphs.Graph(W=to_dense_adj(data.edge_index)[0])
+    G = gsp.graphs.Graph(W=to_dense_adj(data.edge_index, max_num_nodes=data.x.shape[0])[0])
     components = extract_components(G)
     candidate = sorted(components, key=lambda x: len(x.info['orig_idx']), reverse=True)
     number = 0
@@ -288,6 +288,8 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                         mappiing[new_node.item()] = new_node.item()
                 if args.extra_node:
                     M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool)
+                elif args.cluster_node:
+                    M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool)
                 else:
                     M.mask = torch.tensor([True]*len(value), dtype=torch.bool)
                 M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
@@ -424,6 +426,8 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                 M.map_dict = mappiing
                 if args.extra_node:
                     M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool)
+                elif args.cluster_node:
+                    M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool)
                 else:
                     M.mask = torch.tensor([True]*len(value), dtype=torch.bool)
                 M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)

@@ -480,7 +480,7 @@ def contract_variation_edges(G, A=None, K=10, r=0.5, algorithm="greedy"):
 
     # cost function for the edge
     def subgraph_cost(G, A, edge):
-        edge, w = edge[:2].astype(np.int), edge[2]
+        edge, w = edge[:2].astype(np.int32), edge[2]
         deg_new = 2 * deg[edge] - w
         L = np.array([[deg_new[0], -w], [-w, deg_new[1]]])
         B = Pibot @ A[edge, :]
@@ -817,7 +817,7 @@ def generate_test_vectors(
 
     if method == "JC" or method == "Jacobi":
 
-        deg = G.dw.astype(np.float)
+        deg = G.dw.astype(np.float32)
         D = sp.sparse.diags(deg, 0)
         deginv = deg ** (-1)
         deginv[deginv == np.Inf] = 0

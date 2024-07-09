@@ -139,7 +139,7 @@ def graph_train_Gs(model, loader, optimizer, loss_fn):
     optimizer.zero_grad()
     for batch in loader:
         set_gs = batch[1]
-        y = batch[2].to(device)
+        y = batch[2].to(device).type(torch.long)
         batch_tensor = batch[3].to(device)
         out = model(set_gs, batch_tensor)
         loss = loss_fn(out, y)
@@ -457,12 +457,12 @@ def graph_classification(args, path, writer, dataset):
                 torch.save(model_gs.state_dict(), path+'/model.pt')
 
     #here we need to print the results and save it in a csv file
-    if not os.path.exists(f"results/{args.dataset}.csv"):
-        with open(f"results/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers,batch_size,lr,best_test_loss,best_test_acc\n')
+    if not os.path.exists(f"results/{args.dataset}_final.csv"):
+        with open(f"results/{args.dataset}_final.csv", 'w') as f:
+            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,best_test_acc\n')
 
-    with open(f"results/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
+    with open(f"results/{args.dataset}_final.csv", 'a') as f:
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
     print("#####################################################################")
     print(f"dataset: {args.dataset}")
     print(f"exp_setup: {args.exp_setup}")
@@ -562,7 +562,7 @@ def graph_regression(args, path, writer, dataset):
             f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers,batch_size,lr,best_test_loss,best_test_acc\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss}\n")
     print("#####################################################################")
     print(f"dataset: {args.dataset}")
     print(f"exp_setup: {args.exp_setup}")
@@ -575,5 +575,4 @@ def graph_regression(args, path, writer, dataset):
     print(f"coarsening_ratio: {args.coarsening_ratio}")
     print(f"coarsening_method: {args.coarsening_method}")
     print(f"best_test_loss: {best_test_loss}")
-    print(f"best_test_acc: {best_test_acc}")
     print("#####################################################################")

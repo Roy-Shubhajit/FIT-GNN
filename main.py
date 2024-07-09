@@ -13,45 +13,76 @@ def process_dataset(args):
     # Node Classification
     if args.dataset == 'dblp':
         dataset = CitationFull(root='./dataset', name=args.dataset)
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == 'Physics':
         dataset = Coauthor(root='./dataset/Physics', name=args.dataset)
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == 'cora':
         dataset = Planetoid(root='./dataset', name=args.dataset)
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == 'citeseer':
         dataset = Planetoid(root='./dataset', name=args.dataset)
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == 'pubmed':
         dataset = Planetoid(root='./dataset', name=args.dataset)
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     #Node Regression
     elif args.dataset == 'chameleon':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_reg'
     elif args.dataset == 'squirrel':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_reg'
     elif args.dataset == 'crocodile':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_reg'
     #Graph Classification
     elif args.dataset == 'ENZYMES':
         dataset = TUDataset(root='./dataset', name=args.dataset)
+        for i in range(len(dataset)):
+            if args.normalize_features:
+                dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
     elif args.dataset == 'PROTEINS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
+        for i in range(len(dataset)):
+            if args.normalize_features:
+                dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
     elif args.dataset == 'AIDS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
+        for i in range(len(dataset)):
+            if args.normalize_features:
+                dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
     #Graph Regression
     elif args.dataset == 'QM7b':
         dataset = QM7b(root='./dataset/QM7b')
+        for i in range(len(dataset)):
+            if args.normalize_features:
+                dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_reg'
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
+        for i in range(len(dataset)):
+            if args.normalize_features:
+                dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_reg'
 
     
@@ -148,14 +179,8 @@ if __name__ == "__main__":
             Gs = subgraph_list
             new_dataset.append((dataset[i], Gc, Gs))
             classes.add(dataset[i].y.item())
-            sub = 0
-            for j in range(len(subgraph_list)):
-                sub += torch.sum(subgraph_list[j].mask)
-            if sub != dataset[i].x.shape[0]:
-                print(i)
-                print(dataset[i].x.shape[0], len(subgraph_list))
         args.num_classes = len(classes)                         ### Added num_classs
-        # graph_classification(args, path, writer, new_dataset)
+        graph_classification(args, path, writer, new_dataset)
         
     else:
         new_dataset = []
