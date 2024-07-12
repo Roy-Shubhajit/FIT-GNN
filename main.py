@@ -72,12 +72,12 @@ def process_dataset(args):
                 dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
     #Graph Regression
-    elif args.dataset == 'QM7b':
-        dataset = QM7b(root='./dataset/QM7b')
-        for i in range(len(dataset)):
-            if args.normalize_features:
-                dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
-        args.task = 'graph_reg'
+    # elif args.dataset == 'QM7b':
+    #     dataset = QM7b(root='./dataset/QM7b')
+    #     for i in range(len(dataset)):
+    #         if args.normalize_features:
+    #             dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
+    #     args.task = 'graph_reg'
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
         for i in range(len(dataset)):

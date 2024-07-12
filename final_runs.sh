@@ -1,5 +1,5 @@
 exp_setup="Gc_train_2_Gs_infer"
-dataset="ENZYMES"
+dataset="AIDS"
 output_dir=graph_cls_final
 task=graph_cls
 hidden=512

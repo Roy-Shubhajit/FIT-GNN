@@ -109,6 +109,8 @@ class Classify_graph_gs(torch.nn.Module):
         # x = global_max_pool(X_main, batch_tensor.type(torch.int64))
         x = X_main
         x = self.lt1(x)
+        if len(x.shape) == 1:
+            return F.log_softmax(x)
         return F.log_softmax(x, dim=1)
     
 class Regress_graph_gc(torch.nn.Module):
@@ -184,4 +186,6 @@ class TransferNet(torch.nn.Module):
             x = F.elu(x)    
             x = F.dropout(x, training=self.training)
         x = self.new_lt1(x)
+        if len(x.shape) == 1:
+            return F.log_softmax(x)
         return F.log_softmax(x, dim=1)

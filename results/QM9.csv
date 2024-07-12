@@ -1,2 +1,3 @@
 dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers,batch_size,lr,best_test_loss
 QM9,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,False,False,512,2,128,0.01,inf
+QM9,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,False,False,512,2,128,0.01,0.5289174437061204

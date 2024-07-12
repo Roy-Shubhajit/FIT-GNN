@@ -537,6 +537,7 @@ def graph_regression(args, path, writer, dataset):
         val_loss, val_acc = graph_infer_Gs(args, model_gs, val_loader, loss_fn)
         test_loss, test_acc = graph_infer_Gs(args, model_gs, test_loader, loss_fn)
         best_val_loss_Gs = val_loss
+        best_test_loss = test_loss
         writer.add_scalar('Gs_val_loss', val_loss, epoch)
         writer.add_scalar('Gs_test_loss', test_loss, epoch)
 
