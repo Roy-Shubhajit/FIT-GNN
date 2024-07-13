@@ -1,3 +1,6 @@
 dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers,batch_size,lr,best_test_loss
 QM9,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,False,False,512,2,128,0.01,inf
 QM9,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,False,False,512,2,128,0.01,0.5289174437061204
+QM9,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,True,False,512,2,128,0.01,0.5293931699422731
+QM9,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,False,True,512,2,128,0.01,0.5211164084363286
+QM9,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,False,False,512,2,128,0.01,0.00042391598742531526

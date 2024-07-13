@@ -150,6 +150,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_dir', type=str, required=True)
     parser.add_argument('--task', type = str, default = 'node_cls')         ### node_reg, graph_cls, graph_reg
     parser.add_argument('--seed', type = int, default = None)               ### Seed for reproducibility
+    parser.add_argument('--property', type = int, default = 0)              ### Property for graph regression task
     args = parser.parse_args()
 
     args = arg_correction(args)
