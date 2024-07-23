@@ -101,9 +101,16 @@ class Classify_graph_gs(torch.nn.Module):
                     x = F.elu(x)
                     x = F.dropout(x, training=self.training)
                 X = torch.cat((X, x[mask]), 0)
-            X_main = torch.cat((X_main, X), 0)
-        x = global_max_pool(X_main, batch_tensor.type(torch.int64))
+            temp = torch.max(X, 0)[0]  
+            if X_main.size()[0] == 0:
+                X_main = temp          
+            else:
+                X_main = torch.vstack((X_main, temp))
+        # x = global_max_pool(X_main, batch_tensor.type(torch.int64))
+        x = X_main
         x = self.lt1(x)
+        if len(x.shape) == 1:
+            return F.log_softmax(x)
         return F.log_softmax(x, dim=1)
     
 class Regress_graph_gc(torch.nn.Module):
@@ -111,7 +118,7 @@ class Regress_graph_gc(torch.nn.Module):
         super(Regress_graph_gc, self).__init__()
         self.num_layers = args.num_layers1
         self.conv = torch.nn.ModuleList()
-        self.conv.append(GCNConv(args.hidden, args.hidden))
+        self.conv.append(GCNConv(args.num_features, args.hidden))
         for i in range(self.num_layers - 1):
             self.conv.append(GCNConv(args.hidden, args.hidden))
         self.lt1 = torch.nn.Linear(args.hidden, 1)
@@ -136,7 +143,7 @@ class Regress_graph_gs(torch.nn.Module):
         super(Regress_graph_gs, self).__init__()
         self.num_layers = args.num_layers1
         self.conv = torch.nn.ModuleList()
-        self.conv.append(GCNConv(args.hidden, args.hidden))
+        self.conv.append(GCNConv(args.num_features, args.hidden))
         for i in range(self.num_layers - 1):
             self.conv.append(GCNConv(args.hidden, args.hidden))
         self.lt1 = torch.nn.Linear(args.hidden, 1)
@@ -159,7 +166,7 @@ class Regress_graph_gs(torch.nn.Module):
                     x = F.dropout(x, training=self.training)
                 X = torch.cat((X, x[mask]), 0)
             X_main = torch.cat((X_main, X), 0)
-        x = global_max_pool(X_main, batch_tensor)
+        x = global_max_pool(X_main, batch_tensor.type(torch.int64))
         x = self.lt1(x)
         return x    
                   
@@ -176,7 +183,9 @@ class TransferNet(torch.nn.Module):
     def forward(self, x, edge_index):
         for i in range(self.num_layers):
             x = self.conv[i](x, edge_index)
-            x = F.elu(x)
+            x = F.elu(x)    
             x = F.dropout(x, training=self.training)
         x = self.new_lt1(x)
+        if len(x.shape) == 1:
+            return F.log_softmax(x)
         return F.log_softmax(x, dim=1)
