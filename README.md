@@ -1,23 +1,28 @@
 # CoPart-GNN
-<!-- ## Accuracies for `extra_node` varying `exp_setup`
-![avg_acc](plots/cora_ave_acc.png)
-![top_10_acc](plots/cora_top_10_acc.png)
 
-## Important files added/modified
-./results/cora.csv<br>
-./save/ -->
+---
 
-## Resolved minor errors in `main.py`, `run.py` and `utils.py`.
-
-## Errors:
-### Node Classification
-Terminal Input: python main.py --dataset cora --output_dir node_cls_final
-Error: Weird loss_fn error. Not able to resolve this. 
-
-### Graph Classification
-Terminal Input: python main.py --dataset ENZYMES --output_dir graph_cls_final
-Error: Shape mismatch in run.py (line 118): out = model(gc)
-
-### Graph Regression
-Terminal Input: python main.py --dataset QM9 --output_dir graph_reg_final
-Error: Shape mismatch in run.py (line 118): out = model(gc)
+### Important file locations:
+- Training
+    1) Baseline:
+        a. Node Classification - `node_classification_baseline.ipynb`
+        b. Node Regression - `node_regression_baseline.ipynb`
+        c. Graph Classification - `graph_classification_baseline.ipynb`
+        d. Graph Regression - `graph_regression_baseline.ipynb`
+    2) Subgraph: `main.py`
+- Inference:
+    1) Baseline: `final.ipynb`
+    2) Subgraph: `final.ipynb`
+- Saved models:
+    1) Baseline:
+        a. Node Classification - `save/node_cls/baselines/`
+        b. Node Regression - `save/node_reg/baselines/`
+        c. Graph Classification - `final_models/`
+        d. Graph Regression - With Shubhajit Roy
+    2) Subgraph:
+        a. Node Classification - `save/` or `save/node_cls/`
+        b. Node Regression - `save/node_reg/final_testing/`
+        c. Graph Classification - `save/graph_cls/`
+        d. Graph Regression - With Shubhajit Roy
+- Results:
+        `final_results/` or `results/` 

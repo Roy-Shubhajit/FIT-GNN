@@ -615,3 +615,12 @@ ENZYMES,variation_neighborhoods,0.1,Gc_train_2_Gs_infer,True,False,512,2,2,100,3
 ENZYMES,variation_neighborhoods,0.9,Gc_train_2_Gs_infer,True,False,512,2,2,100,300,64,1e-05,1.7887167533238728,0.13636363636363635
 ENZYMES,variation_neighborhoods,0.9,Gc_train_2_Gs_infer,True,False,512,4,4,100,300,64,1e-05,1.804924448331197,0.13636363636363635
 ENZYMES,variation_neighborhoods,0.9,Gc_train_2_Gs_infer,True,False,512,4,4,100,300,64,0.001,1.781259536743164,0.13636363636363635
+
+### Checking reproducibility
+ENZYMES,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,False,True,512,2,2,100,300,2,0.001,14.70273052761952,0.0
+ENZYMES,variation_neighborhoods,0.1,Gc_train_2_Gs_infer,False,False,512,2,2,100,300,64,0.0001,1.777355710665385,0.18181818181818182
+ENZYMES,variation_neighborhoods,0.1,Gc_train_2_Gs_infer,False,False,512,2,2,100,300,64,0.0001,1.787439266840617,0.3181818181818182
+ENZYMES,variation_neighborhoods,0.1,Gc_train_2_Gs_infer,False,False,512,2,2,200,300,64,0.0001,1.782431960105896,0.18181818181818182
+ENZYMES,variation_neighborhoods,0.1,Gc_train_2_Gs_infer,False,False,512,2,2,200,300,64,0.0001,1.780498782793681,0.36363636363636365
+ENZYMES,variation_neighborhoods,0.1,Gc_train_2_Gs_infer,False,False,512,3,2,200,300,64,0.0001,1.8225613435109456,0.09090909090909091
+ENZYMES,variation_neighborhoods,0.5,Gc_train_2_Gs_train,False,False,512,2,2,100,300,128,0.0001,1.835683524608612,0.09090909090909091

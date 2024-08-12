@@ -83,7 +83,7 @@ def node_infer_Gs(args, model, graph_data, loss_fn, infer_type):
     
     return total_loss / n, acc, total_time
 
-def node_train_Gs(model, graph_data, loss_fn, optimizer):
+def node_train_Gs(model, graph_data, loss_fn, optimizer, args):
     total_loss = 0
     n = 0
     all_out = torch.tensor([], dtype=torch.float32).to(device)
@@ -102,7 +102,10 @@ def node_train_Gs(model, graph_data, loss_fn, optimizer):
         else:
             continue
         n = n + 1
-    loss = loss_fn(all_out.view(-1, 1), all_label.view(-1, 1))
+    if args.task == 'node_cls':
+        loss = loss_fn(all_out, all_label.type(torch.long)) ### node_cls ERROR
+    else:
+        loss = loss_fn(all_out.view(-1, 1), all_label.view(-1, 1))
     loss.backward()
     optimizer.step()
     total_loss += loss.item()
@@ -213,7 +216,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
             #Train and val on Gs
             model.load_state_dict(torch.load(path+'/model.pt'))# changed from model = model.load_state_dict(torch.load(path+'/model.pt')) -> model.load_state_dict(torch.load(path+'/model.pt'))
             for epoch in tqdm(range(args.epochs2)):
-                train_loss = node_train_Gs(model, graph_data, loss_fn, optimizer)
+                train_loss = node_train_Gs(model, graph_data, loss_fn, optimizer, args)
                 run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
                 val_loss, val_acc, val_time = node_infer_Gs(args, model, graph_data, loss_fn, 'val')
                 run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
@@ -263,7 +266,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
             best_val_loss_Gs =  float('inf')
             #Train on Gs
             for epoch in tqdm(range(args.epochs2)):
-                train_loss = node_train_Gs(model, graph_data, loss_fn, optimizer)
+                train_loss = node_train_Gs(model, graph_data, loss_fn, optimizer,args)
                 run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
                 val_loss, val_acc, val_time = node_infer_Gs(args, model, graph_data, loss_fn, 'val')
                 run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
@@ -330,7 +333,7 @@ def node_regression(args, path, dataset, writer, subgraph_list):
         best_val_loss_Gs =  float('inf')
         #Train on Gs
         for epoch in tqdm(range(args.epochs2)):
-            train_loss = node_train_Gs(model, graph_data, loss_fn, optimizer)
+            train_loss = node_train_Gs(model, graph_data, loss_fn, optimizer,args)
             run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
             val_loss, val_acc, val_time = node_infer_Gs(args, model, graph_data, loss_fn, 'val')
             run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
@@ -572,10 +575,10 @@ def graph_regression(args, path, writer, dataset):
     #here we need to print the results and save it in a csv file
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers,batch_size,lr,best_test_loss,best_test_acc\n')
+            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,property_idx}\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss}\n")
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{args.property}\n")
     print("#####################################################################")
     print(f"dataset: {args.dataset}")
     print(f"exp_setup: {args.exp_setup}")
@@ -588,4 +591,5 @@ def graph_regression(args, path, writer, dataset):
     print(f"coarsening_ratio: {args.coarsening_ratio}")
     print(f"coarsening_method: {args.coarsening_method}")
     print(f"best_test_loss: {best_test_loss}")
+    print(f"property_idx: {args.property}")
     print("#####################################################################")

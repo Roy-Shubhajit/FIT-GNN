@@ -101,17 +101,17 @@ class Classify_graph_gs(torch.nn.Module):
                     x = F.elu(x)
                     x = F.dropout(x, training=self.training)
                 X = torch.cat((X, x[mask]), 0)
-            temp = torch.max(X, 0)[0]  
-            if X_main.size()[0] == 0:
-                X_main = temp          
-            else:
-                X_main = torch.vstack((X_main, temp))
-        # x = global_max_pool(X_main, batch_tensor.type(torch.int64))
-        x = X_main
+            X_main = torch.cat((X_main, X), 0)
+            # temp = torch.max(X, 0)[0]  
+            # if X_main.size()[0] == 0:
+            #     X_main = temp          
+            # else:
+            #     X_main = torch.vstack((X_main, temp))
+        x = global_max_pool(X_main, batch_tensor.type(torch.int64))
         x = self.lt1(x)
         if len(x.shape) == 1:
-            return F.log_softmax(x)
-        return F.log_softmax(x, dim=1)
+            return F.softmax(x)
+        return F.softmax(x, dim=1)
     
 class Regress_graph_gc(torch.nn.Module):
     def __init__(self, args):
