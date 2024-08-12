@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
-from torch_geometric.nn import global_max_pool
+from torch_geometric.nn import global_max_pool, global_mean_pool
 
 class Classify_node(torch.nn.Module):
     def __init__(self, args):
@@ -72,7 +72,7 @@ class Classify_graph_gc(torch.nn.Module):
             x = F.dropout(x, training=self.training)
         x = global_max_pool(x, batch)
         x = self.lt1(x)
-        return F.log_softmax(x, dim=1)
+        return F.softmax(x, dim=1)
 
 class Classify_graph_gs(torch.nn.Module):
     def __init__(self, args):
@@ -95,7 +95,7 @@ class Classify_graph_gs(torch.nn.Module):
             X = torch.tensor([]).to(batch_tensor.device)
             for g in gs:
                 g = g.to(batch_tensor.device)
-                x, edge_index, mask = g.x, g.edge_index, g.mask
+                x, edge_index, mask = g.x.float(), g.edge_index, g.mask
                 for i in range(self.num_layers):
                     x = self.conv[i](x, edge_index)
                     x = F.elu(x)
@@ -110,8 +110,8 @@ class Classify_graph_gs(torch.nn.Module):
         x = X_main
         x = self.lt1(x)
         if len(x.shape) == 1:
-            return F.log_softmax(x)
-        return F.log_softmax(x, dim=1)
+            return F.softmax(x)
+        return F.softmax(x, dim=1)
     
 class Regress_graph_gc(torch.nn.Module):
     def __init__(self, args):
@@ -134,7 +134,7 @@ class Regress_graph_gc(torch.nn.Module):
             x = self.conv[i](x, edge_index)
             x = F.elu(x)
             x = F.dropout(x, training=self.training)
-        x = global_max_pool(x, batch)
+        x = global_mean_pool(x, batch)
         x = self.lt1(x)
         return x
 
@@ -159,14 +159,14 @@ class Regress_graph_gs(torch.nn.Module):
             X = torch.tensor([]).to(batch_tensor.device)
             for g in gs:
                 g = g.to(batch_tensor.device)
-                x, edge_index, mask = g.x, g.edge_index, g.mask
+                x, edge_index, mask = g.x.float(), g.edge_index, g.mask
                 for i in range(self.num_layers):
                     x = self.conv[i](x, edge_index)
                     x = F.elu(x)
                     x = F.dropout(x, training=self.training)
                 X = torch.cat((X, x[mask]), 0)
             X_main = torch.cat((X_main, X), 0)
-        x = global_max_pool(X_main, batch_tensor.type(torch.int64))
+        x = global_mean_pool(X_main, batch_tensor.type(torch.int64))
         x = self.lt1(x)
         return x    
                   

@@ -116,7 +116,7 @@ def graph_train_Gc(args, model, loader, optimizer, loss_fn):
         gc = batch[0].to(device)
         y = batch[2].to(device).type(torch.long)
         out = model(gc)
-        if args.task =='graph_reg':
+        if args.multi_prop:
             loss = loss_fn(out, y[:, args.property].view(-1, 1))
         else:
             loss = loss_fn(out, y)
@@ -132,7 +132,7 @@ def graph_val_Gc(args, model, loader, loss_fn):
         gc = batch[0].to(device)
         y = batch[2].to(device).type(torch.long)
         out = model(gc)
-        if args.task =='graph_reg':
+        if args.multi_prop:
             loss = loss_fn(out, y[:, args.property].view(-1, 1))
         else:
             loss = loss_fn(out, y)
@@ -148,7 +148,7 @@ def graph_train_Gs(args, model, loader, optimizer, loss_fn):
         y = batch[2].to(device).type(torch.long)
         batch_tensor = batch[3].to(device)
         out = model(set_gs, batch_tensor)
-        if args.task =='graph_reg':
+        if args.multi_prop:
             loss = loss_fn(out, y[:, args.property].view(-1, 1))
         else:
             loss = loss_fn(out, y)
@@ -166,11 +166,12 @@ def graph_infer_Gs(args, model, loader, loss_fn):
         y = batch[2].to(device).type(torch.long)
         batch_tensor = batch[3].to(device)
         out = model(set_gs, batch_tensor)
-        if args.task =='graph_reg':
+        if args.multi_prop:
             loss = loss_fn(out, y[:, args.property].view(-1, 1))
+            all_labels = torch.cat((all_labels, y[:, args.property]))
         else:
             loss = loss_fn(out, y)
-        all_labels = torch.cat((all_labels, y))
+            all_labels = torch.cat((all_labels, y))
         total_loss += loss.item()
     if args.task == 'graph_cls':
         acc = int(torch.sum(torch.argmax(out, dim=1) == y).item()) / len(y)
@@ -383,7 +384,7 @@ def graph_classification(args, path, writer, dataset):
 
     model_gc = Classify_graph_gc(args).to(device)
     model_gs = Classify_graph_gs(args).to(device)
-    loss_fn = torch.nn.NLLLoss().to(device)
+    loss_fn = torch.nn.CrossEntropyLoss().to(device)
     optimizer_gc = torch.optim.Adam(model_gc.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     optimizer_gs = torch.optim.Adam(model_gs.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 

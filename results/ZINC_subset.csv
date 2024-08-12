@@ -1,0 +1,7 @@
+dataset     ,coarsening_method       ,coarsening_ratio ,exp_setup           ,extra_nodes ,cluster_node ,hidden ,num_layers ,batch_size ,lr     ,best_test_loss     ,best_test_acc
+ZINC_subset ,variation_neighborhoods ,             0.5 ,Gc_train_2_Gs_infer ,True        ,False        ,   512 ,         2 ,         1 ,0.01   ,3.8479606103330872
+ZINC_subset ,variation_neighborhoods ,             0.5 ,Gs_train_2_Gs_infer ,True        ,False        ,   512 ,         2 ,       128 ,0.01   ,0.675435311257172
+ZINC_subset ,variation_neighborhoods ,             0.5 ,Gs_train_2_Gs_infer ,True        ,False        ,   512 ,         2 ,         1 ,0.01   ,3.532184636218476
+ZINC_subset ,variation_neighborhoods ,             0.5 ,Gc_train_2_Gs_infer ,True        ,False        ,   512 ,         2 ,       128 ,0.01   ,2.6156794809189803
+ZINC_subset ,variation_neighborhoods ,             0.5 ,Gc_train_2_Gs_infer ,True        ,False        ,   512 ,         2 ,       128 ,0.001  ,0.6433596537412857
+ZINC_subset ,variation_neighborhoods ,             0.5 ,Gs_train_2_Gs_infer ,True        ,False        ,   512 ,         2 ,       128 ,0.0001 ,0.620304474623947

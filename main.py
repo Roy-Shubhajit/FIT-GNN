@@ -5,7 +5,7 @@ from run import *
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from utils import coarsening_classification, coarsening_regression, load_graph_data
-from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM7b, QM9
+from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, ZINC, QM9
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -67,25 +67,19 @@ def process_dataset(args):
         args.task = 'graph_cls'
     elif args.dataset == 'AIDS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
-        for i in range(len(dataset)):
-            if args.normalize_features:
-                dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
     #Graph Regression
-    # elif args.dataset == 'QM7b':
-    #     dataset = QM7b(root='./dataset/QM7b')
-    #     for i in range(len(dataset)):
-    #         if args.normalize_features:
-    #             dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
-    #     args.task = 'graph_reg'
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
-        for i in range(len(dataset)):
-            if args.normalize_features:
-                dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
+        args.task = 'graph_reg'
+        args.multi_prop = True
+    elif args.dataset == 'ZINC_full':
+        dataset = ZINC(root='./dataset/ZINC', subset=False)
+        args.task = 'graph_reg'
+    elif args.dataset == 'ZINC_subset':
+        dataset = ZINC(root='./dataset/ZINC', subset=True)
         args.task = 'graph_reg'
 
-    
     '''if args.task == 'node_cls':
         if args.dataset == 'dblp':
             dataset = CitationFull(root='./dataset', name=args.dataset)
@@ -150,6 +144,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_dir', type=str, required=True)
     parser.add_argument('--task', type = str, default = 'node_cls')         ### node_reg, graph_cls, graph_reg
     parser.add_argument('--seed', type = int, default = None)               ### Seed for reproducibility
+    parser.add_argument('--multi_prop', type =bool, default=False) 
     parser.add_argument('--property', type = int, default = 0)              ### Property for graph regression task
     args = parser.parse_args()
 
@@ -175,19 +170,25 @@ if __name__ == "__main__":
         new_dataset = []
         classes = set()
         for i in tqdm(range(len(dataset))):
-            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
-            Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
-            Gs = subgraph_list
-            new_dataset.append((dataset[i], Gc, Gs))
-            classes.add(dataset[i].y.item())
+            try:
+                args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
+                Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+                Gs = subgraph_list
+                new_dataset.append((dataset[i], Gc, Gs))
+                classes.add(dataset[i].y.item())
+            except:
+                pass
         args.num_classes = len(classes)                         ### Added num_classs
         graph_classification(args, path, writer, new_dataset)
         
     else:
         new_dataset = []
-        for i in range(len(dataset)):
-            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
-            Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
-            Gs = subgraph_list
-            new_dataset.append((dataset[i], Gc, Gs))
+        for i in tqdm(range(len(dataset))):
+            try:
+                args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
+                Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+                Gs = subgraph_list
+                new_dataset.append((dataset[i], Gc, Gs))
+            except:
+                pass
         graph_regression(args, path, writer, new_dataset)
