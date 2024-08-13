@@ -16,13 +16,10 @@ df = pd.read_csv("results.csv")
 
 for dataset in df["dataset"].unique():
     plt.figure()
-    plt.plot(df[df["dataset"] == dataset]["coarsening_ratio"], np.log10(df[df["dataset"] == dataset]["total"]), marker = "o", color = 'b')
-    plt.plot(df[df["dataset"] == dataset]["coarsening_ratio"], np.log10(df[(df["dataset"] == dataset) & (df["baseline"] == True)]["total"].iloc[0] * np.ones(7)), marker = "^", color = 'g')
+    plt.plot(df[df["dataset"] == dataset]["coarsening_ratio"], np.log10(df[df["dataset"] == dataset]['x'] + df[df["dataset"] == dataset]['y'] + df[df["dataset"] == dataset]['edge_index']), marker = "o", color = 'b')
+    plt.plot(df[df["dataset"] == dataset]["coarsening_ratio"], np.log10((df[(df["dataset"] == dataset) & (df["baseline"]==True)]['x'] + df[(df["dataset"] == dataset) & (df["baseline"]==True)]['y'] + df[(df["dataset"] == dataset) & (df["baseline"]==True)]['edge_index']).iloc[0] * np.ones(7)), marker = "^", color = 'g')
     plt.legend(["Ours", "Original"])
-    if dataset in ["dblp", "Physics"]:
-        plt.title(f"{dataset} - Total space occupied* vs Coarsening Ratio\n*Not including sizes of train, val and test masks" )
-    else:
-        plt.title(f"{dataset}\nTotal space occupied vs Coarsening Ratio" )
+    plt.title(f"{dataset} - Total space occupied* vs Coarsening Ratio\n*Not including sizes of train, val and test masks" )
     plt.xlabel("Coarsening Ratio")
     plt.ylabel("Total space occupied (in log10(byes))")
     plt.grid(alpha = 0.5)
