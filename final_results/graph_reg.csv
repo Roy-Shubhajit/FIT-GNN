@@ -1,0 +1,1 @@
+dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_nodes,cluster_node,hidden,num_test_nodes,num_layers,batch_size,lr,ave_inf_time,ave_inf_loss,inf_loss_std
