@@ -1,83 +1,99 @@
 import argparse
-import torch.nn.functional as F
-import torch
-from torch import tensor
-from network import Net1, TransferNet
 import numpy as np
 from utils import load_data, coarsening, create_distribution_tensor
-import os
-from tqdm import tqdm
-import time
 import sys
-from torch_geometric.loader import DataLoader
+from torch_geometric.datasets import Planetoid, Coauthor, CitationFull
+# parser = argparse.ArgumentParser()
+# parser.add_argument('--dataset', type=str, default='cora')
+# parser.add_argument('--experiment', type=str, default='fixed') #'fixed', 'random', 'few'
+# parser.add_argument('--runs', type=int, default=50)
+# parser.add_argument('--hidden', type=int, default=512)
+# parser.add_argument('--epochs1', type=int, default=100)
+# parser.add_argument('--epochs2', type=int, default=300)
+# parser.add_argument('--num_layers1', type=int, default=2)
+# parser.add_argument('--num_layers2', type=int, default=2)
+# parser.add_argument('--batch_size', type=int, default=128)
+# parser.add_argument('--early_stopping', type=int, default=10)
+# parser.add_argument('--extra_node', type=bool, default=True)
+# parser.add_argument('--cluster_node', type=bool, default=False)
+# parser.add_argument('--super_graph', type=bool, default=False)
+# parser.add_argument('--lr', type=float, default=0.01)
+# parser.add_argument('--weight_decay', type=float, default=0.0005)
+# parser.add_argument('--normalize_features', type=bool, default=True)
+# parser.add_argument('--coarsening_ratio', type=float, default=0.5)
+# parser.add_argument('--coarsening_method', type=str, default='variation_neighborhoods') #'variation_neighborhoods', 'variation_edges', 'variation_cliques', 'heavy_edge', 'algebraic_JC', 'affinity_GS', 'kron'
+# # parser.add_argument('--output_dir', type=str, required=False)
+# args = parser.parse_args()
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', type=str, default='cora')
-parser.add_argument('--experiment', type=str, default='fixed') #'fixed', 'random', 'few'
-parser.add_argument('--runs', type=int, default=50)
-parser.add_argument('--hidden', type=int, default=512)
-parser.add_argument('--epochs1', type=int, default=100)
-parser.add_argument('--epochs2', type=int, default=300)
-parser.add_argument('--num_layers1', type=int, default=2)
-parser.add_argument('--num_layers2', type=int, default=2)
-parser.add_argument('--batch_size', type=int, default=128)
-parser.add_argument('--early_stopping', type=int, default=10)
-parser.add_argument('--extra_node', type=bool, default=True)
-parser.add_argument('--cluster_node', type=bool, default=False)
-parser.add_argument('--super_graph', type=bool, default=False)
-parser.add_argument('--lr', type=float, default=0.01)
-parser.add_argument('--weight_decay', type=float, default=0.0005)
-parser.add_argument('--normalize_features', type=bool, default=True)
-parser.add_argument('--coarsening_ratio', type=float, default=0.5)
-parser.add_argument('--coarsening_method', type=str, default='variation_neighborhoods') #'variation_neighborhoods', 'variation_edges', 'variation_cliques', 'heavy_edge', 'algebraic_JC', 'affinity_GS', 'kron'
-# parser.add_argument('--output_dir', type=str, required=False)
-args = parser.parse_args()
+# if args.super_graph:
+#     args.cluster_node = False
+#     args.extra_node = False
+# elif args.cluster_node:
+#     args.extra_node = False
+#     args.super_graph = False
+# elif args.extra_node:
+#     args.cluster_node = False
+#     args.super_graph = False
 
-if args.super_graph:
-    args.cluster_node = False
-    args.extra_node = False
-elif args.cluster_node:
-    args.extra_node = False
-    args.super_graph = False
-elif args.extra_node:
-    args.cluster_node = False
-    args.super_graph = False
+# print(args)
+# args.num_features, args.num_classes, candidate, C_list, Gc_list, subgraph_list = coarsening(args, 1-args.coarsening_ratio, args.coarsening_method)
 
-print(args)
-args.num_features, args.num_classes, candidate, C_list, Gc_list, subgraph_list = coarsening(args, 1-args.coarsening_ratio, args.coarsening_method)
+# num_extra_nodes = []
+# num_orig_nodes = []
+# num_subgraph_nodes = []
+# x = 0
+# y = 0
+# edge_index = 0
+# train_mask = 0
+# val_mask = 0
+# test_mask = 0
 
-num_extra_nodes = []
-num_orig_nodes = []
-num_subgraph_nodes = []
-x = 0
-y = 0
-edge_index = 0
-train_mask = 0
-val_mask = 0
-test_mask = 0
+# for subgraph in subgraph_list:
+#     num_extra_nodes.append(len(subgraph.actual_ext))
+#     num_orig_nodes.append(subgraph.x.shape[0] - len(subgraph.actual_ext))
+#     num_subgraph_nodes.append(subgraph.x.shape[0])
+#     x += sys.getsizeof(subgraph.x[0][0])*subgraph.x.shape[0]*subgraph.x.shape[1]
+#     y += sys.getsizeof(subgraph.y[0])*subgraph.y.shape[0]
+#     print(subgraph.edge_index)
+#     if subgraph.edge_index.shape != (2,0):
+#         edge_index += sys.getsizeof(subgraph.edge_index[0][0])*subgraph.edge_index.shape[0]*subgraph.edge_index.shape[1]
+#     if args.dataset not in ["dblp","Physics"]:
+#         train_mask += sys.getsizeof(subgraph.train_mask[0])*subgraph.train_mask.shape[0]
+#         val_mask += sys.getsizeof(subgraph.val_mask[0])*subgraph.val_mask.shape[0]
+#         test_mask += sys.getsizeof(subgraph.test_mask[0])*subgraph.test_mask.shape[0]
 
-for subgraph in subgraph_list:
-    num_extra_nodes.append(len(subgraph.actual_ext))
-    num_orig_nodes.append(subgraph.x.shape[0] - len(subgraph.actual_ext))
-    num_subgraph_nodes.append(subgraph.x.shape[0])
-    x += sys.getsizeof(subgraph.x[0][0])*subgraph.x.shape[0]*subgraph.x.shape[1]
-    y += sys.getsizeof(subgraph.y[0])*subgraph.y.shape[0]
-    print(subgraph.edge_index)
-    if subgraph.edge_index.shape != (2,0):
-        edge_index += sys.getsizeof(subgraph.edge_index[0][0])*subgraph.edge_index.shape[0]*subgraph.edge_index.shape[1]
-    if args.dataset not in ["dblp","Physics"]:
-        train_mask += sys.getsizeof(subgraph.train_mask[0])*subgraph.train_mask.shape[0]
-        val_mask += sys.getsizeof(subgraph.val_mask[0])*subgraph.val_mask.shape[0]
-        test_mask += sys.getsizeof(subgraph.test_mask[0])*subgraph.test_mask.shape[0]
-
-total = x + y + edge_index + train_mask + val_mask + test_mask
+# total = x + y + edge_index + train_mask + val_mask + test_mask
 # print(subgraph, x, y, edge_index, train_mask, val_mask, test_mask)
 
-with open("results.txt", 'a') as f:
-    f.write(f"{args.dataset}, {args.coarsening_ratio}, {len(num_extra_nodes)}, {np.sum(num_extra_nodes)}, {np.mean(num_extra_nodes)}, {np.max(num_extra_nodes)}, {np.sum(num_orig_nodes)}, {np.sum(num_orig_nodes)**2}, {np.linalg.norm(num_subgraph_nodes)**2}, {x}, {y}, {edge_index}, {train_mask}, {val_mask}, {test_mask}, {total}\n")
-f.close()
+# with open("results.txt", 'a') as f:
+#     f.write(f"{args.dataset}, {args.coarsening_ratio}, {len(num_extra_nodes)}, {np.sum(num_extra_nodes)}, {np.mean(num_extra_nodes)}, {np.max(num_extra_nodes)}, {np.sum(num_orig_nodes)}, {np.sum(num_orig_nodes)**2}, {np.linalg.norm(num_subgraph_nodes)**2}, {x}, {y}, {edge_index}, {train_mask}, {val_mask}, {test_mask}, {total}\n")
+# f.close()
 # print(f"##### Coarsening Ratio {args.coarsening_ratio} #####")
 # print(f"Tot Num Extra Nodes: {np.sum(num_extra_nodes)}")
 # print(f"Avg Num Extra Nodes: {np.mean(num_extra_nodes)}")
 # print(f"Max Num Extra Nodes: {np.max(num_extra_nodes)}\n")
 # print(num_extra_nodes)
+
+for dataset_name in ['cora', 'citeseer', 'pubmed', 'dblp', 'Physics']:
+    if dataset_name in ["cora", 'citeseer', 'pubmed']:
+        dataset = Planetoid(root='./dataset', name=dataset_name)
+    elif dataset_name == 'dblp':
+        dataset = CitationFull(root ='./dataset', name=dataset_name)
+    elif dataset_name == 'Physics':
+        dataset = Coauthor(root='./dataset', name=dataset_name)
+    data = dataset[0]
+    x = sys.getsizeof(data.x[0][0])*data.x.shape[0]*data.x.shape[1]
+    y = sys.getsizeof(data.y[0])*data.y.shape[0]
+    edge_index = sys.getsizeof(data.edge_index[0][0])*data.edge_index.shape[0]*data.edge_index.shape[1]
+    train_mask = 0
+    val_mask = 0
+    test_mask = 0
+    if dataset_name not in ["dblp","Physics"]:
+        train_mask = sys.getsizeof(data.train_mask[0])*data.train_mask.shape[0]
+        val_mask = sys.getsizeof(data.val_mask[0])*data.val_mask.shape[0]
+        test_mask = sys.getsizeof(data.test_mask[0])*data.test_mask.shape[0]
+    total = x + y + edge_index + train_mask + val_mask + test_mask
+    with open("results.csv", 'a') as f:
+        f.write(f"{dataset_name},None,None,None,None,None,{data.x.shape[0]},{data.x.shape[0]**2},None,{x},{y},{edge_index},{train_mask},{val_mask},{test_mask},{total}\n")
+    f.close()
+
