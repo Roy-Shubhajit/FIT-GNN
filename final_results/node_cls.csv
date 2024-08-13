@@ -25,3 +25,5 @@ dblp,True,random,None,None,None,None,None,512,20,2,None,0.01,0.00623244988290887
 dblp,False,random,Gc_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,20,2,128,0.01,0.002011989292345549,5.020078677548097,12.049293222880635,0.8
 Physics,True,random,None,None,None,None,None,512,20,2,None,0.01,0.025087231083920126,0.28260177336437664,0.655386594724078,0.9
 Physics,False,random,Gc_train_2_Gs_infer,variation_neighborhoods,0.3,False,True,512,20,2,128,0.01,0.0017999096920615749,26.951972579956056,69.75739959644268,0.85
+Physics,True,random,None,None,None,None,None,512,20,2,None,0.01,0.025337859203940945,0.3328448608462168,0.6409405505221312,0.85
+Physics,False,random,Gc_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,20,2,128,0.01,0.0020277123702199837,29.22047381401062,64.51141724040426,0.75

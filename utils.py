@@ -479,7 +479,6 @@ def splits_classification(data, num_classes, exp):
             indices.append(index)
 
         if exp == 'random':
-            print("inside random")
             train_index = torch.cat([i[:20] for i in indices], dim=0)
             val_index = torch.cat([i[20:50] for i in indices], dim=0)
             test_index = torch.cat([i[50:] for i in indices], dim=0)
