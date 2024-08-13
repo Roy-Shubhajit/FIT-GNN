@@ -5,7 +5,7 @@ from run import *
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from utils import coarsening_classification, coarsening_regression, load_graph_data
-from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM7b, QM9
+from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM7b, QM9, NeuroGraphDataset
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -55,20 +55,20 @@ def process_dataset(args):
     #Graph Classification
     elif args.dataset == 'ENZYMES':
         dataset = TUDataset(root='./dataset', name=args.dataset)
-        for i in range(len(dataset)):
-            if args.normalize_features:
+        if args.normalize_features:
+            for i in range(len(dataset)):
                 dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
     elif args.dataset == 'PROTEINS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
-        for i in range(len(dataset)):
-            if args.normalize_features:
+        if args.normalize_features:
+            for i in range(len(dataset)):
                 dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
     elif args.dataset == 'AIDS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
-        for i in range(len(dataset)):
-            if args.normalize_features:
+        if args.normalize_features:
+            for i in range(len(dataset)):
                 dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
     #Graph Regression
@@ -80,10 +80,22 @@ def process_dataset(args):
     #     args.task = 'graph_reg'
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
-        for i in range(len(dataset)):
-            if args.normalize_features:
+        if args.normalize_features:
+            for i in range(len(dataset)):
                 dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_reg'
+    # elif args.dataset == "HCPFI":
+    #     dataset = NeuroGraphDataset(root = "./dataset", name=args.dataset)
+    #     if args.normalize_features:
+    #         for i in range(len(dataset)):
+    #             dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
+    #     args.task = 'graph_reg'
+    # elif args.dataset == "HCPWM":
+    #     dataset = NeuroGraphDataset(root = "./dataset", name=args.dataset)
+    #     if args.normalize_features:
+    #         for i in range(len(dataset)):
+    #             dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
+    #     args.task = 'graph_reg'
 
     
     '''if args.task == 'node_cls':
