@@ -4,6 +4,7 @@ from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coa
 from utils import load_graph_data, coarsening_classification, coarsening_regression, coarsening_classification, coarsening_regression, load_data_classification, load_data_regression, colater 
 from torch.utils.data import DataLoader as T_DataLoader
 from network import Classify_graph_gs, Regress_graph_gs, Classify_node, Regress_node
+from torch_geometric.data import Data
 from time import time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -197,6 +198,8 @@ def process_dataset(args):
         args.num_features = dataset[0].x.shape[1]
     elif args.dataset == "ZINC":
         dataset = ZINC(root='./dataset', subset=True)
+        for i in range(len(dataset)):
+            dataset[i].x = dataset[i].x.float()
         args.task = 'graph_reg'
         args.num_features = dataset[0].x.shape[1]
 
@@ -240,8 +243,6 @@ dataset, args = process_dataset(args)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-new_dataset = []
-
 if args.task == "graph_cls":
     test_indices = np.random.choice(len(dataset), args.num_test_samples, replace=False)
     all_out_b = []
@@ -268,7 +269,7 @@ if args.task == "graph_cls":
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
             Gs = subgraph_list
-            new_dataset.append((dataset[i], Gc, Gs))
+            new_dataset = [[dataset[i], Gc, Gs]]
             num += 1
         except:
             continue
@@ -302,9 +303,8 @@ if args.task == "graph_cls":
         loss_b = loss_fn(out_b, y)
         losses_b.append(loss_b.item())
 
-        # print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.argmax().item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-        # print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
-    print(len(times_b), len(times_gs))
+        print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.argmax().item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
+        print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
 
 elif args.task == "graph_reg":
     test_indices = np.random.choice(len(dataset), args.num_test_samples, replace=False)
@@ -327,7 +327,7 @@ elif args.task == "graph_reg":
         args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
         Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
         Gs = subgraph_list
-        new_dataset.append((dataset[i], Gc, Gs))
+        new_dataset = [[dataset[i], Gc, Gs]]
         num += 1
 
         colater_fn = colater()

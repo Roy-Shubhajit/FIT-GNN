@@ -1,9 +1,22 @@
-dataset,baseline,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_nodes,num_layers,batch_size,lr,ave_inf_time,ave_inf_loss,inf_loss_std
-QM9,True,None,None,None,None,512,20,2,None,0.01,0.4204987601230019,1.7436192035675049,0.0
-QM9,False,variation_neighborhoods,0.3,True,False,512,20,2,128,0.001,0.012251135264857533,0.7700806617736816,0.6141149394334408
-QM9,True,None,None,None,None,512,20,2,None,0.01,0.41948568421687804,0.7436192035675049,0.0
-QM9,False,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.01553506828381114,0.6956137293861026,0.39015430793365974
-QM9,True,None,None,None,None,512,20,2,None,0.01,0.41178589118154424,0.7436192035675049,0.0
-QM9,False,variation_neighborhoods,0.3,True,False,512,20,2,128,0.001,0.012277762855639298,0.6869406609308152,0.42016842493051837
-QM9,True,None,None,None,None,512,20,2,None,0.01,0.5190744776474802,0.2563807964324951,0.0
-QM9,False,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.01582627319262929,0.7310131481715612,0.5587617620602094
+dataset     ,baseline ,coarsening_method       ,coarsening_ratio ,extra_node ,cluster_node ,hidden ,num_test_nodes ,num_layers ,batch_size ,lr    ,ave_inf_time         ,ave_inf_loss        ,inf_loss_std
+QM9         ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01  ,0.4204987601230019   ,1.7436192035675049  ,0.0
+QM9         ,False    ,variation_neighborhoods ,0.3              ,True       ,False        ,   512 ,            20 ,         2 ,128        ,0.001 ,0.012251135264857533 ,0.7700806617736816  ,0.6141149394334408
+QM9         ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01  ,0.41948568421687804  ,0.7436192035675049  ,0.0
+QM9         ,False    ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,            20 ,         2 ,128        ,0.001 ,0.01553506828381114  ,0.6956137293861026  ,0.39015430793365974
+QM9         ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01  ,0.41178589118154424  ,0.7436192035675049  ,0.0
+QM9         ,False    ,variation_neighborhoods ,0.3              ,True       ,False        ,   512 ,            20 ,         2 ,128        ,0.001 ,0.012277762855639298 ,0.6869406609308152  ,0.42016842493051837
+QM9         ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01  ,0.5190744776474802   ,0.2563807964324951  ,0.0
+QM9         ,False    ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,            20 ,         2 ,128        ,0.001 ,0.01582627319262929  ,0.7310131481715612  ,0.5587617620602094
+# corrected
+QM9         ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01  ,0.440669950686003    ,0.8256380796432495  ,0.6539664194665293
+QM9         ,False    ,variation_neighborhoods ,0.3              ,True       ,False        ,   512 ,            20 ,         2 ,128        ,0.001 ,0.013392059426558646 ,0.8256380558013916  ,0.6539665383841203
+QM9         ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01  ,0.42683286415903193  ,0.5756380796432495  ,0.4498366792161882
+QM9         ,False    ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,            20 ,         2 ,128        ,0.001 ,0.02033350342198422  ,0.5756380558013916  ,0.4498368653472204
+QM9         ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01  ,0.42125952871222244  ,0.5769142389297486  ,0.5282732208241985
+QM9         ,False    ,variation_neighborhoods ,0.3              ,True       ,False        ,   512 ,            20 ,         2 ,128        ,0.001 ,0.016589352959080747 ,0.5769141674041748  ,0.5282733186216441
+QM9         ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01  ,0.4376295114818372   ,0.8769142389297485  ,0.5855971759512877
+QM9         ,False    ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,            20 ,         2 ,128        ,0.001 ,0.019666107077347606 ,0.8769141674041748  ,0.585597300817738
+QM9         ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01  ,0.41837113781979207  ,0.5743619203567505  ,0.28188419748359644
+QM9         ,False    ,variation_neighborhoods ,0.3              ,True       ,False        ,   512 ,            20 ,         2 ,128        ,0.001 ,0.014184148688065378 ,0.5743619441986084  ,0.28188435495785436
+QM9         ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01  ,0.42632854612250076  ,0.47691423892974855 ,0.3649373704341926
+QM9         ,False    ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,            20 ,         2 ,128        ,0.001 ,0.020135841871562758 ,0.4769141674041748  ,0.3649375577349869
