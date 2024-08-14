@@ -1,1 +1,8 @@
-dataset,baseline,experiment,exp_setup,coarsening_method,coarsening_ratio,extra_nodes,cluster_node,hidden,num_test_nodes,num_layers,batch_size,lr,ave_inf_time,ave_inf_loss,inf_loss_std,acc
+dataset  ,baseline ,coarsening_method       ,coarsening_ratio ,extra_node ,cluster_node ,hidden ,num_test_nodes ,num_layers ,batch_size ,lr     ,ave_inf_time         ,ave_inf_loss        ,inf_loss_std        ,acc
+
+PROTEINS ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01   ,0.5185496556131464   ,0.49224239587783813 ,0.0                 ,1.0
+PROTEINS ,False    ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,            20 ,         2 ,128        ,0.0001 ,0.017335656727329965 ,0.6283307572205862  ,0.23837842309455243 ,7.2
+PROTEINS ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01   ,0.4117851633774607   ,0.39163556694984436 ,0.0                 ,1.0
+PROTEINS ,False    ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,            20 ,         2 ,128        ,0.0001 ,0.023195428711375553 ,0.6371583836419242  ,0.27217790145862336 ,6.6
+PROTEINS ,True     ,None                    ,None             ,None       ,None         ,   512 ,            20 ,         2 ,None       ,0.01   ,0.5180444968374152   ,0.40990525484085083 ,0.0                 ,1.0
+PROTEINS ,False    ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,            20 ,         2 ,128        ,0.0001 ,0.0199209925090297   ,0.6466501963990076  ,0.24787179200613363 ,6.7

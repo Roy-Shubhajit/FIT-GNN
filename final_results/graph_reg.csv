@@ -1,1 +1,9 @@
-dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_nodes,cluster_node,hidden,num_test_nodes,num_layers,batch_size,lr,ave_inf_time,ave_inf_loss,inf_loss_std
+dataset,baseline,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_nodes,num_layers,batch_size,lr,ave_inf_time,ave_inf_loss,inf_loss_std
+QM9,True,None,None,None,None,512,20,2,None,0.01,0.4204987601230019,1.7436192035675049,0.0
+QM9,False,variation_neighborhoods,0.3,True,False,512,20,2,128,0.001,0.012251135264857533,0.7700806617736816,0.6141149394334408
+QM9,True,None,None,None,None,512,20,2,None,0.01,0.41948568421687804,0.7436192035675049,0.0
+QM9,False,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.01553506828381114,0.6956137293861026,0.39015430793365974
+QM9,True,None,None,None,None,512,20,2,None,0.01,0.41178589118154424,0.7436192035675049,0.0
+QM9,False,variation_neighborhoods,0.3,True,False,512,20,2,128,0.001,0.012277762855639298,0.6869406609308152,0.42016842493051837
+QM9,True,None,None,None,None,512,20,2,None,0.01,0.5190744776474802,0.2563807964324951,0.0
+QM9,False,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.01582627319262929,0.7310131481715612,0.5587617620602094

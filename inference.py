@@ -1,6 +1,6 @@
 import torch
 import argparse
-from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM9
+from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM9, ZINC
 from utils import load_graph_data, coarsening_classification, coarsening_regression, coarsening_classification, coarsening_regression, load_data_classification, load_data_regression, colater 
 from torch.utils.data import DataLoader as T_DataLoader
 from network import Classify_graph_gs, Regress_graph_gs, Classify_node, Regress_node
@@ -170,12 +170,15 @@ def process_dataset(args):
                 dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
         args.num_classes = 6
+        args.num_features = dataset[0].x.shape[1]
     elif args.dataset == 'PROTEINS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
         for i in range(len(dataset)):
             if args.normalize_features:
                 dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
+        args.num_features = dataset[0].x.shape[1]
+        args.num_classes = 2
     elif args.dataset == 'AIDS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
         for i in range(len(dataset)):
@@ -183,6 +186,7 @@ def process_dataset(args):
                 dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
         args.num_classes = 2
+        args.num_features = dataset[0].x.shape[1]
     #Graph Regression
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
@@ -190,6 +194,12 @@ def process_dataset(args):
             if args.normalize_features:
                 dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_reg'
+        args.num_features = dataset[0].x.shape[1]
+    elif args.dataset == "ZINC":
+        dataset = ZINC(root='./dataset', subset=True)
+        args.task = 'graph_reg'
+        args.num_features = dataset[0].x.shape[1]
+
     return dataset, args
 
 parser = argparse.ArgumentParser()
@@ -252,12 +262,16 @@ if args.task == "graph_cls":
     loss_fn = torch.nn.CrossEntropyLoss().to(device)
     model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
     model_b.eval()
-
+    num = 0
     for i in test_indices:
-        args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
-        Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
-        Gs = subgraph_list
-        new_dataset.append((dataset[i], Gc, Gs))
+        try:
+            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
+            Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+            Gs = subgraph_list
+            new_dataset.append((dataset[i], Gc, Gs))
+            num += 1
+        except:
+            continue
 
         colater_fn = colater()
         test_loader = T_DataLoader(new_dataset, batch_size=1, collate_fn=colater_fn)
@@ -277,19 +291,20 @@ if args.task == "graph_cls":
             losses_gs.append(loss_gs.item())
 
         # Baseline model
-        for batch in test_loader:
-            G = new_dataset[0][0]
-            y = G.y.to(device).type(torch.long)
-            t3 = time()
-            out_b = model_b(G).to(device)
-            t4 = time()
-            times_b.append(t4-t3)
-            all_out_b.append(out_b.argmax().item())
-            all_label_b.append(y.item())
-            loss_b = loss_fn(out_b, y)
-            losses_b.append(loss_b.item())
-        print(f"Subgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.argmax().item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-        print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+        G = new_dataset[0][0]
+        y = G.y.to(device).type(torch.long)
+        t3 = time()
+        out_b = model_b(G).to(device)
+        t4 = time()
+        times_b.append(t4-t3)
+        all_out_b.append(out_b.argmax().item())
+        all_label_b.append(y.item())
+        loss_b = loss_fn(out_b, y)
+        losses_b.append(loss_b.item())
+
+        # print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.argmax().item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
+        # print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+    print(len(times_b), len(times_gs))
 
 elif args.task == "graph_reg":
     test_indices = np.random.choice(len(dataset), args.num_test_samples, replace=False)
@@ -307,12 +322,13 @@ elif args.task == "graph_reg":
     loss_fn = torch.nn.L1Loss().to(device)
     model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
     model_b.eval()
-
+    num = 0
     for i in test_indices:    
         args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
         Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
         Gs = subgraph_list
         new_dataset.append((dataset[i], Gc, Gs))
+        num += 1
 
         colater_fn = colater()
         test_loader = T_DataLoader(new_dataset, batch_size=1, collate_fn=colater_fn)
@@ -330,15 +346,14 @@ elif args.task == "graph_reg":
             losses_gs.append(loss_gs.item())
         
         # Baseline model
-        for batch in test_loader:
-            G = new_dataset[0][0]
-            y = G.y.to(device).type(torch.long)
-            t3 = time()
-            out_b = model_b(G).to(device)
-            t4 = time()
-            times_b.append(t4-t3)
-            loss_b = loss_fn(out_b, y[:, args.property].view(-1, 1))
-            losses_b.append(loss_b.item())
+        G = new_dataset[0][0]
+        y = G.y.to(device).type(torch.long)
+        t3 = time()
+        out_b = model_b(G).to(device)
+        t4 = time()
+        times_b.append(t4-t3)
+        loss_b = loss_fn(out_b, y[:, args.property].view(-1, 1))
+        losses_b.append(loss_b.item())
         
         print(f"Subgraph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
         print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
@@ -512,7 +527,7 @@ with open(file_path, 'a') as f:
         f.write(f"{args.dataset},False,{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)}\n")
     elif args.task == 'graph_cls':
         if args.baseline:
-            f.write(f"{args.dataset},True,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)},{np.sum(np.array(all_label_b) == np.array(all_out_b))/num},{np.sum(np.array(all_label_b) == np.array(all_out_b))/num}\n")
+            f.write(f"{args.dataset},True,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)},{np.sum(np.array(all_label_b) == np.array(all_out_b))/num}\n")
         f.write(f"{args.dataset},False,{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},{np.sum(np.array(all_label_gs) == np.array(all_out_gs))/num}\n")
     elif args.task == 'graph_reg':
         if args.baseline:
