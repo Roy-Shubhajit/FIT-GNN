@@ -386,7 +386,7 @@ def graph_classification(args, path, writer, dataset):
 
     model_gc = Classify_graph_gc(args).to(device)
     model_gs = Classify_graph_gs(args).to(device)
-    loss_fn = torch.nn.NLLLoss().to(device)
+    loss_fn = torch.nn.CrossEntropyLoss().to(device)
     optimizer_gc = torch.optim.Adam(model_gc.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     optimizer_gs = torch.optim.Adam(model_gs.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
@@ -575,10 +575,16 @@ def graph_regression(args, path, writer, dataset):
     #here we need to print the results and save it in a csv file
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,property_idx}\n')
+            if args.multi_prop:
+                f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,property_idx}\n')
+            else:
+                f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss}\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{args.property}\n")
+        if args.multi_prop:
+            f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{args.property}\n")
+        else:
+            f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss}\n")
     print("#####################################################################")
     print(f"dataset: {args.dataset}")
     print(f"exp_setup: {args.exp_setup}")
@@ -591,5 +597,6 @@ def graph_regression(args, path, writer, dataset):
     print(f"coarsening_ratio: {args.coarsening_ratio}")
     print(f"coarsening_method: {args.coarsening_method}")
     print(f"best_test_loss: {best_test_loss}")
-    print(f"property_idx: {args.property}")
+    if args.multi_prop:
+        print(f"property_idx: {args.property}")
     print("#####################################################################")
