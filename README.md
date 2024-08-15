@@ -31,7 +31,7 @@
     - Directory to save best model.
 - `task`: {node_cls, node_reg, graph_cls, graph_reg}
     - Type of node-level or graph-level task being performed.
-- `multiprop`: {True, False}
+- `multi_prop`: {True, False}
     - Boolean parameter specific to QM9 `dataset` for Node Regression task. Should be set to True while performing experiments using QM9, else False.
 - `property`: {0, 1, ... , 18}
     - Parameter specific to QM9 `dataset` for Node Regression task. Should be given one of the 19 targets for prediction.
