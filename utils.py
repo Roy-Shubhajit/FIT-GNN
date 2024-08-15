@@ -5,7 +5,6 @@ from torch_geometric.data import Data, Batch
 from torch_geometric.loader import DataLoader
 from torch_geometric.utils import subgraph
 from tqdm import tqdm
-from sklearn.random_projection import johnson_lindenstrauss_min_dim, SparseRandomProjection
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
