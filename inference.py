@@ -53,7 +53,7 @@ class Regress_graph(torch.nn.Module):
         self.lt1.reset_parameters()
 
     def forward(self, gc):
-        x, edge_index, batch = gc.x, gc.edge_index, gc.batch
+        x, edge_index, batch = gc.x.float(), gc.edge_index, gc.batch
         for i in range(self.num_layers):
             x = self.conv[i](x, edge_index)
             x = F.elu(x)
@@ -198,11 +198,8 @@ def process_dataset(args):
         args.num_features = dataset[0].x.shape[1]
     elif args.dataset == "ZINC":
         dataset = ZINC(root='./dataset', subset=True)
-        for i in range(len(dataset)):
-            dataset[i].x = dataset[i].x.float()
         args.task = 'graph_reg'
         args.num_features = dataset[0].x.shape[1]
-
     return dataset, args
 
 parser = argparse.ArgumentParser()
@@ -336,27 +333,38 @@ elif args.task == "graph_reg":
         # Subgraph based model
         for batch in test_loader:
             set_gs = batch[1]
-            y_ = batch[2].to(device).type(torch.long)
+            y_ = batch[2].to(device).type(torch.float)
+            print(y_)
             batch_tensor = batch[3].to(device)
             t1 = time()
             out_gs = model_gs(set_gs, batch_tensor).to(device)
             t2 = time()
             times_gs.append(t2-t1)
-            loss_gs = loss_fn(out_gs, y_[:, args.property].view(-1, 1))
+            if args.dataset == 'QM9':
+                loss_gs = loss_fn(out_gs, y_[:, args.property].view(-1, 1))
+            else:
+                loss_gs = loss_fn(out_gs, y_)
             losses_gs.append(loss_gs.item())
         
         # Baseline model
         G = new_dataset[0][0]
-        y = G.y.to(device).type(torch.long)
+        y = G.y.to(device).type(torch.float)
         t3 = time()
         out_b = model_b(G).to(device)
         t4 = time()
         times_b.append(t4-t3)
-        loss_b = loss_fn(out_b, y[:, args.property].view(-1, 1))
+        if args.dataset == 'QM9':
+            loss_b = loss_fn(out_b, y[:, args.property].view(-1, 1))
+        else:
+            loss_b = loss_fn(out_b, y)
         losses_b.append(loss_b.item())
         
-        print(f"Subgraph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-        print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+        if args.dataset == 'QM9':
+            print(f"Subgraph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
+            print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+        else:
+            print(f"Subgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
+            print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
 
 if args.task == "node_cls":
     args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
@@ -531,6 +539,12 @@ with open(file_path, 'a') as f:
         f.write(f"{args.dataset},False,{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},{np.sum(np.array(all_label_gs) == np.array(all_out_gs))/num}\n")
     elif args.task == 'graph_reg':
         if args.baseline:
-            f.write(f"{args.dataset},True,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)}\n")
-        f.write(f"{args.dataset},False,{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)}\n")
+            if args.dataset == 'QM9':
+                f.write(f"{args.dataset},True,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)},{args.property}\n")
+            else:
+                f.write(f"{args.dataset},True,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)},None\n")
+        if args.dataset == 'QM9':
+            f.write(f"{args.dataset},False,{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},{args.property}\n")
+        else:
+            f.write(f"{args.dataset},False,{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},None\n")
 f.close()

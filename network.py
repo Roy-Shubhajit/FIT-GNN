@@ -159,7 +159,7 @@ class Regress_graph_gs(torch.nn.Module):
             X = torch.tensor([]).to(batch_tensor.device)
             for g in gs:
                 g = g.to(batch_tensor.device)
-                x, edge_index, mask = g.x, g.edge_index, g.mask
+                x, edge_index, mask = g.x.float(), g.edge_index, g.mask
                 for i in range(self.num_layers):
                     x = self.conv[i](x, edge_index)
                     x = F.elu(x)
