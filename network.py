@@ -72,7 +72,7 @@ class Classify_graph_gc(torch.nn.Module):
             x = F.dropout(x, training=self.training)
         x = global_max_pool(x, batch)
         x = self.lt1(x)
-        return F.log_softmax(x, dim=1)
+        return F.softmax(x, dim=1)
 
 class Classify_graph_gs(torch.nn.Module):
     def __init__(self, args):
