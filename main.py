@@ -55,14 +55,14 @@ def process_dataset(args):
     #Graph Classification
     elif args.dataset == 'ENZYMES':
         dataset = TUDataset(root='./dataset', name=args.dataset)
-        for i in range(len(dataset)):
-            if args.normalize_features:
+        if args.normalize_features:
+            for i in range(len(dataset)):
                 dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
     elif args.dataset == 'PROTEINS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
-        for i in range(len(dataset)):
-            if args.normalize_features:
+        if args.normalize_features:
+            for i in range(len(dataset)):
                 dataset[i].x = torch.nn.functional.normalize(dataset[i].x, p=1)
         args.task = 'graph_cls'
     elif args.dataset == 'AIDS':
