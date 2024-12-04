@@ -14,7 +14,7 @@ def train_test_val_split(dataset, shuffle=True):
         idx = torch.randperm(N)
     else:
         idx = torch.arange(N)
-    train = []                                  ### Modified method of splitting data as earlier method was shooting errors.
+    train = []
     val = []
     test = []
     for i in range(N):
@@ -27,18 +27,16 @@ def train_test_val_split(dataset, shuffle=True):
     return train, test, val
 
 def create_super_graph(dataset, component_2_subgraphs, CLIST, GcLIST):
-    # super_graph is the final data object which has combined graphs of all components
-    # Not considering masking variables here
     sub_super_graph_list = []
     for component in component_2_subgraphs.keys():
         if sum(g.x.shape[0] for g in component_2_subgraphs[component]) > 1:
             sub_super_graph = DataLoader(component_2_subgraphs[component], batch_size=len(component_2_subgraphs[component]), shuffle=False)
             for graph in sub_super_graph:
                 G_new = Data(x = graph.x, y = graph.y, edge_index = graph.edge_index, ptr = graph.ptr)
-                orig_idx_2_sub_super_graph = dict() # USING DICTIONARY FOR ORIGINAL NODE TO SUPER GRAPH NODE MAPPING
+                orig_idx_2_sub_super_graph = dict() 
                 for idx, node in enumerate(graph.orig_idx):
                     orig_idx_2_sub_super_graph[node.item()] = idx
-                cluster_node_2_sub_super_graph = (G_new.x.shape[0]) + np.arange(G_new.ptr.shape[0]-1) # CLUSTER NODES GIVEN NUMBERS AFTER NORMAL NODE NUMBERS IN SUPER GRAPH
+                cluster_node_2_sub_super_graph = (G_new.x.shape[0]) + np.arange(G_new.ptr.shape[0]-1)
                 new_edges = np.array([], dtype=np.compat.long)
                 actual_ext = set()
                 for node in range(G_new.x.shape[0]):
@@ -64,7 +62,6 @@ def create_super_graph(dataset, component_2_subgraphs, CLIST, GcLIST):
                                 new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
                                 new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
 
-                # ADDED ALL CROSS EDGES BETWEEN SELECTED CLUSTERS AS GIVEN IN Gc
                 actual_ext = list(actual_ext)
                 G_new.actual_ext = torch.tensor(np.array(actual_ext) + (G_new.x.shape[0]), dtype = float)
                 coar_adj_mat = GcLIST[component].A.toarray()
@@ -193,8 +190,8 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
     number = 0
     C_list=[]
     Gc_list=[]
-    CLIST = [] # NEWLY ADDED (WORKS FOR CORA)
-    GcLIST = [] # NEWLY ADDED (WORKS FOR CORA)
+    CLIST = []
+    GcLIST = []
     comp_node_2_meta_node_list = []
     subgraph_list=[]
     component_2_subgraphs = {}
@@ -243,7 +240,6 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                                 else:
                                     new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
                                 num_nodes += 1
-                            # print(meta_node_2_new_node[cluster] ,np.array([node, meta_node_2_new_node[cluster][0]], dtype=np.compat.long))
                             e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
                             e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
                             if len(new_edges.shape) <= 1:
@@ -276,7 +272,6 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                 for i in range(len(value)):
                     mappiing[value[i].item()] = i
                 M = data.subgraph(value)
-                # M.num_classes = num_classes
                 M.actual_ext = actual_ext
                 M.orig_idx = value
                 if args.cluster_node:
@@ -304,7 +299,6 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                 value, _ = torch.sort(value)
                 actual_ext = torch.LongTensor([])
                 M = data.subgraph(value)
-                # M.num_classes = num_classes
                 M.actual_ext = actual_ext
                 M.orig_idx = value
                 mappiing = {}
@@ -317,13 +311,6 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                 new_subgraph_list.append(M_t)
         component_2_subgraphs[number] = new_subgraph_list
         number += 1
-
-    #print("Subgraphs created, number of subgraphs: ", len(subgraph_list))
-
-    # if args.super_graph:
-    #     component_2_supergraph = create_super_graph(data, component_2_subgraphs, CLIST, GcLIST)
-    #     return data.x.shape[1], num_classes, candidate, C_list, Gc_list, component_2_supergraph, comp_node_2_meta_node_list
-    # else:
     return data.x.shape[1], candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST
 
 def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
@@ -381,7 +368,6 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                                 else:
                                     new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
                                 num_nodes += 1
-                            # print(meta_node_2_new_node[cluster] ,np.array([node, meta_node_2_new_node[cluster][0]], dtype=np.compat.long))
                             e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
                             e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
                             if len(new_edges.shape) <= 1:
@@ -455,13 +441,6 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                 new_subgraph_list.append(M_t)
         component_2_subgraphs[number] = new_subgraph_list
         number += 1
-
-    #print("Subgraphs created, number of subgraphs: ", len(subgraph_list))
-
-    # if args.super_graph:
-    #     component_2_supergraph = create_super_graph(dataset, component_2_subgraphs, CLIST, GcLIST)
-    #     return data.x.shape[1], candidate, C_list, Gc_list, component_2_supergraph
-    # else:
     return data.x.shape[1], candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST
 
 def index_to_mask(index, size):
@@ -601,10 +580,8 @@ def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, sub
             new_val_mask[mix_mask > 1] = False
 
             coarsen_features = torch.cat([coarsen_features, torch.FloatTensor(C.dot(H_features))], dim=0)
-            #coarsen_train_labels = torch.cat([coarsen_train_labels, torch.FloatTensor(C.dot(train_labels))], dim=0)
             coarsen_train_labels = torch.cat([coarsen_train_labels, torch.argmax(torch.FloatTensor(C.dot(train_labels)), dim=1).float()], dim=0)
             coarsen_train_mask = torch.cat([coarsen_train_mask, new_train_mask], dim=0)
-            #coarsen_val_labels = torch.cat([coarsen_val_labels, torch.FloatTensor(C.dot(val_labels))], dim=0)
             coarsen_val_labels = torch.cat([coarsen_val_labels, torch.argmax(torch.FloatTensor(C.dot(val_labels)), dim=1).float()], dim=0)
             coarsen_val_mask = torch.cat([coarsen_val_mask, new_val_mask], dim=0)
 
@@ -621,7 +598,6 @@ def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, sub
         elif torch.sum(H_train_mask)+torch.sum(H_val_mask)>0:
 
             coarsen_features = torch.cat([coarsen_features, H_features], dim=0)
-            #H_labels = one_hot(H_labels, n_classes)
             coarsen_train_labels = torch.cat([coarsen_train_labels, H_labels.float()], dim=0)
             coarsen_train_mask = torch.cat([coarsen_train_mask, H_train_mask], dim=0)
             coarsen_val_labels = torch.cat([coarsen_val_labels, H_labels.float()], dim=0)
@@ -637,7 +613,6 @@ def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, sub
             coarsen_node += H.W.shape[0]
         number += 1
 
-    #print('the size of coarsen graph features:', coarsen_features.shape)
     coarsen_edge = np.array([coarsen_row, coarsen_col])
     coarsen_edge = torch.LongTensor(coarsen_edge)
     coarsen_train_labels = coarsen_train_labels.long()
@@ -655,7 +630,7 @@ def load_data_regression(args, dataset, subgraph_list):
 
     if args.super_graph:
         for graph in subgraph_list:
-            F = Data(x=graph.x, edge_index=graph.edge_index, y=graph.y) # num_classes=graph.num_classes ##### REMOVED num_classes
+            F = Data(x=graph.x, edge_index=graph.edge_index, y=graph.y)
             F.train_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
             F.val_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
             F.test_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
@@ -674,7 +649,7 @@ def load_data_regression(args, dataset, subgraph_list):
 
     else:
         for graph in subgraph_list:
-            F = Data(x=graph.x, edge_index=graph.edge_index, y=graph.y) # num_classes=graph.num_classes ##### REMOVED num_classes
+            F = Data(x=graph.x, edge_index=graph.edge_index, y=graph.y)
             F.train_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
             F.val_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
             F.test_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)

@@ -1,0 +1,4 @@
+dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,best_test_acc
+AIDS,algebraic_JC,0.7,Gc_train_2_Gs_train,False,True,512,2,2,1,1,128,0.01,0.5016221404075623,0.8706896551724138
+AIDS,algebraic_JC,0.7,Gc_train_2_Gs_train,False,True,512,2,2,1,1,128,0.01,0.5037232935428619,0.8103448275862069
+AIDS,algebraic_JC,0.7,Gc_train_2_Gs_train,False,True,512,2,2,1,1,128,0.01,0.48835286498069763,0.8189655172413793

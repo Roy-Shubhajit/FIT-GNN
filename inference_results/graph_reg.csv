@@ -1,0 +1,3 @@
+dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,std_loss,property
+ZINC_subset,True,None,None,None,None,None,512,5,2,None,0.01,0.4355485439300537,64.27597198486328,13.140306982209264,None
+ZINC_subset,False,Gc_train_2_Gs_infer,variation_neighborhoods,0.5,True,False,512,5,2,128,0.001,0.025416553020477295,43.57133178710937,0.5862580484889709,None

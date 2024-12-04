@@ -1,0 +1,9 @@
+dataset,baseline,experiment,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,std_loss,acc
+cora,True,fixed,None,None,None,None,None,512,20,2,None,0.01,0.0019870180832712273,0.9890360275399871,1.1912131039179725,0.7
+cora,False,fixed,Gc_train_2_Gs_infer,variation_neighborhoods,0.5,False,True,512,20,2,128,0.001,0.0016373082211143092,1.685974234342575,0.2276697642250037,0.55
+cora,True,fixed,None,None,None,None,None,512,5,2,None,0.01,0.0018264055252075195,1.292208341427613,1.191882609471242,0.4
+cora,False,fixed,Gc_train_2_Gs_infer,variation_neighborhoods,0.5,False,True,512,5,2,128,0.001,0.0018810033798217773,1.53609459400177,0.20646842598230272,0.8
+cora,True,fixed,None,None,None,None,None,512,5,2,None,0.01,0.0018289685249328613,0.3104414145462215,0.337657195017335,1.0
+cora,False,fixed,Gc_train_2_Gs_infer,variation_neighborhoods,0.5,False,True,512,5,2,128,0.001,0.0018658638000488281,1.531175923347473,0.26102845567384775,0.6
+cora,True,fixed,None,None,None,None,None,512,5,2,None,0.01,0.0018884539604187012,0.49326777905225755,0.36730614699014597,1.0
+cora,False,fixed,Gc_train_2_Gs_infer,variation_neighborhoods,0.5,False,True,512,5,2,128,0.001,0.0019603371620178223,1.71228768825531,0.19701292084454314,0.6

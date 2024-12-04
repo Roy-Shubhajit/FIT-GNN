@@ -1,0 +1,9 @@
+dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,std_loss
+chameleon,True,None,None,None,None,None,512,20,2,None,0.01,0.0025452689120644017,0.7360281705856323,0.7486167342579244
+chameleon,False,Gs_train_2_Gs_infer,kron,0.3,True,False,512,20,2,128,0.001,0.002202724155626799,4.720588827133179,3.333790061996512
+chameleon,True,None,None,None,None,None,512,5,2,None,0.01,0.0027467012405395508,1.1072372436523437,0.4537148604011322
+chameleon,False,Gs_train_2_Gs_infer,kron,0.3,True,False,512,5,2,128,0.001,0.003203094005584717,3.171876049041748,2.0799448010134807
+chameleon,True,None,None,None,None,None,512,5,2,None,0.01,0.0026137232780456543,0.711276912689209,0.5386416829281544
+chameleon,False,Gs_train_2_Gs_infer,kron,0.3,True,False,512,5,2,128,0.001,0.0029646754264831543,2.95495491027832,1.5082854880426753
+chameleon,True,None,None,None,None,None,512,5,2,None,0.01,0.002561628818511963,0.9160375118255615,0.6180133804602144
+chameleon,False,Gs_train_2_Gs_infer,kron,0.3,True,False,512,5,2,128,0.001,0.0031976699829101562,4.974946784973144,3.539998290849209

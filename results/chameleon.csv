@@ -1,0 +1,5 @@
+dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss
+chameleon,kron,0.3,True,False,512,1,2,128,0.01,0.04931902885437012,0.39740725258670556 +/- 0.0,0.39740725258670556
+chameleon,kron,0.3,True,False,512,1,2,128,0.01,0.052509307861328125,0.399137171770954 +/- 0.0,0.399137171770954
+chameleon,kron,0.3,True,False,512,1,2,128,0.01,0.04938983917236328,0.4129573738374505 +/- 0.0,0.4129573738374505
+chameleon,kron,0.3,True,False,512,1,2,128,0.01,0.04890727996826172,0.39547982295929085 +/- 0.0,0.39547982295929085

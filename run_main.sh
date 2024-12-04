@@ -1,147 +1,24 @@
-# exp_setup="Gc_train_2_Gs_infer"
-# task=node_cls
-# hidden=512
-# num_layers1=2
-# num_layers2=2
-# epochs1=100
-# epochs2=300
-# early_stopping=10
-# weight_decay=0.0005
-# normalize_features=True
-# underscore="_"
-# cluster="cluster"
-# extra="extra"
+# output_dir="cora_fixed_Gc_train_2_Gs_infer_0.5_variation_neighborhoods_cluster"
+# python main.py --dataset cora --experiment fixed --output_dir $output_dir --exp_setup Gc_train_2_Gs_infer --cluster_node True --coarsening_method variation_neighborhoods --coarsening_ratio 0.5 --runs 20
 
-# for dataset in citeseer pubmed
-# do
-#     for experiment in few fixed
-#     do
-#         for cluster_node in True
-#         do
-#             for coarsening_method in variation_neighborhoods
-#             do
-#                 for coarsening_ratio in 0.5
-#                 do
-#                     for batch_size in 128
-#                     do
-#                         for lr in 0.01
-#                         do
-#                         output_dir=final_testing/$dataset$underscore$experiment$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$cluster
-#                         python main.py --dataset $dataset --experiment $experiment --output_dir $output_dir --exp_setup $exp_setup --cluster_node $cluster_node --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio --task $task --hidden $hidden --num_layers1 $num_layers1 --num_layers2 $num_layers2 --epochs1 $epochs1 --epochs2 $epochs2 --early_stopping $early_stopping --weight_decay $weight_decay --normalize_features $normalize_features --batch_size $batch_size --lr $lr --runs 5
-#                         done
-#                     done
-#                 done
-#             done
-#         done
-#     done
+# output_dir="chameleon_Gs_train_2_Gs_infer_0.3_kron_extra"
+# python main.py --dataset chameleon --output_dir $output_dir --exp_setup Gs_train_2_Gs_infer --extra_node True --coarsening_method kron --coarsening_ratio 0.3 --runs 1
 
-#     for experiment in few fixed
-#     do
-#         for extra_node in True
-#         do
-#             for coarsening_method in variation_neighborhoods
-#             do
-#                 for coarsening_ratio in 0.5
-#                 do
-#                     for batch_size in 128
-#                     do
-#                         for lr in 0.01
-#                         do
-#                         output_dir=final_testing/$dataset$underscore$experiment$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$extra
-#                         python main.py --dataset $dataset --experiment $experiment --output_dir $output_dir --exp_setup $exp_setup --extra_node $extra_node --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio --task $task --hidden $hidden --num_layers1 $num_layers1 --num_layers2 $num_layers2 --epochs1 $epochs1 --epochs2 $epochs2 --early_stopping $early_stopping --weight_decay $weight_decay --normalize_features $normalize_features --batch_size $batch_size --lr $lr --runs 5
-#                         done
-#                     done
-#                 done
-#             done
-#         done
-#     done
-# done
+# output_dir="AIDS_Gc_train_2_Gs_train_0.7_algebraic_JC_cluster"
+# python main.py --dataset AIDS --output_dir $output_dir --exp_setup Gc_train_2_Gs_train --cluster_node True --coarsening_method algebraic_JC --coarsening_ratio 0.7 --epochs2 1
 
-# for coarsening_method in variation_neighborhoods algebraic_JC affinity_GS kron
-# do
-#     for coarsening_ratio in 0.1 0.5 0.9
-#     do
-#         for batch_size in 2 16 32 128
-#         do
-#             for lr in 0.001 0.01 0.1
-#             do
-#             output_dir=$dataset$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$batch_size$underscore$lr
-#             python main.py --dataset $dataset --output_dir $output_dir --exp_setup $exp_setup --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio --task $task --hidden $hidden --num_layers1 $num_layers1 --num_layers2 $num_layers2 --epochs1 $epochs1 --epochs2 $epochs2 --early_stopping $early_stopping --weight_decay $weight_decay --normalize_features $normalize_features --batch_size $batch_size --lr $lr
-#             done
-#         done
-#     done
-# done
+# output_dir="QM9_Gc_train_2_Gs_infer_0.5_variation_neighborhoods_extra_6"
+# python main.py --dataset QM9 --output_dir $output_dir --exp_setup Gc_train_2_Gs_infer --extra_node True --coarsening_method variation_neighborhoods --coarsening_ratio 0.5 --multi_prop True --property 6
 
+output_dir="cora_fixed_Gc_train_2_Gs_infer_0.5_variation_neighborhoods_cluster"
+python main.py --dataset cora --experiment fixed --output_dir $output_dir --exp_setup Gc_train_2_Gs_infer --cluster_node True --coarsening_method variation_neighborhoods --coarsening_ratio 0.5 --runs 1 --epochs1 1 --epochs2 1
 
-# python main.py --dataset ENZYMES --output_dir graph_cls_final --exp_setup Gs_train_2_Gs_infer
-# python main.py --dataset ENZYMES --output_dir graph_cls_final --extra_node True --exp_setup Gs_train_2_Gs_infer
-# python main.py --dataset ENZYMES --output_dir graph_cls_final --cluster_node True --exp_setup Gs_train_2_Gs_infer
+output_dir="chameleon_Gs_train_2_Gs_infer_0.3_kron_extra"
+python main.py --dataset chameleon --output_dir $output_dir --exp_setup Gs_train_2_Gs_infer --extra_node True --coarsening_method kron --coarsening_ratio 0.3 --runs 1 --epochs1 1 --epochs2 1
 
-task=node_cls
-hidden=512
-num_layers1=2
-num_layers2=2
-epochs1=100
-epochs2=300
-early_stopping=10
-weight_decay=0.0005
-normalize_features=True
-underscore="_"
-cluster="cluster"
-cluster_node=True
-batch_size=128
-lr=0.01
+output_dir="AIDS_Gc_train_2_Gs_train_0.7_algebraic_JC_cluster"
+python main.py --dataset AIDS --output_dir $output_dir --exp_setup Gc_train_2_Gs_train --cluster_node True --coarsening_method algebraic_JC --coarsening_ratio 0.7 --epochs1 1 --epochs2 1
 
-for dataset in citeseer pubmed dblp Physics
-do
-    for exp_setup in Gc_train_2_Gs_infer
-    do
-        for coarsening_method in variation_neighborhoods
-        do
-            for coarsening_ratio in 0.1 0.3
-            do
-                if [$dataset == "Physics" -o $dataset == "dblp"]
-                then
-                    for experiment in few random
-                    do
-                        output_dir=final_testing/$dataset$underscore$experiment$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$cluster
-                        python main.py --dataset $dataset --experiment $experiment --output_dir $output_dir --exp_setup $exp_setup --cluster_node $cluster_node --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio --task $task --hidden $hidden --num_layers1 $num_layers1 --num_layers2 $num_layers2 --epochs1 $epochs1 --epochs2 $epochs2 --early_stopping $early_stopping --weight_decay $weight_decay --normalize_features $normalize_features --batch_size $batch_size --lr $lr --runs 5
-                    done
-                else
-                    for experiment in few fixed
-                    do
-                        output_dir=final_testing/$dataset$underscore$experiment$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$cluster
-                        python main.py --dataset $dataset --experiment $experiment --output_dir $output_dir --exp_setup $exp_setup --cluster_node $cluster_node --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio --task $task --hidden $hidden --num_layers1 $num_layers1 --num_layers2 $num_layers2 --epochs1 $epochs1 --epochs2 $epochs2 --early_stopping $early_stopping --weight_decay $weight_decay --normalize_features $normalize_features --batch_size $batch_size --lr $lr --runs 5
-                    done
-                fi
-            done
-        done 
-    done
-done
+output_dir="ZINC_subset_Gc_train_2_Gs_infer_0.5_variation_neighborhoods_extra"
+python main.py --dataset ZINC_subset --output_dir $output_dir --exp_setup Gc_train_2_Gs_infer --extra_node True --coarsening_method variation_neighborhoods --coarsening_ratio 0.5 --epochs1 1 --epochs2 1
 
-for dataset in citeseer pubmed dblp Physics
-do
-    for exp_setup in Gs_train_2_Gs_infer
-    do
-        for coarsening_method in variation_neighborhoods
-        do
-            for coarsening_ratio in 0.1 0.3
-            do
-                if [$dataset == "Physics" -o $dataset == "dblp"]
-                then
-                    for experiment in few random
-                    do
-                        output_dir=final_testing/$dataset$underscore$experiment$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$cluster
-                        python main.py --dataset $dataset --experiment $experiment --output_dir $output_dir --exp_setup $exp_setup --cluster_node $cluster_node --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio --task $task --hidden $hidden --num_layers1 $num_layers1 --num_layers2 $num_layers2 --epochs1 $epochs1 --epochs2 $epochs2 --early_stopping $early_stopping --weight_decay $weight_decay --normalize_features $normalize_features --batch_size $batch_size --lr $lr --runs 5
-                    done
-                else
-                    for experiment in few fixed
-                    do
-                        output_dir=final_testing/$dataset$underscore$experiment$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$cluster
-                        python main.py --dataset $dataset --experiment $experiment --output_dir $output_dir --exp_setup $exp_setup --cluster_node $cluster_node --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio --task $task --hidden $hidden --num_layers1 $num_layers1 --num_layers2 $num_layers2 --epochs1 $epochs1 --epochs2 $epochs2 --early_stopping $early_stopping --weight_decay $weight_decay --normalize_features $normalize_features --batch_size $batch_size --lr $lr --runs 5
-                    done
-                fi
-            done
-        done 
-    done
-done

@@ -12,6 +12,8 @@ from network import Classify_node, Regress_node, Classify_graph_gc, Classify_gra
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if not os.path.exists("results"):
+    os.mkdir("results")
 
 def node_train_Gc(model, x, edge_index, mask, y, loss_fn, optimizer):
     model.train()
@@ -53,8 +55,6 @@ def node_infer_Gs(args, model, graph_data, loss_fn, infer_type):
                 out = model(x, edge_index)
                 total_time += time.time() - start_time
                 test_mask = graph.test_mask.to(device)
-                # loss = loss_fn(out[test_mask], y[test_mask])
-                # total_loss += loss.item()
                 all_out = torch.cat((all_out, out[test_mask]), dim=0)
                 all_label = torch.cat((all_label, y[test_mask]), dim=0)
             else:
@@ -65,15 +65,13 @@ def node_infer_Gs(args, model, graph_data, loss_fn, infer_type):
                 out = model(x, edge_index)
                 total_time += time.time() - start_time
                 val_mask = graph.val_mask.to(device)
-                # loss = loss_fn(out[val_mask], y[val_mask])
-                # total_loss += loss.item()
                 all_out = torch.cat((all_out, out[val_mask]), dim=0)
                 all_label = torch.cat((all_label, y[val_mask]), dim=0)
             else:
                 continue
         n = n + 1
     if args.task == 'node_cls':
-        loss = loss_fn(all_out, all_label.type(torch.long)) ### node_cls ERROR
+        loss = loss_fn(all_out, all_label.type(torch.long))
         total_loss += loss.item()
         acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
     else:
@@ -103,7 +101,7 @@ def node_train_Gs(model, graph_data, loss_fn, optimizer, args):
             continue
         n = n + 1
     if args.task == 'node_cls':
-        loss = loss_fn(all_out, all_label.type(torch.long)) ### node_cls ERROR
+        loss = loss_fn(all_out, all_label.type(torch.long))
     else:
         loss = loss_fn(all_out.view(-1, 1), all_label.view(-1, 1))
     loss.backward()
@@ -189,7 +187,6 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
 
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
-        ### Added args.num_classes
         args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset[0], candidate, C_list, Gc_list, args.experiment, subgraph_list)
         if args.normalize_features:
             coarsen_features = F.normalize(coarsen_features, p=1)
@@ -214,7 +211,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                     torch.save(model.state_dict(), path+'/model.pt') 
 
             #Train and val on Gs
-            model.load_state_dict(torch.load(path+'/model.pt'))# changed from model = model.load_state_dict(torch.load(path+'/model.pt')) -> model.load_state_dict(torch.load(path+'/model.pt'))
+            model.load_state_dict(torch.load(path+'/model.pt'))
             for epoch in tqdm(range(args.epochs2)):
                 train_loss = node_train_Gs(model, graph_data, loss_fn, optimizer, args)
                 run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
@@ -227,7 +224,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                     torch.save(model.state_dict(), path+'/model.pt')
             
             #Test on Gs
-            model.load_state_dict(torch.load(path+'/model.pt'))# changed from model = model.load_state_dict(torch.load(path+'/model.pt')) -> model.load_state_dict(torch.load(path+'/model.pt'))
+            model.load_state_dict(torch.load(path+'/model.pt'))
             test_loss, test_acc, test_time = node_infer_Gs(args, model, graph_data, loss_fn, 'test')
             
             writer.add_scalar('Gs_test_loss', test_loss, run)
@@ -251,7 +248,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                     torch.save(model.state_dict(), path+'/model.pt') 
 
             #Infer on Gs
-            model.load_state_dict(torch.load(path+'/model.pt')) # changed from model = model.load_state_dict(torch.load(path+'/model.pt')) -> model.load_state_dict(torch.load(path+'/model.pt'))
+            model.load_state_dict(torch.load(path+'/model.pt'))
             val_loss, val_acc, val_time = node_infer_Gs(args, model, graph_data, loss_fn, 'val')
             run_writer.add_scalar('Gs_val_loss', val_loss, 0)
             run_writer.add_scalar('Gs_val_acc', val_acc, 0)
@@ -277,7 +274,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                     torch.save(model.state_dict(), path+'/model.pt')
             
             #Test on Gs
-            model.load_state_dict(torch.load(path+'/model.pt')) # changed from model = model.load_state_dict(torch.load(path+'/model.pt')) -> model.load_state_dict(torch.load(path+'/model.pt'))
+            model.load_state_dict(torch.load(path+'/model.pt'))
             test_loss, test_acc, test_time = node_infer_Gs(args, model, graph_data, loss_fn, 'test')
             writer.add_scalar('Gs_test_loss', test_loss, run)
             writer.add_scalar('Gs_test_acc', test_acc, run)
@@ -471,12 +468,11 @@ def graph_classification(args, path, writer, dataset):
                 best_val_acc = val_acc
                 torch.save(model_gs.state_dict(), path+'/model.pt')
 
-    #here we need to print the results and save it in a csv file
-    if not os.path.exists(f"results/{args.dataset}_final.csv"):
-        with open(f"results/{args.dataset}_final.csv", 'w') as f:
+    if not os.path.exists(f"results/{args.dataset}.csv"):
+        with open(f"results/{args.dataset}.csv", 'w') as f:
             f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,best_test_acc\n')
 
-    with open(f"results/{args.dataset}_final.csv", 'a') as f:
+    with open(f"results/{args.dataset}.csv", 'a') as f:
         f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
     print("#####################################################################")
     print(f"dataset: {args.dataset}")
@@ -572,7 +568,6 @@ def graph_regression(args, path, writer, dataset):
                 best_test_loss = test_loss
                 torch.save(model_gs.state_dict(), path+'/model.pt')
 
-    #here we need to print the results and save it in a csv file
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
             if args.multi_prop:

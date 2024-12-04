@@ -1,0 +1,5 @@
+dataset,coarsening_method,coarsening_ratio,experiment,exp_setup,extra_nodes,cluster_node,hidden,runs,num_layers,batch_size,lr,ave_acc,ave_time,top_10_acc,best_acc,top_10_loss,best_loss
+cora,variation_neighborhoods,0.5,fixed,Gc_train_2_Gs_infer,False,True,512,1,2,128,0.01,0.635 +/- 0.0,0.02714371681213379,0.635 +/- 0.0, 0.635, 0.1382328470547994 +/- 0.0, 0.1382328470547994
+cora,variation_neighborhoods,0.5,fixed,Gc_train_2_Gs_infer,False,True,512,1,2,128,0.01,0.59 +/- 0.0,0.027715444564819336,0.59 +/- 0.0, 0.59, 0.13665915528933206 +/- 0.0, 0.13665915528933206
+cora,variation_neighborhoods,0.5,fixed,Gc_train_2_Gs_infer,False,True,512,1,2,128,0.01,0.68 +/- 0.0,0.03662300109863281,0.68 +/- 0.0, 0.68, 0.13644294937451681 +/- 0.0, 0.13644294937451681
+cora,variation_neighborhoods,0.5,fixed,Gc_train_2_Gs_infer,False,True,512,1,2,128,0.01,0.635 +/- 0.0,0.02605748176574707,0.635 +/- 0.0, 0.635, 0.1353130837281545 +/- 0.0, 0.1353130837281545
