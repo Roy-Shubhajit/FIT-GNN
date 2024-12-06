@@ -138,7 +138,10 @@ def graph_val_Gc(args, model, loader, loss_fn):
         else:
             loss = loss_fn(out, y)
         total_loss += loss.item()
-    return total_loss / len(loader)
+    if args.task == "graph_cls":
+        return total_loss / len(loader), int(torch.sum(torch.argmax(out, dim=1) == y).item()) / len(y)
+    else:
+        return total_loss / len(loader), 0 
 
 def graph_train_Gs(args, model, loader, optimizer, loss_fn):
     total_loss = 0
@@ -419,6 +422,28 @@ def graph_classification(args, path, writer, dataset):
                 best_test_acc = test_acc
                 best_val_acc = val_acc
                 torch.save(model_gs.state_dict(), path+'/model.pt')
+    
+    elif args.exp_setup == "Gc_train_2_Gc_infer":
+        best_val_loss_Gc =  float('inf')
+        best_test_loss = float('inf')
+        best_test_acc = 0
+        best_val_acc = 0
+        for epoch in tqdm(range(args.epochs2)):
+            train_loss = graph_train_Gc(args, model_gc, train_loader, optimizer_gc, loss_fn)
+            val_loss, val_acc = graph_val_Gc(args, model_gc, val_loader, loss_fn)
+            test_loss, test_acc = graph_val_Gc(args, model_gc, test_loader, loss_fn)
+            writer.add_scalar('Gc_train_loss', train_loss, epoch)
+            writer.add_scalar('Gc_val_loss', val_loss, epoch)
+            writer.add_scalar('Gc_test_loss', test_loss, epoch)
+            writer.add_scalar('Gc_val_acc', val_acc, epoch)
+            writer.add_scalar('Gc_test_acc', test_acc, epoch)
+
+            if val_loss < best_val_loss_Gc or epoch == 0:
+                best_val_loss_Gc = val_loss
+                best_test_loss = test_loss
+                best_test_acc = test_acc
+                best_val_acc = val_acc
+                torch.save(model_gc.state_dict(), path+'/model.pt')
 
     elif args.exp_setup == 'Gc_train_2_Gs_infer':
         best_val_loss_Gc =  float('inf')
@@ -530,6 +555,28 @@ def graph_regression(args, path, writer, dataset):
                 best_test_acc = test_acc
                 best_val_acc = val_acc
                 torch.save(model_gs.state_dict(), path+'/model.pt')
+    
+    elif args.exp_setup == "Gc_train_2_Gc_infer":
+        best_val_loss_Gc =  float('inf')
+        best_test_loss = float('inf')
+        best_test_acc = 0
+        best_val_acc = 0
+        for epoch in tqdm(range(args.epochs2)):
+            train_loss = graph_train_Gc(args, model_gc, train_loader, optimizer_gc, loss_fn)
+            val_loss, val_acc = graph_val_Gc(args, model_gc, val_loader, loss_fn)
+            test_loss, test_acc = graph_val_Gc(args, model_gc, test_loader, loss_fn)
+            writer.add_scalar('Gc_train_loss', train_loss, epoch)
+            writer.add_scalar('Gc_val_loss', val_loss, epoch)
+            writer.add_scalar('Gc_test_loss', test_loss, epoch)
+            writer.add_scalar('Gc_val_acc', val_acc, epoch)
+            writer.add_scalar('Gc_test_acc', test_acc, epoch)
+
+            if val_loss < best_val_loss_Gc or epoch == 0:
+                best_val_loss_Gc = val_loss
+                best_test_loss = test_loss
+                best_test_acc = test_acc
+                best_val_acc = val_acc
+                torch.save(model_gc.state_dict(), path+'/model.pt')
 
     elif args.exp_setup == 'Gc_train_2_Gs_infer':
         best_val_loss_Gc =  float('inf')

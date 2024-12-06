@@ -1,4 +1,5 @@
 from torch_geometric.datasets import Planetoid, Coauthor, CitationFull, WikipediaNetwork, TUDataset, ZINC, QM9
+from ogb.nodeproppred import PygNodePropPredDataset
 from torch_geometric.data import DataLoader
 import torch
 from utils import coarsening_classification, coarsening_regression, load_graph_data
@@ -31,6 +32,11 @@ def process_dataset(args):
         args.task = 'node_cls'
     elif args.dataset == 'pubmed':
         dataset = Planetoid(root='./dataset', name=args.dataset)
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
+        args.task = 'node_cls'
+    elif args.dataset == "ogbn-products":
+        dataset = PygNodePropPredDataset(name="ogbn-products", root='../OGB/dataset/')
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'

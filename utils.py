@@ -3,7 +3,7 @@ from torch_geometric.utils import to_dense_adj
 from graph_coarsening.coarsening_utils import *
 from torch_geometric.data import Data, Batch
 from torch_geometric.loader import DataLoader
-from torch_geometric.utils import subgraph
+from torch_geometric.utils import subgraph, to_scipy_sparse_matrix
 from tqdm import tqdm
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -184,7 +184,7 @@ def metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node):
     return metanode_2_node
 
 def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
-    G = gsp.graphs.Graph(W=to_dense_adj(data.edge_index, max_num_nodes=data.x.shape[0])[0])
+    G = gsp.graphs.Graph(W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr())
     components = extract_components(G)
     candidate = sorted(components, key=lambda x: len(x.info['orig_idx']), reverse=True)
     number = 0
