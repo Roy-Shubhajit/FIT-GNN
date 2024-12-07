@@ -5,11 +5,10 @@ import argparse
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM9, ZINC
 from utils import load_graph_data, coarsening_classification, coarsening_regression, coarsening_classification, coarsening_regression, load_data_classification, load_data_regression, colater 
 from torch.utils.data import DataLoader as T_DataLoader
-from network import Classify_graph_gs, Regress_graph_gs, Classify_node, Regress_node
+from network import Classify_graph_gs, Regress_graph_gs, Classify_node, Regress_node, Classify_graph_gc, Regress_graph_gc
 from time import time
 import numpy as np
 import matplotlib.pyplot as plt
-
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_max_pool, global_mean_pool
 
@@ -238,6 +237,8 @@ parser.add_argument('--path_b', type = str, default = "./save/node_cls/baselines
 parser.add_argument('--model_name_b', type = str, default = "baseline_cora_fixed.pt")                                                           ### Baseline model name
 parser.add_argument('--path_gs', type = str, default = "./save/node_cls/cora_fixed_Gc_train_2_Gs_infer_0.5_variation_neighborhoods_cluster/")   ### Path for subgraph model
 parser.add_argument('--model_name_gs', type = str, default = "model.pt")                                                                        ### Subgraph model name
+parser.add_argument('--path_gc', type = str, default = "./save/graph_cls/AIDS_Gc_train_2_Gc_infer_0.5_variation_neighborhoods_extra/")          ### Path for coarsened graph model
+parser.add_argument('--model_name_gc', type = str, default = "model.pt")                                                                        ### Coarsened graph model name
 parser.add_argument('--baseline', type = bool, default = False)                                                                                 ### If True, baseline model results will be saved
 args = parser.parse_args()
 
@@ -253,14 +254,13 @@ elif args.cluster_node:
     node_type = "c"
 
 print("###############################################")
-print("\n\nDataset: ", args.dataset)
+print("\nDataset: ", args.dataset)
 print("Task: ", args.task)
 print("Coarsening Method: ", args.coarsening_method)
 print("Coarsening Ratio: ", args.coarsening_ratio)
 print("Extra Node: ", args.extra_node)
 print("Cluster Node: ", args.cluster_node)
-print("\n\n")
-print("###############################################")
+print("\n###############################################")
 
 
 if args.task == "graph_cls":
@@ -273,16 +273,28 @@ if args.task == "graph_cls":
     losses_b = []
     times_b = []
     times_gs = []
+    all_out_gc = []
+    all_label_gc = []
+    losses_gc = []
+    times_gc = []
 
-    model_gs = Classify_graph_gs(args).to(device)
-    loss_fn = torch.nn.CrossEntropyLoss().to(device)
-    model_gs.load_state_dict(torch.load(args.path_gs + args.model_name_gs))
-    model_gs.eval()
+    if args.exp_setup == "Gc_train_2_Gc_infer":
+        model_gc = Classify_graph_gc(args).to(device)
+        loss_fn = torch.nn.CrossEntropyLoss().to(device)
+        model_gc.load_state_dict(torch.load(args.path_gc + args.model_name_gc))
+        model_gc.eval()
+    else:
+        model_gs = Classify_graph_gs(args).to(device)
+        loss_fn = torch.nn.CrossEntropyLoss().to(device)
+        model_gs.load_state_dict(torch.load(args.path_gs + args.model_name_gs))
+        model_gs.eval()
+    
+    if args.baseline:
+        model_b = Classify_graph(args.num_layers2, args.num_features, args.hidden, args.num_classes)
+        loss_fn = torch.nn.CrossEntropyLoss().to(device)
+        model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
+        model_b.eval()
 
-    model_b = Classify_graph(args.num_layers2, args.num_features, args.hidden, args.num_classes)
-    loss_fn = torch.nn.CrossEntropyLoss().to(device)
-    model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
-    model_b.eval()
     num = 0
     new_datasets = []
     if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_subgraph_list.pt"):
@@ -311,19 +323,33 @@ if args.task == "graph_cls":
         colater_fn = colater()
         test_loader = T_DataLoader(new_datasets[j], batch_size=1, collate_fn=colater_fn)
 
-        # Subgraph based model
-        for batch in test_loader:
-            set_gs = batch[1]
-            y_ = batch[2].to(device).type(torch.long)
-            batch_tensor = batch[3].to(device)
-            t1 = time()
-            out_gs = model_gs(set_gs, batch_tensor).to(device)
-            t2 = time()
-            times_gs.append(t2-t1)
-            all_out_gs.append(out_gs.argmax().item())
-            all_label_gs.append(y_.item())
-            loss_gs = loss_fn(out_gs, y_)
-            losses_gs.append(loss_gs.item())
+        if args.exp_setup == 'Gc_train_2_Gc_infer':
+            # Coaarsened Graph based model
+            for batch in test_loader:
+                set_gc = batch[0].to(device)
+                y_ = batch[2].to(device).type(torch.long)
+                t1 = time()
+                out_gc = model_gc(set_gc).to(device)
+                t2 = time()
+                times_gc.append(t2-t1)
+                all_out_gc.append(out_gc.argmax().item())
+                all_label_gc.append(y_.item())
+                loss_gc = loss_fn(out_gc, y_)
+                losses_gc.append(loss_gc.item())
+        else:
+            # Subgraph based model
+            for batch in test_loader:
+                set_gs = batch[1]
+                y_ = batch[2].to(device).type(torch.long)
+                batch_tensor = batch[3].to(device)
+                t1 = time()
+                out_gs = model_gs(set_gs, batch_tensor).to(device)
+                t2 = time()
+                times_gs.append(t2-t1)
+                all_out_gs.append(out_gs.argmax().item())
+                all_label_gs.append(y_.item())
+                loss_gs = loss_fn(out_gs, y_)
+                losses_gs.append(loss_gs.item())
 
         # Baseline model
         G = new_datasets[j][0][0]
@@ -337,11 +363,17 @@ if args.task == "graph_cls":
         loss_b = loss_fn(out_b, y)
         losses_b.append(loss_b.item())
 
-        print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.argmax().item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
+        if args.exp_setup == "Gc_train_2_Gc_infer":
+            print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.argmax().item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
+        else:
+            print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.argmax().item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
         print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
     
-    print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAccuracy (subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
-    print(f"Average time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
+    if args.exp_setup == "Gc_train_2_Gc_infer":
+        print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAccuracy (coarsened graph): {np.sum(np.array(all_label_gc) == np.array(all_out_gc))}/{num}")
+    else:
+        print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAccuracy (subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
+    print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
 
 elif args.task == "graph_reg":
     test_indices = np.random.choice(len(dataset), args.num_test_samples, replace=False)
@@ -349,16 +381,26 @@ elif args.task == "graph_reg":
     losses_b = []
     times_gs = []
     times_b = []
+    losses_gc = []
+    times_gc = []
     
-    model_gs = Regress_graph_gs(args).to(device)
-    loss_fn = torch.nn.L1Loss().to(device)
-    model_gs.load_state_dict(torch.load(args.path_gs + args.model_name_gs))
-    model_gs.eval()
+    if args.exp_setup == "Gc_train_2_Gc_infer":
+        model_gc = Regress_graph_gc(args).to(device)
+        loss_fn = torch.nn.L1Loss().to(device)
+        model_gc.load_state_dict(torch.load(args.path_gc + args.model_name_gc))
+        model_gc.eval()
+    else:
+        model_gs = Regress_graph_gs(args).to(device)
+        loss_fn = torch.nn.L1Loss().to(device)
+        model_gs.load_state_dict(torch.load(args.path_gs + args.model_name_gs))
+        model_gs.eval()
 
-    model_b = Regress_graph(args.num_layers2, args.num_features, args.hidden)
-    loss_fn = torch.nn.L1Loss().to(device)
-    model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
-    model_b.eval()
+    if args.baseline:
+        model_b = Regress_graph(args.num_layers2, args.num_features, args.hidden)
+        loss_fn = torch.nn.L1Loss().to(device)
+        model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
+        model_b.eval()
+    
     num = 0
     new_datasets = []
 
@@ -388,21 +430,37 @@ elif args.task == "graph_reg":
         colater_fn = colater()
         test_loader = T_DataLoader(new_datasets[j], batch_size=1, collate_fn=colater_fn)
 
-        # Subgraph based model
-        for batch in test_loader:
-            set_gs = batch[1]
-            y_ = batch[2].to(device).type(torch.float)
-            print(y_)
-            batch_tensor = batch[3].to(device)
-            t1 = time()
-            out_gs = model_gs(set_gs, batch_tensor).to(device)
-            t2 = time()
-            times_gs.append(t2-t1)
-            if args.dataset == 'QM9':
-                loss_gs = loss_fn(out_gs, y_[:, args.property].view(-1, 1))
-            else:
-                loss_gs = loss_fn(out_gs, y_)
-            losses_gs.append(loss_gs.item())
+        if args.exp_setup == "Gc_train_2_Gc_infer":
+            # Coarsened Graph based model
+            for batch in test_loader:
+                set_gc = batch[0].to(device)
+                y_ = batch[2].to(device).type(torch.float)
+                t1 = time()
+                out_gc = model_gc(set_gc).to(device)
+                t2 = time()
+                times_gc.append(t2-t1)
+                if args.dataset == 'QM9':
+                    loss_gc = loss_fn(out_gc, y_[:, args.property].view(-1, 1))
+                else:
+                    loss_gc = loss_fn(out_gc, y_)
+                losses_gc.append(loss_gc.item())
+        else:
+                
+            # Subgraph based model
+            for batch in test_loader:
+                set_gs = batch[1]
+                y_ = batch[2].to(device).type(torch.float)
+                print(y_)
+                batch_tensor = batch[3].to(device)
+                t1 = time()
+                out_gs = model_gs(set_gs, batch_tensor).to(device)
+                t2 = time()
+                times_gs.append(t2-t1)
+                if args.dataset == 'QM9':
+                    loss_gs = loss_fn(out_gs, y_[:, args.property].view(-1, 1))
+                else:
+                    loss_gs = loss_fn(out_gs, y_)
+                losses_gs.append(loss_gs.item())
         
         # Baseline model
         G = new_datasets[j][0][0]
@@ -418,14 +476,22 @@ elif args.task == "graph_reg":
         losses_b.append(loss_b.item())
         
         if args.dataset == 'QM9':
-            print(f"Subgraph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
+            if args.exp_setup == "Gc_train_2_Gc_infer":
+                print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gc.item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
+            else:
+                print(f"\nSubgraph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
             print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
         else:
-            print(f"Subgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
+            if args.exp_setup == "Gc_train_2_Gc_infer":
+                print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
+            else:
+                print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
             print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
-    
-    print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAverage Loss (subgraph): {np.mean(losses_gs)}")
-    print(f"Average time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
+    if args.exp_setup == "Gc_train_2_Gc_infer":
+        print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAverage Loss (coarsened graph): {np.mean(losses_gc)}")
+    else:
+        print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAverage Loss (subgraph): {np.mean(losses_gs)}")
+    print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
 
 elif args.task == "node_cls":
 
@@ -475,6 +541,13 @@ elif args.task == "node_cls":
         t1 = time()
         out_gs = model_gs(x, edge_index).to(device)
         t2 = time()
+        
+        # Remove x, y and edge_index from device memory
+        x = x.cpu()
+        y = y.cpu()
+        edge_index = edge_index.cpu()
+        del x, y, edge_index
+        
         loss_gs = loss_fn(out_gs[j], y[j])
         all_label_gs.append(y[j].item())
         all_out_gs.append(out_gs[j].argmax().item())
@@ -569,6 +642,7 @@ elif args.task == "node_reg":
 
 if not os.path.exists("inference_results"):
     os.makedirs("inference_results")
+
 if not os.path.exists(f"inference_results/{args.task}.csv"):
     with open(f"inference_results/{args.task}.csv", 'w') as f:
         if args.task == "node_cls":
@@ -594,7 +668,10 @@ with open(file_path, 'a') as f:
     elif args.task == 'graph_cls':
         if args.baseline:
             f.write(f"{args.dataset},True,None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)},{np.sum(np.array(all_label_b) == np.array(all_out_b))/num}\n")
-        f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},{np.sum(np.array(all_label_gs) == np.array(all_out_gs))/num}\n")
+        if args.exp_setup == "Gc_train_2_Gc_infer":
+            f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gc[1:])},{np.mean(losses_gc)},{np.std(losses_gc)},{np.sum(np.array(all_label_gc) == np.array(all_out_gc))/num}\n")
+        else:
+            f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},{np.sum(np.array(all_label_gs) == np.array(all_out_gs))/num}\n")
     elif args.task == 'graph_reg':
         if args.baseline:
             if args.dataset == 'QM9':
@@ -602,7 +679,13 @@ with open(file_path, 'a') as f:
             else:
                 f.write(f"{args.dataset},True,None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)},None\n")
         if args.dataset == 'QM9':
-            f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},{args.property}\n")
+            if args.exp_setup == "Gc_train_2_Gc_infer":
+                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gc[1:])},{np.mean(losses_gc)},{np.std(losses_gc)},{args.property}\n")
+            else:
+                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},{args.property}\n")
         else:
-            f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},None\n")
+            if args.exp_setup == "Gc_train_2_Gc_infer":
+                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gc[1:])},{np.mean(losses_gc)},{np.std(losses_gc)},None\n")
+            else:
+                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},None\n")
 f.close()

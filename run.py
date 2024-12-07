@@ -183,6 +183,7 @@ def graph_infer_Gs(args, model, loader, loss_fn):
         total_loss = total_loss / torch.std(all_labels).item()
         acc = 0
     return total_loss / len(loader), acc
+
 def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list, subgraph_list):
     all_loss = []
     all_acc = []
