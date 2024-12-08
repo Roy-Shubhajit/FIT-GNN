@@ -1,4 +1,5 @@
 from torch_geometric.datasets import Planetoid, Coauthor, CitationFull, WikipediaNetwork, TUDataset, ZINC, QM9
+from torch_geometric.data import Data
 from ogb.nodeproppred import PygNodePropPredDataset
 from torch_geometric.data import DataLoader
 import torch
@@ -83,6 +84,23 @@ def process_dataset(args):
     elif args.dataset == 'ZINC_subset':
         dataset = ZINC(root='./dataset/ZINC', subset=True)
         args.task = 'graph_reg'
+    elif args.dataset == 'random':
+        print("Here\nNum Random Nodes: ", args.num_random_nodes)
+        # create a cyclic graph with args.num_random_nodes nodes
+        x = torch.randint(0, 10, (args.num_random_nodes, 1), dtype=torch.float64)
+        edge_index = torch.zeros(2, 4*args.num_random_nodes, dtype=torch.long)
+        for i in tqdm(range(args.num_random_nodes)):
+            edge_index[0][2*i] = i
+            edge_index[1][2*i] = (i+1)%args.num_random_nodes
+            edge_index[0][2*i+1] = (i+1)%args.num_random_nodes
+            edge_index[1][2*i+1] = i
+            edge_index[0][2*args.num_random_nodes + 2*i] = i
+            edge_index[1][2*args.num_random_nodes + 2*i] = (i+2)%args.num_random_nodes
+            edge_index[0][2*args.num_random_nodes + 2*i+1] = (i+2)%args.num_random_nodes
+            edge_index[1][2*args.num_random_nodes + 2*i+1] = i
+        dataset = [Data(x=x, edge_index=edge_index, y = torch.zeros(args.num_random_nodes, 1, dtype=torch.long))]
+        args.task = 'graph_cls'
+        print("Graph formed...")
     return dataset, args
 
 def arg_correction(args):
@@ -149,6 +167,7 @@ if __name__ == '__main__':
     parser.add_argument('--multi_prop', type =bool, default=False)
     parser.add_argument('--property', type = int, default = 0)
     parser.add_argument('--super_graph', type=bool, default=False)
+    parser.add_argument('--num_random_nodes', type=int, default=100)
     # parser.add_argument('--experiment', type=str, default='fixed')
     # parser.add_argument('--runs', type=int, default=20)
     # parser.add_argument('--exp_setup', type=str, default='Gc_train_2_Gs_infer')
@@ -183,7 +202,7 @@ elif args.task == 'graph_cls':
     Gs_ = []
     classes = set()
     for i in tqdm(range(len(dataset))):
-        try:
+        # try:
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
             # Gs = subgraph_list
@@ -191,8 +210,8 @@ elif args.task == 'graph_cls':
             Gc_.append(Gc)
             Gs_.append(subgraph_list)
             classes.add(dataset[i].y.item())
-        except:
-            pass
+        # except:
+        #     pass
     args.num_classes = len(classes)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_)
     

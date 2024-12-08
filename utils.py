@@ -184,8 +184,11 @@ def metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node):
     return metanode_2_node
 
 def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
-    G = gsp.graphs.Graph(W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr())
+    print("In coarsening classification...")
+    G = gsp.graphs.Graph(W=to_dense_adj(data.edge_index, max_num_nodes=data.x.shape[0])[0]) #W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr()
+    print("Extracting components...")
     components = extract_components(G)
+    print("Components extracted...")
     candidate = sorted(components, key=lambda x: len(x.info['orig_idx']), reverse=True)
     number = 0
     C_list=[]
@@ -201,6 +204,7 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
         H_feature = data.x[H.info['orig_idx']]
         comp_node_2_node, node_2_comp_node = orig_to_new_map(H.info['orig_idx'])
         if len(H.info['orig_idx']) > 1:
+            print("Starting coarsening...")
             C, Gc, mapping_dict_list = coarsen(H, r=coarsening_ratio, method=coarsening_method)
             adj = Gc.A
             C_dot_H_feature = C.dot(H_feature)
@@ -212,7 +216,7 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
             comp_node_2_meta_node = subgraph_mapping(mapping_dict_list)
             comp_node_2_meta_node_list.append(comp_node_2_meta_node)
             meta_node_2_node = metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node)
-            for key, value in meta_node_2_node.items():
+            for key, value in tqdm(meta_node_2_node.items()):
                 value = np.sort(value)
                 node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
                 actual_ext = np.array([], dtype=np.compat.long)
