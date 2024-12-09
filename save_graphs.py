@@ -37,7 +37,7 @@ def process_dataset(args):
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == "ogbn-products":
-        dataset = PygNodePropPredDataset(name="ogbn-products", root='../OGB/dataset/')
+        dataset = PygNodePropPredDataset(name="ogbn-products", root='/hdfs1/Data/weather/CoarseGNN_Hrriday/OGB/dataset/')
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'

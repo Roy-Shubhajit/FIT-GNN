@@ -61,7 +61,6 @@ def coarsen(
     C = sp.sparse.eye(N, format="csc")
     Gc = G
     mapping_dict_list = []
-    print("Entering levels for loop...")
     for level in range(1, max_levels + 1):
 
         G = Gc
@@ -70,37 +69,18 @@ def coarsen(
         r_cur = np.clip(1 - n_target / n, 0.0, max_level_r)
 
         if "variation" in method:
-            print("In variation...")
 
             if level == 1:
-                print("In level 1...")
                 if (Uk is not None) and (lk is not None) and (len(lk) >= K):
-                    print("In if block...")
                     mask = lk < 1e-10
                     lk[mask] = 1
                     lsinv = lk ** (-0.5)
                     lsinv[mask] = 0
                     B = Uk[:, :K] @ np.diag(lsinv[:K])
                 else:
-                    print("In else block...")
                     offset = 2 * max(G.dw)
-                    print("After offset...")
                     T = offset * sp.sparse.eye(G.N, format="csc") - G.L
-                    print("After T...")
-                    #T_ = T.toarray()
-                    without_toarray = time()
-                    lk_, Uk_ = sp.sparse.linalg.eigsh(T, k=K, which="LM", tol=1e-5)
-                    print("Time without toarray: ", time() - without_toarray)
-                    with_toarray = time()
-                    lk, Uk = sp.sparse.linalg.eigsh(T.toarray(), k=K, which="LM", tol=1e-5)
-                    print("Time with toarray: ", time() - with_toarray)
-                    print("lk == lk_? ", np.allclose(lk, lk_))
-                    print("Uk == Uk_? ", np.allclose(Uk, Uk_))
-                    print("Uk", Uk)
-                    print("Uk_", Uk_)
-                    distance = np.linalg.norm(Uk - Uk_)
-                    print("Distance: ", distance)
-                    print("After eigsh...")
+                    lk, Uk = sp.sparse.linalg.eigsh(T, k=K, which="LM", tol=1e-5)
                     lk = (offset - lk)[::-1]
                     Uk = Uk[:, ::-1]
                     mask = lk < 1e-10

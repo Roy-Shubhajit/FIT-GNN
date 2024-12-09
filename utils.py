@@ -246,11 +246,8 @@ def merge_communities(data, mapping, k):
     return new_data
 
 def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
-    print("In coarsening classification...")
     G = gsp.graphs.Graph(W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr()) #W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr()
-    print("Extracting components...")
     components = G.extract_components()
-    print("Components extracted...")
     candidate = sorted(components, key=lambda x: len(x.info['orig_idx']), reverse=True)
     number = 0
     C_list=[]
@@ -266,7 +263,6 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
         H_feature = data.x[H.info['orig_idx']]
         comp_node_2_node, node_2_comp_node = orig_to_new_map(H.info['orig_idx'])
         if len(H.info['orig_idx']) > 1:
-            print("Starting coarsening...")
             C, Gc, mapping_dict_list = coarsen(H, r=coarsening_ratio, method=coarsening_method)
             adj = Gc.A
             C_dot_H_feature = C.dot(H_feature)
