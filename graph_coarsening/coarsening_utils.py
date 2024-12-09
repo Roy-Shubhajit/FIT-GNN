@@ -3,7 +3,7 @@ import pygsp as gsp
 from pygsp import graphs, filters, reduction
 import scipy as sp
 from scipy import sparse
-
+from time import time
 import matplotlib
 import matplotlib.pylab as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -87,7 +87,19 @@ def coarsen(
                     print("After offset...")
                     T = offset * sp.sparse.eye(G.N, format="csc") - G.L
                     print("After T...")
+                    #T_ = T.toarray()
+                    without_toarray = time()
+                    lk_, Uk_ = sp.sparse.linalg.eigsh(T, k=K, which="LM", tol=1e-5)
+                    print("Time without toarray: ", time() - without_toarray)
+                    with_toarray = time()
                     lk, Uk = sp.sparse.linalg.eigsh(T.toarray(), k=K, which="LM", tol=1e-5)
+                    print("Time with toarray: ", time() - with_toarray)
+                    print("lk == lk_? ", np.allclose(lk, lk_))
+                    print("Uk == Uk_? ", np.allclose(Uk, Uk_))
+                    print("Uk", Uk)
+                    print("Uk_", Uk_)
+                    distance = np.linalg.norm(Uk - Uk_)
+                    print("Distance: ", distance)
                     print("After eigsh...")
                     lk = (offset - lk)[::-1]
                     Uk = Uk[:, ::-1]

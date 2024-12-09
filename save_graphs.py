@@ -98,7 +98,7 @@ def process_dataset(args):
             edge_index[1][2*args.num_random_nodes + 2*i] = (i+2)%args.num_random_nodes
             edge_index[0][2*args.num_random_nodes + 2*i+1] = (i+2)%args.num_random_nodes
             edge_index[1][2*args.num_random_nodes + 2*i+1] = i
-        dataset = [Data(x=x, edge_index=edge_index, y = torch.zeros(args.num_random_nodes, 1, dtype=torch.long))]
+        dataset = [Data(x=x, edge_index=edge_index, y = torch.zeros(args.num_random_nodes, dtype=torch.long))]
         args.task = 'graph_cls'
         print("Graph formed...")
     return dataset, args

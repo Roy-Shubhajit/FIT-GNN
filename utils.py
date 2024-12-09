@@ -3,7 +3,7 @@ from torch_geometric.utils import to_dense_adj
 from graph_coarsening.coarsening_utils import *
 from torch_geometric.data import Data, Batch
 from torch_geometric.loader import DataLoader
-from torch_geometric.utils import subgraph, to_scipy_sparse_matrix
+from torch_geometric.utils import subgraph, to_scipy_sparse_matrix, degree
 from tqdm import tqdm
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -183,11 +183,73 @@ def metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node):
             metanode_2_node[metanode] = np.append(metanode_2_node[metanode], comp_node_2_node[comp_node])
     return metanode_2_node
 
+def modularity(edge_index, communities, degrees):
+    row, col = edge_index
+    m = degrees.sum()
+    modularity_score = 0.0
+    for c in torch.unique(communities):
+        community_nodes = (communities == c).nonzero(as_tuple=True)[0]
+        k_i = degrees[community_nodes].sum()
+        e_ii = 0.0
+        for node in community_nodes:
+            neighbors = col[row == node]
+            e_ii += (communities[neighbors] == c).sum().item()
+        modularity_score += (e_ii / m) - (k_i / m) ** 2
+
+    return modularity_score
+
+def louvain(data, max_iter=100):
+    edge_index = data.edge_index
+    num_nodes = data.num_nodes
+    degrees = degree(edge_index[0], num_nodes, dtype=torch.float)
+    communities = torch.arange(num_nodes)
+
+    prev_modularity = -1.0
+    for _ in range(max_iter):
+        for node in range(num_nodes):
+            neighbors = edge_index[1, edge_index[0] == node]
+            best_community = communities[node]
+            best_modularity = prev_modularity
+
+            for community in torch.unique(communities[neighbors]):
+                temp_communities = communities.clone()
+                temp_communities[node] = community
+                new_modularity = modularity(edge_index, temp_communities, degrees)
+
+                if new_modularity > best_modularity:
+                    best_modularity = new_modularity
+                    best_community = community
+
+            communities[node] = best_community
+
+        current_modularity = modularity(edge_index, communities, degrees)
+        if abs(current_modularity - prev_modularity) < 1e-5:
+            break
+        prev_modularity = current_modularity
+
+    mapping = {}
+    for i, c in enumerate(communities):
+        if int(c) not in mapping.keys():
+            mapping[int(c)] = []
+        mapping[int(c)].append(i)
+    return mapping
+
+def merge_communities(data, mapping, k):
+    sorted_mapping = sorted(mapping.items(), key=lambda x: len(x[1]), reverse=True)
+    new_nodes = torch.tensor([], dtype=torch.long)
+    for i in range(len(sorted_mapping)):
+        if len(new_nodes) + len(sorted_mapping[i][1]) <= k:
+            new_nodes = torch.cat((new_nodes, torch.tensor(sorted_mapping[i][1], dtype=torch.long)))
+            if len(new_nodes) == k:
+                break
+    new_data = data.subgraph(new_nodes)
+    return new_data
+
 def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
     print("In coarsening classification...")
-    G = gsp.graphs.Graph(W=to_dense_adj(data.edge_index, max_num_nodes=data.x.shape[0])[0]) #W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr()
+    G = gsp.graphs.Graph(W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr()) #W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr()
     print("Extracting components...")
-    components = extract_components(G)
+    components = G.extract_components()
     print("Components extracted...")
     candidate = sorted(components, key=lambda x: len(x.info['orig_idx']), reverse=True)
     number = 0
@@ -318,8 +380,8 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
     return data.x.shape[1], candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST
 
 def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
-    G = gsp.graphs.Graph(W=to_dense_adj(data.edge_index)[0])
-    components = extract_components(G)
+    G = gsp.graphs.Graph(W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr())
+    components = G.extract_components()
     candidate = sorted(components, key=lambda x: len(x.info['orig_idx']), reverse=True)
     number = 0
     C_list=[]
