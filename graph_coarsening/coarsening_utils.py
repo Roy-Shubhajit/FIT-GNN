@@ -80,7 +80,10 @@ def coarsen(
                 else:
                     offset = 2 * max(G.dw)
                     T = offset * sp.sparse.eye(G.N, format="csc") - G.L
-                    lk, Uk = sp.sparse.linalg.eigsh(T, k=K, which="LM", tol=1e-5)
+                    if K >= N:
+                        lk, Uk = sp.sparse.linalg.eigsh(T.toarray(), k=K, which="LM", tol=1e-5)
+                    else:
+                        lk, Uk = sp.sparse.linalg.eigsh(T, k=K, which="LM", tol=1e-5)
                     lk = (offset - lk)[::-1]
                     Uk = Uk[:, ::-1]
                     mask = lk < 1e-10
