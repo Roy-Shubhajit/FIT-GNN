@@ -69,7 +69,7 @@ def coarsen(
         r_cur = np.clip(1 - n_target / n, 0.0, max_level_r)
 
         if "variation" in method:
-
+            
             if level == 1:
                 if (Uk is not None) and (lk is not None) and (len(lk) >= K):
                     mask = lk < 1e-10
@@ -92,6 +92,7 @@ def coarsen(
                     lsinv[mask] = 0
                     B = Uk @ np.diag(lsinv)
                 A = B
+                #print("Level 1: Got eigenvectors and eigenvalues, and built A")
             else:
                 B = iC.dot(B)
                 d, V = np.linalg.eig(B.T @ (G.L).dot(B))
@@ -100,6 +101,7 @@ def coarsen(
                 dinvsqrt = d ** (-1 / 2)
                 dinvsqrt[mask] = 0
                 A = B @ np.diag(dinvsqrt) @ V
+                #print(f"Level {level}: Got eigenvectors and eigenvalues, and built A")
 
             if method == "variation_edges":
                 coarsening_list = contract_variation_edges(
@@ -109,7 +111,7 @@ def coarsen(
                 coarsening_list = contract_variation_linear(
                     G, K=K, A=A, r=r_cur, mode=method
                 )
-
+            #print(f"Got coarsening list at level {level}")
         else:
             weights = get_proximity_measure(G, method, K=K)
 
@@ -122,49 +124,64 @@ def coarsen(
 
             elif algorithm == "greedy":
                 coarsening_list = matching_greedy(G, weights=weights, r=r_cur)
+                
         iC = get_coarsening_matrix(G, coarsening_list)
-
+        #print(f"Got coarsening matrix at level {level}")
         if iC.shape[1] - iC.shape[0] <= 2:
             for i in range(G.N):
                 mapping_dict[i] = i
             mapping_dict_list.append(mapping_dict)
             break  # avoid too many levels for so few nodes
-
+        #print("created mapping_dict")
         C = iC.dot(C)
 
         Wc = graph_utils.zero_diag(coarsen_matrix(G.W, iC))  # coarsen and remove self-loops
         Wc = (Wc + Wc.T) / 2  # this is only needed to avoid pygsp complaining for tiny errors
 
+        #print("Calculated C, Wc")
         if not hasattr(G, "coords"):
             Gc = gsp.graphs.Graph(Wc)
         else:
             Gc = gsp.graphs.Graph(Wc, coords=coarsen_vector(G.coords, iC))
-
+        #print("Built Gc")
         n = Gc.N
-        new_num = 0
+        '''new_num = 0
         in_list = False
+        mapping_dict_exits = {i: False for i in range(N)}
         for i in range(N):
-            for sublist in coarsening_list:
-                if i in sublist:
-                    if any(j in list(mapping_dict.keys()) for j in sublist):
-                        common = np.intersect1d(sublist, list(mapping_dict.keys()))
-                        mapping_dict[i] = mapping_dict[common[0]]
-                        in_list = True
-                        break
+            if not mapping_dict_exits[i]:
+                for sublist in coarsening_list:
+                    if i in sublist:
+                        if any(j in list(mapping_dict.keys()) for j in sublist):
+                            common = np.intersect1d(sublist, list(mapping_dict.keys()))
+                            mapping_dict[i] = mapping_dict[common[0]]
+                            in_list = True
+                            break
+                        else:
+                            mapping_dict[i] = new_num
+                            new_num += 1
+                            in_list = True
+                            break
                     else:
-                        mapping_dict[i] = new_num
-                        new_num += 1
-                        in_list = True
-                        break
-                else:
-                    in_list = False
-            if not in_list:
-                mapping_dict[i] = new_num
-                new_num += 1
+                        in_list = False
+                if not in_list:
+                    mapping_dict[i] = new_num
+                    new_num += 1'''
+        mapping_dict = {i:i for i in range(N)}
+        for sublist in coarsening_list:
+            sort_sublist = sorted(sublist)
+            for i in sort_sublist:
+                mapping_dict[i] = sort_sublist[0]
+        mapped_keys = {}
+        for i, key in enumerate(sorted(set(mapping_dict.values()))): ##### Added sorted(set(.)) to match the outputs of both the functions
+            mapped_keys[key] = i
+        for key, value in mapping_dict.items():
+            mapping_dict[key] = mapped_keys[value]
+                    
         mapping_dict_list.append(mapping_dict)
         if n <= n_target:
             break
-
+        #print(f"level = {level}, n = {n}")
     return C, Gc, mapping_dict_list
 
 
@@ -633,6 +650,7 @@ def contract_variation_linear(G, A=None, K=10, r=0.5, mode="neighborhood"):
                 i_cset.set = i_set
                 i_cset.cost = subgraph_cost(i_set)
                 family.add(i_cset)
+        #print(f"Inside while loop, n = {N - n_reduce}")
 
     return coarsening_list
 

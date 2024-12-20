@@ -339,7 +339,10 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                 if args.cluster_node:
                     M.x = torch.cat((M.x, torch.tensor(new_features).float()), dim=0)
                     M.edge_index = torch.cat((M.edge_index.T, torch.tensor(new_edges, dtype=torch.long)), dim=0).T
-                    M.y = torch.cat((M.y, torch.zeros(len(new_features)).long()))
+                    if len(M.y.size()) > 1:
+                        M.y = torch.cat((M.y, torch.zeros((new_features.shape[0], M.y.shape[1])).long()))
+                    else:
+                        M.y = torch.cat((M.y, torch.zeros(len(new_features)).long()))
                     for new_node in actual_ext:
                         mappiing[new_node.item()] = new_node.item()
                 if args.extra_node:
