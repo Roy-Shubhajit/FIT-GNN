@@ -111,7 +111,7 @@ def nodes_2_neighbours(G, nodes):
     edge_index = G.edge_index.numpy()
     mask = np.isin(edge_index[0], nodes)
     connected_targets = np.unique(edge_index[1, mask])
-    return connected_targets
+    return torch.tensor(connected_targets).to(device)
 
 def neighbor_2_cluster(Nt_node, node_2_comp_node, comp_node_2_meta_node):
     connected_clusters = np.array([], dtype=int)
@@ -321,15 +321,17 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                                     e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.compat.long)
                                     new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
                                     new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
-
+                    value = np.unique(np.sort(value))
+                    value = torch.tensor(value).to(device)
                 elif args.extra_node:
                     extra_node = nodes_2_neighbours(data, value)
-                    actual_ext = extra_node[~np.isin(extra_node, value)]
-                    value = np.concatenate((value, actual_ext), 0)
+                    value = torch.tensor(value).to(device)
+                    actual_ext = extra_node[~torch.isin(extra_node, value)]
+                    value = torch.cat((value, actual_ext), dim=0)
                     #value = np.unique(value)
-                
-                value = np.sort(value)
-                value = torch.tensor(value).to(device)
+                    
+                value, _ = torch.sort(value)
+                #value = torch.tensor(value).to(device)
                 mappiing = {}
                 for i in range(len(value)):
                     mappiing[value[i].item()] = i

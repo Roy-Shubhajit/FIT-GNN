@@ -178,7 +178,7 @@ if __name__ == "__main__":
         node_type = "e"
     elif args.cluster_node:
         node_type = "c"
-
+    dataset = dataset.to(device)
     if args.task == 'node_cls':
         if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_subgraph_list.pt'):
             print("Loading saved graphs...")
