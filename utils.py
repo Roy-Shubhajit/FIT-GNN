@@ -102,7 +102,7 @@ def one_hot(x, class_count):
     return torch.eye(class_count)[x, :]
 
 def neighbour(G, node):
-    edge_index = G.edge_index.numpy()
+    edge_index = G.edge_index.cpu().numpy()
     edges_connected_to_k = np.nonzero(edge_index[0] == node)[0]
     neighbors_k = edge_index[1][edges_connected_to_k].flatten()
     return neighbors_k
@@ -260,7 +260,7 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
     while number < len(candidate):
         H = candidate[number]
         new_subgraph_list = []
-        H_feature = data.x[H.info['orig_idx']]
+        H_feature = data.x[H.info['orig_idx']].cpu()
         comp_node_2_node, node_2_comp_node = orig_to_new_map(H.info['orig_idx'])
         if len(H.info['orig_idx']) > 1:
             C, Gc, mapping_dict_list = coarsen(H, r=coarsening_ratio, method=coarsening_method)
@@ -276,10 +276,10 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
             meta_node_2_node = metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node)
             for key, value in tqdm(meta_node_2_node.items()):
                 value = np.sort(value)
-                node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
                 actual_ext = np.array([], dtype=np.compat.long)
                 num_nodes = len(value)
                 if args.cluster_node:
+                    node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
                     new_edges = np.array([], dtype=np.compat.long)
                     new_features = np.array([])
                     meta_node_2_new_node = {}
@@ -325,11 +325,11 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                 elif args.extra_node:
                     extra_node = nodes_2_neighbours(data, value)
                     actual_ext = extra_node[~np.isin(extra_node, value)]
-                    value = np.concatenate((value, extra_node), 0)
-                    value = np.unique(value)
+                    value = np.concatenate((value, actual_ext), 0)
+                    #value = np.unique(value)
                 
                 value = np.sort(value)
-                value = torch.tensor(value)
+                value = torch.tensor(value).to(device)
                 mappiing = {}
                 for i in range(len(value)):
                     mappiing[value[i].item()] = i
@@ -337,20 +337,20 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                 M.actual_ext = actual_ext
                 M.orig_idx = value
                 if args.cluster_node:
-                    M.x = torch.cat((M.x, torch.tensor(new_features).float()), dim=0)
-                    M.edge_index = torch.cat((M.edge_index.T, torch.tensor(new_edges, dtype=torch.long)), dim=0).T
+                    M.x = torch.cat((M.x, torch.tensor(new_features).to(device).float()), dim=0)
+                    M.edge_index = torch.cat((M.edge_index.T, torch.tensor(new_edges, dtype=torch.long).to(device)), dim=0).T
                     if len(M.y.size()) > 1:
-                        M.y = torch.cat((M.y, torch.zeros((new_features.shape[0], M.y.shape[1])).long()))
+                        M.y = torch.cat((M.y, torch.zeros((new_features.shape[0], M.y.shape[1])).to(device).long()))
                     else:
-                        M.y = torch.cat((M.y, torch.zeros(len(new_features)).long()))
+                        M.y = torch.cat((M.y, torch.zeros(len(new_features)).to(device).long()))
                     for new_node in actual_ext:
                         mappiing[new_node.item()] = new_node.item()
                 if args.extra_node:
-                    M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool)
+                    M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool).to(device)
                 elif args.cluster_node:
-                    M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool)
+                    M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
                 else:
-                    M.mask = torch.tensor([True]*len(value), dtype=torch.bool)
+                    M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
                 M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 M.map_dict = mappiing
                 new_subgraph_list.append(M_t)
@@ -360,9 +360,9 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
             comp_node_2_meta_node_list.append(comp_node_2_meta_node)
             meta_node_2_node = metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node)
             for key, value in meta_node_2_node.items():
-                value = torch.LongTensor(value)
+                value = torch.LongTensor(value).to(device)
                 value, _ = torch.sort(value)
-                actual_ext = torch.LongTensor([])
+                actual_ext = torch.LongTensor([]).to(device)
                 M = data.subgraph(value)
                 M.actual_ext = actual_ext
                 M.orig_idx = value
@@ -370,7 +370,7 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                 for i in range(len(value)):
                     mappiing[value[i].item()] = i
                 M.map_dict = mappiing
-                M.mask = torch.tensor([True], dtype=torch.bool)
+                M.mask = torch.tensor([True], dtype=torch.bool).to(device)
                 subgraph_list.append(M)
                 M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 new_subgraph_list.append(M_t)
@@ -392,7 +392,7 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
     while number < len(candidate):
         H = candidate[number]
         new_subgraph_list = []
-        H_feature = data.x[H.info['orig_idx']]
+        H_feature = data.x[H.info['orig_idx']].cpu()
         comp_node_2_node, node_2_comp_node = orig_to_new_map(H.info['orig_idx'])
         if len(H.info['orig_idx']) > 1:
             C, Gc, mapping_dict_list = coarsen(H, r=coarsening_ratio, method=coarsening_method)
@@ -456,11 +456,11 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                 elif args.extra_node:
                     extra_node = nodes_2_neighbours(data, value)
                     actual_ext = extra_node[~np.isin(extra_node, value)]
-                    value = np.concatenate((value, extra_node), 0)
-                    value = np.unique(value)
+                    value = np.concatenate((value, actual_ext), 0)
+                    #value = np.unique(value)
                 
                 value = np.sort(value)
-                value = torch.tensor(value)
+                value = torch.tensor(value).to(device)
                 mappiing = {}
                 for i in range(len(value)):
                     mappiing[value[i].item()] = i
@@ -468,21 +468,21 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                 M.actual_ext = actual_ext
                 M.orig_idx = value
                 if args.cluster_node:
-                    M.x = torch.cat((M.x, torch.tensor(new_features).float()), dim=0)
-                    M.edge_index = torch.cat((M.edge_index.T, torch.tensor(new_edges, dtype=torch.long)), dim=0).T
+                    M.x = torch.cat((M.x, torch.tensor(new_features).to(device).float()), dim=0)
+                    M.edge_index = torch.cat((M.edge_index.T, torch.tensor(new_edges, dtype=torch.long).to(device)), dim=0).T
                     if args.task == "graph_reg":
-                        M.y = torch.cat((M.y, torch.zeros((new_features.shape[0], M.y.shape[1]))))
+                        M.y = torch.cat((M.y, torch.zeros((new_features.shape[0], M.y.shape[1])).to(device)))
                     else:
-                        M.y = torch.cat((M.y, torch.zeros(len(new_features))))
+                        M.y = torch.cat((M.y, torch.zeros(len(new_features)).to(device)))
                     for new_node in actual_ext:
                         mappiing[new_node.item()] = new_node.item()
                 M.map_dict = mappiing
                 if args.extra_node:
-                    M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool)
+                    M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool).to(device)
                 elif args.cluster_node:
-                    M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool)
+                    M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
                 else:
-                    M.mask = torch.tensor([True]*len(value), dtype=torch.bool)
+                    M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
                 M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 new_subgraph_list.append(M_t)
                 subgraph_list.append(M)
@@ -490,9 +490,9 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
             comp_node_2_meta_node = {0: 0}
             meta_node_2_node = metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node)
             for key, value in meta_node_2_node.items():
-                value = torch.LongTensor(value)
+                value = torch.LongTensor(value).to(device)
                 value, _ = torch.sort(value)
-                actual_ext = torch.LongTensor([])
+                actual_ext = torch.LongTensor([]).to(device)
                 M = data.subgraph(value)
                 M.actual_ext = actual_ext
                 M.orig_idx = value
@@ -500,7 +500,7 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                 for i in range(len(value)):
                     mappiing[value[i].item()] = i
                 M.map_dict = mappiing
-                M.mask = torch.tensor([True], dtype=torch.bool)
+                M.mask = torch.tensor([True], dtype=torch.bool).to(device)
                 subgraph_list.append(M)
                 M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                 new_subgraph_list.append(M_t)

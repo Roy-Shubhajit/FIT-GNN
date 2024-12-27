@@ -9,6 +9,8 @@ from tqdm import tqdm
 import pickle
 import os
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 def process_dataset(args):
     # Node Classification
     if args.dataset == 'dblp':
@@ -190,10 +192,12 @@ args = arg_correction(args)
 dataset, args = process_dataset(args)
 
 if args.task == 'node_cls':
+    dataset = dataset.to(device)
     args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
     
 elif args.task == 'node_reg':
+    dataset = dataset.to(device)
     args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', subgraph_list=subgraph_list)
     
@@ -201,6 +205,7 @@ elif args.task == 'graph_cls':
     Gc_ = []
     Gs_ = []
     classes = set()
+    dataset = dataset.to(device)
     for i in tqdm(range(len(dataset))):
         # try:
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
@@ -218,6 +223,7 @@ elif args.task == 'graph_cls':
 else:
     Gc_ = []
     Gs_ = []
+    dataset = dataset.to(device)
     for i in tqdm(range(len(dataset))):
         try:
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
