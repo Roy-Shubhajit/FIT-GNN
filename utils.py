@@ -6,6 +6,7 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.utils import subgraph, to_scipy_sparse_matrix, degree
 from tqdm import tqdm
 
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def train_test_val_split(dataset, shuffle=True):
@@ -108,7 +109,7 @@ def neighbour(G, node):
     return neighbors_k
 
 def nodes_2_neighbours(G, nodes):
-    edge_index = G.edge_index.numpy()
+    edge_index = G.edge_index.cpu().numpy()
     mask = np.isin(edge_index[0], nodes)
     connected_targets = np.unique(edge_index[1, mask])
     return torch.tensor(connected_targets).to(device)
@@ -455,14 +456,16 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                                     new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
                                     new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
 
+                    value = np.unique(np.sort(value))
+                    value = torch.tensor(value).to(device)
                 elif args.extra_node:
                     extra_node = nodes_2_neighbours(data, value)
-                    actual_ext = extra_node[~np.isin(extra_node, value)]
-                    value = np.concatenate((value, actual_ext), 0)
+                    value = torch.tensor(value).to(device)
+                    actual_ext = extra_node[~torch.isin(extra_node, value)]
+                    value = torch.cat((value, actual_ext), dim=0)
                     #value = np.unique(value)
-                
-                value = np.sort(value)
-                value = torch.tensor(value).to(device)
+                    
+                value, _ = torch.sort(value)
                 mappiing = {}
                 for i in range(len(value)):
                     mappiing[value[i].item()] = i
@@ -555,14 +558,14 @@ def splits_regression(data, train_ratio, val_ratio):
     return data
 
 def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, subgraph_list):
-    n_classes = len(set(np.array(dataset.y)))
+    n_classes = len(set(np.array(dataset.y.cpu())))
     data = splits_classification(dataset, n_classes, exp)
 
     train_mask = data.train_mask
     val_mask = data.val_mask
     test_mask = data.test_mask
-    labels = data.y
-    features = data.x
+    labels = data.y.cpu()
+    features = data.x.cpu()
 
     coarsen_node = 0
     number = 0
