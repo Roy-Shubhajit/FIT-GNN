@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_max_pool, global_mean_pool
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter('ignore')
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 class Classify_graph(torch.nn.Module):

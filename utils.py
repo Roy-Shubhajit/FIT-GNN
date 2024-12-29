@@ -2,11 +2,14 @@ import torch
 from torch_geometric.utils import to_dense_adj
 from graph_coarsening.coarsening_utils import *
 from torch_geometric.data import Data, Batch
+import torch_scatter
 from torch_geometric.loader import DataLoader
 from torch_geometric.utils import subgraph, to_scipy_sparse_matrix, degree
 from tqdm import tqdm
-
-
+import warnings
+#warnings.simplefilter(action='ignore', category=FutureWarning)
+#warnings.simplefilter(action='ignore', category=UserWarning)
+warnings.simplefilter('ignore') 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def train_test_val_split(dataset, shuffle=True):

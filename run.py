@@ -4,13 +4,16 @@ import torch
 import numpy as np
 from tqdm import tqdm
 import torch.nn.functional as F
+import torch_scatter
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader as T_DataLoader
 from torch_geometric.loader import DataLoader as G_DataLoader
 from utils import load_data_classification, load_data_regression, train_test_val_split, colater
 from network import Classify_node, Regress_node, Classify_graph_gc, Classify_graph_gs, Regress_graph_gc, Regress_graph_gs
-
-
+import warnings
+#warnings.simplefilter(action='ignore', category=FutureWarning)
+#warnings.simplefilter(action='ignore', category=UserWarning)
+warnings.simplefilter('ignore') 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if not os.path.exists("results"):
     os.mkdir("results")
@@ -455,7 +458,7 @@ def graph_classification(args, path, writer, dataset):
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(args, model_gc, train_loader, optimizer_gc, loss_fn)
             writer.add_scalar('Gc_train_loss', train_loss, epoch)
-            val_loss = graph_val_Gc(args, model_gc, val_loader, loss_fn)
+            val_loss, val_acc = graph_val_Gc(args, model_gc, val_loader, loss_fn)
             writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss

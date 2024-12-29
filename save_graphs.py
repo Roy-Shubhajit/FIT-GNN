@@ -8,6 +8,8 @@ import argparse
 from tqdm import tqdm
 import pickle
 import os
+import warnings
+warnings.simplefilter('ignore')
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -204,12 +206,14 @@ elif args.task == 'node_reg':
 elif args.task == 'graph_cls':
     Gc_ = []
     Gs_ = []
+    saved_graph_list = []
     classes = set()
     dataset = dataset.to(device)
     for i in tqdm(range(len(dataset))):
         # try:
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+            saved_graph_list.append(i)
             # Gs = subgraph_list
             # new_dataset.append((dataset[i], Gc, Gs))
             Gc_.append(Gc)
@@ -218,20 +222,22 @@ elif args.task == 'graph_cls':
         # except:
         #     pass
     args.num_classes = len(classes)
-    save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_)
+    save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
     
 else:
     Gc_ = []
     Gs_ = []
+    saved_graph_list = []
     dataset = dataset.to(device)
     for i in tqdm(range(len(dataset))):
         try:
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+            saved_graph_list.append(i)
             # Gs = subgraph_list
             # new_dataset.append((dataset[i], Gc, Gs))
             Gc_.append(Gc)
             Gs_.append(subgraph_list)
         except:
             pass
-    save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_)
+    save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
