@@ -743,7 +743,8 @@ def load_data_regression(args, dataset, subgraph_list):
     return new_graphs
 
 def load_graph_data(data, C_LIST, GC_LIST, candidate):
-    features = data.x
+    features = data.x.cpu()
+    y = data.y.cpu()
     number = 0
     coarsen_node = 0
     coarsen_row = None
@@ -781,7 +782,7 @@ def load_graph_data(data, C_LIST, GC_LIST, candidate):
         number += 1
     
     coarsen_edge = torch.LongTensor(np.array([coarsen_row, coarsen_col]))
-    Gc = Data(x=coarsen_features, edge_index=coarsen_edge, y=data.y)
+    Gc = Data(x=coarsen_features, edge_index=coarsen_edge, y=y)
     return Gc
 
 def adj_matrix_2_edge_index(adj_matrix):
@@ -834,7 +835,7 @@ class colater:
         for i, graph_data in enumerate(data_list):
             graph = graph_data[0]
             batch_tensor = torch.cat((batch_tensor, torch.full((graph.x.shape[0],), i, dtype=torch.long)))
-            Y = torch.cat((Y, graph.y))
+            Y = torch.cat((Y, graph.y.cpu()))
             GC.append(graph_data[1])
             GS.append(graph_data[2])
         GC_batch = Batch.from_data_list(GC)

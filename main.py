@@ -7,6 +7,8 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from utils import coarsening_classification, coarsening_regression, load_graph_data
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, ZINC, QM9
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

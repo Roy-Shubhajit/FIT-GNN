@@ -11,7 +11,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_max_pool, global_mean_pool
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 class Classify_graph(torch.nn.Module):
     def __init__(self, num_layer, num_feature, num_hidden, num_classes):
         super(Classify_graph, self).__init__()
@@ -244,7 +247,7 @@ args = parser.parse_args()
 
 args = arg_correction(args)
 dataset, args = process_dataset(args)
-
+dataset = dataset.to(device)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 node_type = "d"
@@ -290,7 +293,7 @@ if args.task == "graph_cls":
         model_gs.eval()
     
     if args.baseline:
-        model_b = Classify_graph(args.num_layers2, args.num_features, args.hidden, args.num_classes)
+        model_b = Classify_graph(args.num_layers2, args.num_features, args.hidden, args.num_classes).to(device)
         loss_fn = torch.nn.CrossEntropyLoss().to(device)
         model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
         model_b.eval()
@@ -352,10 +355,10 @@ if args.task == "graph_cls":
                 losses_gs.append(loss_gs.item())
 
         # Baseline model
-        G = new_datasets[j][0][0]
+        G = new_datasets[j][0][0].to(device)
         y = G.y.to(device).type(torch.long)
         t3 = time()
-        out_b = model_b(G).to(device)
+        out_b = model_b(G)
         t4 = time()
         times_b.append(t4-t3)
         all_out_b.append(out_b.argmax().item())
@@ -396,7 +399,7 @@ elif args.task == "graph_reg":
         model_gs.eval()
 
     if args.baseline:
-        model_b = Regress_graph(args.num_layers2, args.num_features, args.hidden)
+        model_b = Regress_graph(args.num_layers2, args.num_features, args.hidden).to(device)
         loss_fn = torch.nn.L1Loss().to(device)
         model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
         model_b.eval()
@@ -463,10 +466,10 @@ elif args.task == "graph_reg":
                 losses_gs.append(loss_gs.item())
         
         # Baseline model
-        G = new_datasets[j][0][0]
+        G = new_datasets[j][0][0].to(device)
         y = G.y.to(device).type(torch.float)
         t3 = time()
-        out_b = model_b(G).to(device)
+        out_b = model_b(G)
         t4 = time()
         times_b.append(t4-t3)
         if args.dataset == 'QM9':
