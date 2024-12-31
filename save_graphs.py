@@ -172,6 +172,7 @@ if __name__ == '__main__':
     parser.add_argument('--property', type = int, default = 0)
     parser.add_argument('--super_graph', type=bool, default=False)
     parser.add_argument('--num_random_nodes', type=int, default=100)
+    parser.add_argument('--use_community_detection', type=bool, default=False)
     # parser.add_argument('--experiment', type=str, default='fixed')
     # parser.add_argument('--runs', type=int, default=20)
     # parser.add_argument('--exp_setup', type=str, default='Gc_train_2_Gs_infer')
@@ -210,7 +211,7 @@ elif args.task == 'graph_cls':
     classes = set()
     dataset = dataset.to(device)
     for i in tqdm(range(len(dataset))):
-        # try:
+        try:
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
             saved_graph_list.append(i)
@@ -219,8 +220,8 @@ elif args.task == 'graph_cls':
             Gc_.append(Gc)
             Gs_.append(subgraph_list)
             classes.add(dataset[i].y.item())
-        # except:
-        #     pass
+        except:
+            pass
     args.num_classes = len(classes)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
     

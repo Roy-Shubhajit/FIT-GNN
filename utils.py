@@ -6,6 +6,8 @@ import torch_scatter
 from torch_geometric.loader import DataLoader
 from torch_geometric.utils import subgraph, to_scipy_sparse_matrix, degree
 from tqdm import tqdm
+import igraph as ig
+import leidenalg
 import warnings
 #warnings.simplefilter(action='ignore', category=FutureWarning)
 #warnings.simplefilter(action='ignore', category=UserWarning)
@@ -202,11 +204,11 @@ def modularity(edge_index, communities, degrees):
 
     return modularity_score
 
-def louvain(data, max_iter=100):
+def louvain(data, max_iter=10):
     edge_index = data.edge_index
     num_nodes = data.num_nodes
-    degrees = degree(edge_index[0], num_nodes, dtype=torch.float)
-    communities = torch.arange(num_nodes)
+    degrees = degree(edge_index[0], num_nodes, dtype=torch.float).to(device)
+    communities = torch.arange(num_nodes).to(device)
 
     prev_modularity = -1.0
     for _ in range(max_iter):
@@ -240,16 +242,25 @@ def louvain(data, max_iter=100):
 
 def merge_communities(data, mapping, k):
     sorted_mapping = sorted(mapping.items(), key=lambda x: len(x[1]), reverse=True)
-    new_nodes = torch.tensor([], dtype=torch.long)
+    new_nodes = torch.tensor([], dtype=torch.long).to(device)
     for i in range(len(sorted_mapping)):
         if len(new_nodes) + len(sorted_mapping[i][1]) <= k:
-            new_nodes = torch.cat((new_nodes, torch.tensor(sorted_mapping[i][1], dtype=torch.long)))
+            new_nodes = torch.cat((new_nodes, torch.tensor(sorted_mapping[i][1], dtype=torch.long).to(device)))
             if len(new_nodes) == k:
                 break
     new_data = data.subgraph(new_nodes)
     return new_data
 
 def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
+    if args.use_community_detection:
+        g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
+        part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
+        mapping = {}
+        for i, c in enumerate(part.membership):
+            if int(c) not in mapping.keys():
+                mapping[int(c)] = []
+            mapping[int(c)].append(i)
+        data = merge_communities(data, mapping, 165000)
     G = gsp.graphs.Graph(W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr()) #W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr()
     components = G.extract_components()
     candidate = sorted(components, key=lambda x: len(x.info['orig_idx']), reverse=True)
@@ -385,6 +396,15 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
     return data.x.shape[1], candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST
 
 def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
+    if args.use_community_detection:
+        g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
+        part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
+        mapping = {}
+        for i, c in enumerate(part.membership):
+            if int(c) not in mapping.keys():
+                mapping[int(c)] = []
+            mapping[int(c)].append(i)
+        data = merge_communities(data, mapping, 165000)
     G = gsp.graphs.Graph(W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr())
     components = G.extract_components()
     candidate = sorted(components, key=lambda x: len(x.info['orig_idx']), reverse=True)

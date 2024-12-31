@@ -98,6 +98,7 @@ def node_train_Gs(model, graph_data, loss_fn, optimizer, args):
             y = graph.y.to(device)
             edge_index = graph.edge_index.to(device)
             out = model(x, edge_index)
+            
             all_out = torch.cat((all_out, out[train_mask]), dim=0)
             all_label = torch.cat((all_label, y[train_mask]), dim=0)
         else:

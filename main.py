@@ -157,6 +157,7 @@ if __name__ == "__main__":
     parser.add_argument('--super_graph', type=bool, default=False)
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--weight_decay', type=float, default=0.0005)
+    parser.add_argument('--use_community_detection', type=bool, default=False)
     parser.add_argument('--normalize_features', type=bool, default=True)
     parser.add_argument('--coarsening_ratio', type=float, default=0.5)
     parser.add_argument('--coarsening_method', type=str, default='variation_neighborhoods')
