@@ -256,6 +256,10 @@ if args.extra_node:
     node_type = "e"
 elif args.cluster_node:
     node_type = "c"
+if args.use_community_detection:
+    graph_type = "community"
+else:
+    graph_type = "full"
 
 print("###############################################")
 print("\nDataset: ", args.dataset)
@@ -301,10 +305,10 @@ if args.task == "graph_cls":
 
     num = 0
     new_datasets = []
-    if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_subgraph_list.pt"):
-        Gs_ = torch.load(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_subgraph_list.pt")
-        Gc_ = pickle.load(open(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_Gc_list.pkl", "rb"))
-        saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_saved_graph_list.pkl', 'rb'))
+    if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
+        Gs_ = torch.load(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt")
+        Gc_ = pickle.load(open(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl", "rb"))
+        saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
         for i in test_indices:
             try:
                 new_datasets.append([[dataset[saved_graph_list[i]], Gc_[i], Gs_[i]]])
@@ -408,10 +412,10 @@ elif args.task == "graph_reg":
     num = 0
     new_datasets = []
 
-    if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_subgraph_list.pt"):
-        Gs_ = torch.load(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_subgraph_list.pt")
-        Gc_ = pickle.load(open(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_Gc_list.pkl", "rb"))
-        saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_saved_graph_list.pkl', 'rb'))
+    if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
+        Gs_ = torch.load(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt")
+        Gc_ = pickle.load(open(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl", "rb"))
+        saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
         for i in test_indices:
             try:
                 new_datasets.append([[dataset[saved_graph_list[i]], Gc_[i], Gs_[i]]])
@@ -499,11 +503,11 @@ elif args.task == "graph_reg":
 
 elif args.task == "node_cls":
 
-    if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_subgraph_list.pt"):
-        subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_subgraph_list.pt')
-        candidate = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_candidate.pkl', 'rb'))
-        C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_C_list.pkl', 'rb'))
-        Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_Gc_list.pkl', 'rb'))
+    if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
+        subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
+        candidate = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl', 'rb'))
+        C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
+        Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
         args.num_features = dataset[0].x.shape[1]
     else:
         args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
@@ -582,8 +586,8 @@ elif args.task == "node_cls":
     print(f"Average time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
 
 elif args.task == "node_reg":
-    if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_subgraph_list.pt"):
-        subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}{node_type}_subgraph_list.pt')
+    if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
+        subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
         args.num_features = dataset[0].x.shape[1]
     else:
         args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)

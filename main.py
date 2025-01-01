@@ -174,6 +174,10 @@ if __name__ == "__main__":
 
     args = arg_correction(args)
     dataset, args = process_dataset(args)
+    if args.task == 'node_cls' and dataset[0].num_nodes > 165000:
+        args.use_community_detection = True
+    elif args.task == 'node_reg' and dataset[0].num_nodes > 165000:
+        args.use_community_detection = True
 
     path = f"save/{args.task}/"+args.output_dir+"/"
     if not os.path.exists('save'):
