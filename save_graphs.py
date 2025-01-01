@@ -127,35 +127,39 @@ def save(args, path, candidate = None, C_list = None, Gc_list = None, subgraph_l
         node_type = "e"
     elif args.cluster_node:
         node_type = "c"
+    if args.use_community_detection:
+        graph_type = "community"
+    else:
+        graph_type = "full"
     if args.task == 'node_cls':
-        with open(path + f'{args.coarsening_ratio}{node_type}_candidate.pkl', 'wb') as f:
+        with open(path + f'{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl', 'wb') as f:
             pickle.dump(candidate, f)
         f.close()
-        with open(path + f'{args.coarsening_ratio}{node_type}_C_list.pkl', 'wb') as f:
+        with open(path + f'{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'wb') as f:
             pickle.dump(C_list, f)
         f.close()
-        with open(path + f'{args.coarsening_ratio}{node_type}_Gc_list.pkl', 'wb') as f:
+        with open(path + f'{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'wb') as f:
             pickle.dump(Gc_list, f)
         f.close()
-        torch.save(subgraph_list, path + f'{args.coarsening_ratio}{node_type}_subgraph_list.pt')
+        torch.save(subgraph_list, path + f'{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
     elif args.task == 'node_reg':
-        torch.save(subgraph_list, path + f'{args.coarsening_ratio}{node_type}_subgraph_list.pt')
+        torch.save(subgraph_list, path + f'{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
     elif args.task == 'graph_cls':
-        with open(path + f'{args.coarsening_ratio}{node_type}_Gc_list.pkl', 'wb') as f:
+        with open(path + f'{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'wb') as f:
             pickle.dump(Gc_list, f)
         f.close()
-        with open(path + f'{args.coarsening_ratio}{node_type}_saved_graph_list.pkl', 'wb') as f:
+        with open(path + f'{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'wb') as f:
             pickle.dump(saved_graph_list, f)
         f.close()
-        torch.save(subgraph_list, path + f'{args.coarsening_ratio}{node_type}_subgraph_list.pt')
+        torch.save(subgraph_list, path + f'{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
     else:
-        with open(path + f'{args.coarsening_ratio}{node_type}_Gc_list.pkl', 'wb') as f:
+        with open(path + f'{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'wb') as f:
             pickle.dump(Gc_list, f)
         f.close()
-        with open(path + f'{args.coarsening_ratio}{node_type}_saved_graph_list.pkl', 'wb') as f:
+        with open(path + f'{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'wb') as f:
             pickle.dump(saved_graph_list, f)
         f.close()
-        torch.save(subgraph_list, path + f'{args.coarsening_ratio}{node_type}_subgraph_list.pt')
+        torch.save(subgraph_list, path + f'{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
     print("Saved!")
 
 
