@@ -338,14 +338,15 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                                     new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
                                     new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
                     value = np.unique(np.sort(value))
-                    value = torch.tensor(value).to(device)
+                    # value = torch.tensor(value).to(device)
                 elif args.extra_node:
                     extra_node = nodes_2_neighbours(data, value)
-                    value = torch.tensor(value).to(device)
+                    # value = torch.tensor(value).to(device)
                     actual_ext = extra_node[~torch.isin(extra_node, value)]
                     value = torch.cat((value, actual_ext), dim=0)
                     #value = np.unique(value)
                     
+                value = torch.tensor(value, dtype = torch.long).to(device)  
                 value, _ = torch.sort(value)
                 #value = torch.tensor(value).to(device)
                 mappiing = {}
@@ -482,14 +483,15 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                                     new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
 
                     value = np.unique(np.sort(value))
-                    value = torch.tensor(value).to(device)
+                    # value = torch.tensor(value, dtype = torch.long).to(device)
                 elif args.extra_node:
                     extra_node = nodes_2_neighbours(data, value)
-                    value = torch.tensor(value).to(device)
+                    # value = torch.tensor(value, dtype = torch.long).to(device)
                     actual_ext = extra_node[~torch.isin(extra_node, value)]
                     value = torch.cat((value, actual_ext), dim=0)
                     #value = np.unique(value)
-                    
+
+                value = torch.tensor(value, dtype = torch.long).to(device)    
                 value, _ = torch.sort(value)
                 mappiing = {}
                 for i in range(len(value)):
@@ -521,7 +523,7 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
             meta_node_2_node = metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node)
             for key, value in meta_node_2_node.items():
                 value = torch.LongTensor(value).to(device)
-                value, _ = torch.sort(value)
+                value, _ = torch.sort(torch.tensor(value, dtype = torch.long))
                 actual_ext = torch.LongTensor([]).to(device)
                 M = data.subgraph(value)
                 M.actual_ext = actual_ext

@@ -213,7 +213,7 @@ elif args.task == 'graph_cls':
     saved_graph_list = []
     classes = set()
     for i in tqdm(range(len(dataset))):
-        try:
+        # try:
             graph = dataset[i]
             graph = graph.to(device)
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
@@ -224,8 +224,8 @@ elif args.task == 'graph_cls':
             Gc_.append(Gc)
             Gs_.append(subgraph_list)
             classes.add(graph.y.item())
-        except:
-            pass
+        # except:
+            # pass
     args.num_classes = len(classes)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
     

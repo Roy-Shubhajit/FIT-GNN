@@ -174,7 +174,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_dir', type=str, required=True)
     parser.add_argument('--task', type = str, default = 'node_cls')
     parser.add_argument('--seed', type = int, default = None)
-    parser.add_argument('--multi_prop', type =bool, default=False)
+    parser.add_argument('--multi_prop', action='store_true')
     parser.add_argument('--property', type = int, default = 0)
     args = parser.parse_args()
 
@@ -260,6 +260,7 @@ if __name__ == "__main__":
                     pass
             save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
         args.num_classes = len(classes)
+        print("Loaded in main.py")
         graph_classification(args, path, writer, new_dataset)    
     else:
         new_dataset = []
@@ -290,4 +291,5 @@ if __name__ == "__main__":
                 except:
                     pass
             save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
+        print("Loaded in main.py")
         graph_regression(args, path, writer, new_dataset)

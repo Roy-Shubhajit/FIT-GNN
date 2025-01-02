@@ -1,0 +1,3 @@
+dataset  ,coarsening_method       ,coarsening_ratio ,exp_setup           ,extra_nodes ,cluster_node ,community_used ,hidden ,num_layers1 ,num_layers2 ,epochs1 ,epochs2 ,batch_size ,lr   ,best_test_loss     ,best_test_acc
+PROTEINS ,variation_neighborhoods ,             0.5 ,Gc_train_2_Gs_infer ,False       ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 ,0.6535277764002482 ,0.782608695652174
+PROTEINS ,variation_neighborhoods ,             0.5 ,Gc_train_2_Gs_infer ,False       ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 ,0.6018713712692261 ,0.782608695652174

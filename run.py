@@ -145,7 +145,7 @@ def graph_val_Gc(args, model, loader, loss_fn):
     if args.task == "graph_cls":
         return total_loss / len(loader), int(torch.sum(torch.argmax(out, dim=1) == y).item()) / len(y)
     else:
-        return total_loss / len(loader), 0 
+        return total_loss / len(loader), 0
 
 def graph_train_Gs(args, model, loader, optimizer, loss_fn):
     total_loss = 0
@@ -295,10 +295,10 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
 
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,coarsening_method,coarsening_ratio,experiment,exp_setup,extra_nodes,cluster_node,hidden,runs,num_layers,batch_size,lr,ave_acc,ave_time,top_10_acc,best_acc,top_10_loss,best_loss\n')
+            f.write('dataset,coarsening_method,coarsening_ratio,experiment,exp_setup,extra_nodes,cluster_node,community_used,hidden,runs,num_layers,batch_size,lr,ave_acc,ave_time,top_10_acc,best_acc,top_10_loss,best_loss\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.experiment},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_acc)} +/- {np.std(all_acc)},{np.mean(all_time)},{np.mean(top_acc)} +/- {np.std(top_acc)}, {top_acc[0]}, {np.mean(top_loss)} +/- {np.std(top_loss)}, {top_loss[0]}\n")
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.experiment},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_acc)} +/- {np.std(all_acc)},{np.mean(all_time)},{np.mean(top_acc)} +/- {np.std(top_acc)}, {top_acc[0]}, {np.mean(top_loss)} +/- {np.std(top_loss)}, {top_loss[0]}\n")
     print("#####################################################################")
     print(f"dataset: {args.dataset}")
     print(f"experiment: {args.experiment}")
@@ -362,10 +362,10 @@ def node_regression(args, path, dataset, writer, subgraph_list):
 
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
+            f.write('dataset,coarsening_method,coarsening_ratio,extra_nodes,cluster_node,community_used,hidden,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")
     print("#####################################################################")
     print(f"dataset: {args.dataset}")
     print(f"extra_nodes: {args.extra_node}")
@@ -404,7 +404,7 @@ def graph_classification(args, path, writer, dataset):
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(args, model_gc, train_loader, optimizer_gc, loss_fn)
             writer.add_scalar('Gc_train_loss', train_loss, epoch)
-            val_loss = graph_val_Gc(args, model_gc, val_loader, loss_fn)
+            val_loss, _ = graph_val_Gc(args, model_gc, val_loader, loss_fn)
             writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss
@@ -500,10 +500,10 @@ def graph_classification(args, path, writer, dataset):
 
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,best_test_acc\n')
+            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,community_used,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,best_test_acc\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
     print("#####################################################################")
     print(f"dataset: {args.dataset}")
     print(f"exp_setup: {args.exp_setup}")
@@ -539,7 +539,7 @@ def graph_regression(args, path, writer, dataset):
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(args, model_gc, train_loader, optimizer_gc, loss_fn)
             writer.add_scalar('Gc_train_loss', train_loss, epoch)
-            val_loss = graph_val_Gc(args, model_gc, val_loader, loss_fn)
+            val_loss, _ = graph_val_Gc(args, model_gc, val_loader, loss_fn)
             writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss
@@ -590,7 +590,7 @@ def graph_regression(args, path, writer, dataset):
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(args, model_gc, train_loader, optimizer_gc, loss_fn)
             writer.add_scalar('Gc_train_loss', train_loss, epoch)
-            val_loss = graph_val_Gc(args, model_gc, val_loader, loss_fn)
+            val_loss, _ = graph_val_Gc(args, model_gc, val_loader, loss_fn)
             writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss
@@ -623,15 +623,15 @@ def graph_regression(args, path, writer, dataset):
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
             if args.multi_prop:
-                f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,property_idx}\n')
+                f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,community_used,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,property_idx\n')
             else:
-                f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss}\n')
+                f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,community_used,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
         if args.multi_prop:
-            f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{args.property}\n")
+            f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{args.property}\n")
         else:
-            f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss}\n")
+            f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss}\n")
     print("#####################################################################")
     print(f"dataset: {args.dataset}")
     print(f"exp_setup: {args.exp_setup}")
