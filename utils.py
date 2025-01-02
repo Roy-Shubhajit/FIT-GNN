@@ -253,6 +253,7 @@ def merge_communities(data, mapping, k):
 
 def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
     if args.use_community_detection:
+        print("Using community detection")
         g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
         part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
         mapping = {}
@@ -397,6 +398,7 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
 
 def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
     if args.use_community_detection:
+        print("Using community detection")
         g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
         part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
         mapping = {}
