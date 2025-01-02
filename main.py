@@ -112,7 +112,7 @@ def save(args, path, candidate = None, C_list = None, Gc_list = None, subgraph_l
         node_type = "e"
     elif args.cluster_node:
         node_type = "c"
-    if args.use_community_detection:
+    if args.use_community_detection == True:
         graph_type = "community"
     else:
         graph_type = "full"
@@ -201,8 +201,9 @@ if __name__ == "__main__":
         graph_type = "community"
     else:
         graph_type = "full"
-    dataset = dataset.to(device)
+    
     if args.task == 'node_cls':
+        dataset = dataset.to(device)
         if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
             print("Loading saved graphs...")
             subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
@@ -216,6 +217,7 @@ if __name__ == "__main__":
             save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
         node_classification(args, path, dataset, writer, candidate, C_list, Gc_list, subgraph_list)
     elif args.task == 'node_reg':
+        dataset = dataset.to(device)
         if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
             print("Loading saved graphs...")
             subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
@@ -244,13 +246,15 @@ if __name__ == "__main__":
             print("Coarsening graphs...")
             for i in tqdm(range(len(dataset))):
                 try:
-                    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
-                    Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+                    graph = dataset[i]
+                    graph = graph.to(device)
+                    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+                    Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
                     Gs = subgraph_list
-                    new_dataset.append((dataset[i], Gc, Gs))
+                    new_dataset.append((graph, Gc, Gs))
                     Gs_.append(Gs)
                     Gc_.append(Gc)
-                    classes.add(dataset[i].y.item())
+                    classes.add(graph.y.item())
                     saved_graph_list.append(i)
                 except:
                     pass
@@ -274,10 +278,12 @@ if __name__ == "__main__":
             print("Coarsening graphs...")   
             for i in tqdm(range(len(dataset))):
                 try:
-                    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
-                    Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+                    graph = dataset[i]
+                    graph = graph.to(device)
+                    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+                    Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
                     Gs = subgraph_list
-                    new_dataset.append((dataset[i], Gc, Gs))
+                    new_dataset.append((graph, Gc, Gs))
                     Gs_.append(Gs)
                     Gc_.append(Gc)
                     saved_graph_list.append(i)

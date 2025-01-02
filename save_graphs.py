@@ -9,7 +9,7 @@ from tqdm import tqdm
 import pickle
 import os
 import warnings
-warnings.simplefilter('ignore')
+#warnings.simplefilter('ignore')
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -127,7 +127,7 @@ def save(args, path, candidate = None, C_list = None, Gc_list = None, subgraph_l
         node_type = "e"
     elif args.cluster_node:
         node_type = "c"
-    if args.use_community_detection:
+    if args.use_community_detection ==  True:
         graph_type = "community"
     else:
         graph_type = "full"
@@ -166,17 +166,17 @@ def save(args, path, candidate = None, C_list = None, Gc_list = None, subgraph_l
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='cora')
-    parser.add_argument('--extra_node', type=bool, default=False)
-    parser.add_argument('--cluster_node', type=bool, default=False)
-    parser.add_argument('--normalize_features', type=bool, default=True)
+    parser.add_argument('--extra_node', action='store_true')
+    parser.add_argument('--cluster_node', action='store_true')
+    parser.add_argument('--normalize_features', action='store_true')
     parser.add_argument('--coarsening_ratio', type=float, default=0.1)
     parser.add_argument('--coarsening_method', type=str, default='variation_neighborhoods')
     parser.add_argument('--task', type = str, default = 'node_cls')
-    parser.add_argument('--multi_prop', type =bool, default=False)
+    parser.add_argument('--multi_prop', action='store_true')
     parser.add_argument('--property', type = int, default = 0)
-    parser.add_argument('--super_graph', type=bool, default=False)
+    parser.add_argument('--super_graph', action='store_true')
     parser.add_argument('--num_random_nodes', type=int, default=100)
-    parser.add_argument('--use_community_detection', type=bool, default=False)
+    parser.add_argument('--use_community_detection', action='store_true')
     # parser.add_argument('--experiment', type=str, default='fixed')
     # parser.add_argument('--runs', type=int, default=20)
     # parser.add_argument('--exp_setup', type=str, default='Gc_train_2_Gs_infer')
@@ -194,9 +194,8 @@ if __name__ == '__main__':
     # parser.add_argument('--output_dir', type=str, required=True)
     # parser.add_argument('--seed', type = int, default = None)
     args = parser.parse_args()
-
-args = arg_correction(args)
-dataset, args = process_dataset(args)
+    args = arg_correction(args)
+    dataset, args = process_dataset(args)
 
 if args.task == 'node_cls':
     dataset = dataset.to(device)
@@ -213,17 +212,18 @@ elif args.task == 'graph_cls':
     Gs_ = []
     saved_graph_list = []
     classes = set()
-    dataset = dataset.to(device)
     for i in tqdm(range(len(dataset))):
         try:
-            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
-            Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+            graph = dataset[i]
+            graph = graph.to(device)
+            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+            Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
             saved_graph_list.append(i)
             # Gs = subgraph_list
             # new_dataset.append((dataset[i], Gc, Gs))
             Gc_.append(Gc)
             Gs_.append(subgraph_list)
-            classes.add(dataset[i].y.item())
+            classes.add(graph.y.item())
         except:
             pass
     args.num_classes = len(classes)
@@ -233,11 +233,12 @@ else:
     Gc_ = []
     Gs_ = []
     saved_graph_list = []
-    dataset = dataset.to(device)
     for i in tqdm(range(len(dataset))):
         try:
-            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
-            Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+            graph = dataset[i]
+            graph = graph.to(device)
+            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+            Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
             saved_graph_list.append(i)
             # Gs = subgraph_list
             # new_dataset.append((dataset[i], Gc, Gs))
