@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter("ignore")
 import torch
 from torch_geometric.utils import to_dense_adj
 from graph_coarsening.coarsening_utils import *
@@ -8,10 +10,9 @@ from torch_geometric.utils import subgraph, to_scipy_sparse_matrix, degree
 from tqdm import tqdm
 import igraph as ig
 import leidenalg
-import warnings
-#warnings.simplefilter(action='ignore', category=FutureWarning)
-#warnings.simplefilter(action='ignore', category=UserWarning)
-warnings.simplefilter('ignore') 
+import logging
+logging.disable(logging.INFO)
+logging.disable(logging.WARNING)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def train_test_val_split(dataset, shuffle=True):
@@ -290,89 +291,177 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
             comp_node_2_meta_node = subgraph_mapping(mapping_dict_list)
             comp_node_2_meta_node_list.append(comp_node_2_meta_node)
             meta_node_2_node = metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node)
-            for key, value in tqdm(meta_node_2_node.items()):
-                value = np.sort(value)
-                actual_ext = np.array([], dtype=np.compat.long)
-                num_nodes = len(value)
-                if args.cluster_node:
-                    node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
-                    new_edges = np.array([], dtype=np.compat.long)
-                    new_features = np.array([])
-                    meta_node_2_new_node = {}
-                    for node in value:
-                        N_node = neighbour(data, node)
-                        Nt_node = N_node[~np.isin(N_node, value)]
-                        connected_clusters = neighbor_2_cluster(Nt_node, node_2_comp_node, comp_node_2_meta_node)
-                        for cluster in connected_clusters:
-                            if cluster not in meta_node_2_new_node.keys():
-                                meta_node_2_new_node[cluster] = np.array([num_nodes])
-                                if len(actual_ext.shape) <= 1:
-                                    actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster]), axis=0)
-                                    actual_ext = actual_ext.reshape(1, 1)
+            if args.task == "node_cls":
+                for key, value in tqdm(meta_node_2_node.items()):
+                    value = np.sort(value)
+                    actual_ext = np.array([], dtype=np.compat.long)
+                    num_nodes = len(value)
+                    if args.cluster_node:
+                        node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
+                        new_edges = np.array([], dtype=np.compat.long)
+                        new_features = np.array([])
+                        meta_node_2_new_node = {}
+                        for node in value:
+                            N_node = neighbour(data, node)
+                            Nt_node = N_node[~np.isin(N_node, value)]
+                            connected_clusters = neighbor_2_cluster(Nt_node, node_2_comp_node, comp_node_2_meta_node)
+                            for cluster in connected_clusters:
+                                if cluster not in meta_node_2_new_node.keys():
+                                    meta_node_2_new_node[cluster] = np.array([num_nodes])
+                                    if len(actual_ext.shape) <= 1:
+                                        actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster]), axis=0)
+                                        actual_ext = actual_ext.reshape(1, 1)
+                                    else:
+                                        actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster].reshape(1,1)), axis=0)
+                                    new_feature = C_dot_H_feature[cluster]
+                                    if len(new_features.shape) <= 1:
+                                        new_features = new_feature
+                                        new_features = new_features.reshape(1, len(new_feature))
+                                    else:
+                                        new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
+                                    num_nodes += 1
+                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
+                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
+                                if len(new_edges.shape) <= 1:
+                                    new_edges = np.concatenate((new_edges, e1), axis=0)
+                                    new_edges = new_edges.reshape(1, 2)
+                                    new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
                                 else:
-                                    actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster].reshape(1,1)), axis=0)
-                                new_feature = C_dot_H_feature[cluster]
-                                if len(new_features.shape) <= 1:
-                                    new_features = new_feature
-                                    new_features = new_features.reshape(1, len(new_feature))
-                                else:
-                                    new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
-                                num_nodes += 1
-                            e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
-                            e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
-                            if len(new_edges.shape) <= 1:
-                                new_edges = np.concatenate((new_edges, e1), axis=0)
-                                new_edges = new_edges.reshape(1, 2)
-                                new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
-                            else:
-                                new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
-                                new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
-                        
-                    if len(meta_node_2_new_node.keys()) > 1:
-                        cluster_keys = list(meta_node_2_new_node.keys())
-                        for i in range(len(cluster_keys)-1):
-                            for j in range(i+1, len(cluster_keys)):
-                                if adj[cluster_keys[i], cluster_keys[j]] or adj[cluster_keys[j], cluster_keys[i]]:
-                                    e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.compat.long)
-                                    e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.compat.long)
                                     new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
                                     new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
-                    value = np.unique(np.sort(value))
-                    value = torch.tensor(value).to(device)
-                elif args.extra_node:
-                    extra_node = nodes_2_neighbours(data, value)
-                    value = torch.tensor(value).to(device)
-                    actual_ext = extra_node[~torch.isin(extra_node, value)]
-                    value = torch.cat((value, actual_ext), dim=0)
-                    #value = np.unique(value)
-                    
-                value, _ = torch.sort(value)
-                #value = torch.tensor(value).to(device)
-                mappiing = {}
-                for i in range(len(value)):
-                    mappiing[value[i].item()] = i
-                M = data.subgraph(value)
-                M.actual_ext = actual_ext
-                M.orig_idx = value
-                if args.cluster_node:
-                    M.x = torch.cat((M.x, torch.tensor(new_features).to(device).float()), dim=0)
-                    M.edge_index = torch.cat((M.edge_index.T, torch.tensor(new_edges, dtype=torch.long).to(device)), dim=0).T
-                    if len(M.y.size()) > 1:
-                        M.y = torch.cat((M.y, torch.zeros((new_features.shape[0], M.y.shape[1])).to(device).long()))
+                            
+                        if len(meta_node_2_new_node.keys()) > 1:
+                            cluster_keys = list(meta_node_2_new_node.keys())
+                            for i in range(len(cluster_keys)-1):
+                                for j in range(i+1, len(cluster_keys)):
+                                    if adj[cluster_keys[i], cluster_keys[j]] or adj[cluster_keys[j], cluster_keys[i]]:
+                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.compat.long)
+                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.compat.long)
+                                        new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
+                                        new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
+                        value = np.unique(np.sort(value))
+                        value = torch.tensor(value).to(device)
+                    elif args.extra_node:
+                        extra_node = nodes_2_neighbours(data, value)
+                        value = torch.tensor(value).to(device)
+                        actual_ext = extra_node[~torch.isin(extra_node, value)]
+                        value = torch.cat((value, actual_ext), dim=0)
+                        #value = np.unique(value)
+                        
+                    #if value is not tensor, convert it into tensor
+                    if not torch.is_tensor(value):
+                        value = torch.tensor(value).to(device)
+                    value, _ = torch.sort(value)
+                    #value = torch.tensor(value).to(device)
+                    mappiing = {}
+                    for i in range(len(value)):
+                        mappiing[value[i].item()] = i
+                    M = data.subgraph(value)
+                    M.actual_ext = actual_ext
+                    M.orig_idx = value
+                    if args.cluster_node:
+                        M.x = torch.cat((M.x, torch.tensor(new_features).to(device).float()), dim=0)
+                        M.edge_index = torch.cat((M.edge_index.T, torch.tensor(new_edges, dtype=torch.long).to(device)), dim=0).T
+                        if len(M.y.size()) > 1:
+                            M.y = torch.cat((M.y, torch.zeros((new_features.shape[0], M.y.shape[1])).to(device).long()))
+                        else:
+                            M.y = torch.cat((M.y, torch.zeros(len(new_features)).to(device).long()))
+                        for new_node in actual_ext:
+                            mappiing[new_node.item()] = new_node.item()
+                    if args.extra_node:
+                        M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool).to(device)
+                    elif args.cluster_node:
+                        M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
                     else:
-                        M.y = torch.cat((M.y, torch.zeros(len(new_features)).to(device).long()))
-                    for new_node in actual_ext:
-                        mappiing[new_node.item()] = new_node.item()
-                if args.extra_node:
-                    M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool).to(device)
-                elif args.cluster_node:
-                    M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
-                else:
-                    M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
-                M.map_dict = mappiing
-                new_subgraph_list.append(M_t)
-                subgraph_list.append(M)
+                        M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
+                    M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
+                    M.map_dict = mappiing
+                    new_subgraph_list.append(M_t)
+                    subgraph_list.append(M)
+            else:
+                for key, value in meta_node_2_node.items():
+                    value = np.sort(value)
+                    actual_ext = np.array([], dtype=np.compat.long)
+                    num_nodes = len(value)
+                    if args.cluster_node:
+                        node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
+                        new_edges = np.array([], dtype=np.compat.long)
+                        new_features = np.array([])
+                        meta_node_2_new_node = {}
+                        for node in value:
+                            N_node = neighbour(data, node)
+                            Nt_node = N_node[~np.isin(N_node, value)]
+                            connected_clusters = neighbor_2_cluster(Nt_node, node_2_comp_node, comp_node_2_meta_node)
+                            for cluster in connected_clusters:
+                                if cluster not in meta_node_2_new_node.keys():
+                                    meta_node_2_new_node[cluster] = np.array([num_nodes])
+                                    if len(actual_ext.shape) <= 1:
+                                        actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster]), axis=0)
+                                        actual_ext = actual_ext.reshape(1, 1)
+                                    else:
+                                        actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster].reshape(1,1)), axis=0)
+                                    new_feature = C_dot_H_feature[cluster]
+                                    if len(new_features.shape) <= 1:
+                                        new_features = new_feature
+                                        new_features = new_features.reshape(1, len(new_feature))
+                                    else:
+                                        new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
+                                    num_nodes += 1
+                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
+                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
+                                if len(new_edges.shape) <= 1:
+                                    new_edges = np.concatenate((new_edges, e1), axis=0)
+                                    new_edges = new_edges.reshape(1, 2)
+                                    new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
+                                else:
+                                    new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
+                                    new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
+                            
+                        if len(meta_node_2_new_node.keys()) > 1:
+                            cluster_keys = list(meta_node_2_new_node.keys())
+                            for i in range(len(cluster_keys)-1):
+                                for j in range(i+1, len(cluster_keys)):
+                                    if adj[cluster_keys[i], cluster_keys[j]] or adj[cluster_keys[j], cluster_keys[i]]:
+                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.compat.long)
+                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.compat.long)
+                                        new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
+                                        new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
+                        value = np.unique(np.sort(value))
+                        value = torch.tensor(value).to(device)
+                    elif args.extra_node:
+                        extra_node = nodes_2_neighbours(data, value)
+                        value = torch.tensor(value).to(device)
+                        actual_ext = extra_node[~torch.isin(extra_node, value)]
+                        value = torch.cat((value, actual_ext), dim=0)
+                        #value = np.unique(value)
+                        
+                    value, _ = torch.sort(value)
+                    #value = torch.tensor(value).to(device)
+                    mappiing = {}
+                    for i in range(len(value)):
+                        mappiing[value[i].item()] = i
+                    M = data.subgraph(value)
+                    M.actual_ext = actual_ext
+                    M.orig_idx = value
+                    if args.cluster_node:
+                        M.x = torch.cat((M.x, torch.tensor(new_features).to(device).float()), dim=0)
+                        M.edge_index = torch.cat((M.edge_index.T, torch.tensor(new_edges, dtype=torch.long).to(device)), dim=0).T
+                        if len(M.y.size()) > 1:
+                            M.y = torch.cat((M.y, torch.zeros((new_features.shape[0], M.y.shape[1])).to(device).long()))
+                        else:
+                            M.y = torch.cat((M.y, torch.zeros(len(new_features)).to(device).long()))
+                        for new_node in actual_ext:
+                            mappiing[new_node.item()] = new_node.item()
+                    if args.extra_node:
+                        M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool).to(device)
+                    elif args.cluster_node:
+                        M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
+                    else:
+                        M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
+                    M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
+                    M.map_dict = mappiing
+                    new_subgraph_list.append(M_t)
+                    subgraph_list.append(M)   
         else:
             comp_node_2_meta_node = {0: 0}
             comp_node_2_meta_node_list.append(comp_node_2_meta_node)
@@ -433,89 +522,176 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                 Gc_list.append(Gc)
             comp_node_2_meta_node = subgraph_mapping(mapping_dict_list)
             meta_node_2_node = metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node)
-            for key, value in meta_node_2_node.items():
-                value = np.sort(value)
-                node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
-                actual_ext = np.array([], dtype=np.compat.long)
-                num_nodes = len(value)
-                if args.cluster_node:
-                    new_edges = np.array([], dtype=np.compat.long)
-                    new_features = np.array([])
-                    meta_node_2_new_node = {}
-                    for node in value:
-                        N_node = neighbour(data, node)
-                        Nt_node = N_node[~np.isin(N_node, value)]
-                        connected_clusters = neighbor_2_cluster(Nt_node, node_2_comp_node, comp_node_2_meta_node)
-                        for cluster in connected_clusters:
-                            if cluster not in meta_node_2_new_node.keys():
-                                meta_node_2_new_node[cluster] = np.array([num_nodes])
-                                if len(actual_ext.shape) <= 1:
-                                    actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster]), axis=0)
-                                    actual_ext = actual_ext.reshape(1, 1)
+            if args.task == "graph_reg":
+                for key, value in meta_node_2_node.items():
+                    value = np.sort(value)
+                    node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
+                    actual_ext = np.array([], dtype=np.compat.long)
+                    num_nodes = len(value)
+                    if args.cluster_node:
+                        new_edges = np.array([], dtype=np.compat.long)
+                        new_features = np.array([])
+                        meta_node_2_new_node = {}
+                        for node in value:
+                            N_node = neighbour(data, node)
+                            Nt_node = N_node[~np.isin(N_node, value)]
+                            connected_clusters = neighbor_2_cluster(Nt_node, node_2_comp_node, comp_node_2_meta_node)
+                            for cluster in connected_clusters:
+                                if cluster not in meta_node_2_new_node.keys():
+                                    meta_node_2_new_node[cluster] = np.array([num_nodes])
+                                    if len(actual_ext.shape) <= 1:
+                                        actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster]), axis=0)
+                                        actual_ext = actual_ext.reshape(1, 1)
+                                    else:
+                                        actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster].reshape(1,1)), axis=0)
+                                    new_feature = C_dot_H_feature[cluster]
+                                    if len(new_features.shape) <= 1:
+                                        new_features = new_feature
+                                        new_features = new_features.reshape(1, len(new_feature))
+                                    else:
+                                        new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
+                                    num_nodes += 1
+                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
+                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
+                                if len(new_edges.shape) <= 1:
+                                    new_edges = np.concatenate((new_edges, e1), axis=0)
+                                    new_edges = new_edges.reshape(1, 2)
+                                    new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
                                 else:
-                                    actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster].reshape(1,1)), axis=0)
-                                new_feature = C_dot_H_feature[cluster]
-                                if len(new_features.shape) <= 1:
-                                    new_features = new_feature
-                                    new_features = new_features.reshape(1, len(new_feature))
-                                else:
-                                    new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
-                                num_nodes += 1
-                            e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
-                            e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
-                            if len(new_edges.shape) <= 1:
-                                new_edges = np.concatenate((new_edges, e1), axis=0)
-                                new_edges = new_edges.reshape(1, 2)
-                                new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
-                            else:
-                                new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
-                                new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
-                        
-                    if len(meta_node_2_new_node.keys()) > 1:
-                        cluster_keys = list(meta_node_2_new_node.keys())
-                        for i in range(len(cluster_keys)-1):
-                            for j in range(i+1, len(cluster_keys)):
-                                if adj[cluster_keys[i], cluster_keys[j]] or adj[cluster_keys[j], cluster_keys[i]]:
-                                    e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.compat.long)
-                                    e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.compat.long)
                                     new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
                                     new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
+                            
+                        if len(meta_node_2_new_node.keys()) > 1:
+                            cluster_keys = list(meta_node_2_new_node.keys())
+                            for i in range(len(cluster_keys)-1):
+                                for j in range(i+1, len(cluster_keys)):
+                                    if adj[cluster_keys[i], cluster_keys[j]] or adj[cluster_keys[j], cluster_keys[i]]:
+                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.compat.long)
+                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.compat.long)
+                                        new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
+                                        new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
 
-                    value = np.unique(np.sort(value))
-                    value = torch.tensor(value).to(device)
-                elif args.extra_node:
-                    extra_node = nodes_2_neighbours(data, value)
-                    value = torch.tensor(value).to(device)
-                    actual_ext = extra_node[~torch.isin(extra_node, value)]
-                    value = torch.cat((value, actual_ext), dim=0)
-                    #value = np.unique(value)
-                    
-                value, _ = torch.sort(value)
-                mappiing = {}
-                for i in range(len(value)):
-                    mappiing[value[i].item()] = i
-                M = data.subgraph(value)
-                M.actual_ext = actual_ext
-                M.orig_idx = value
-                if args.cluster_node:
-                    M.x = torch.cat((M.x, torch.tensor(new_features).to(device).float()), dim=0)
-                    M.edge_index = torch.cat((M.edge_index.T, torch.tensor(new_edges, dtype=torch.long).to(device)), dim=0).T
-                    if args.task == "graph_reg":
-                        M.y = torch.cat((M.y, torch.zeros((new_features.shape[0], M.y.shape[1])).to(device)))
+                        value = np.unique(np.sort(value))
+                        value = torch.tensor(value).to(device)
+                    elif args.extra_node:
+                        extra_node = nodes_2_neighbours(data, value)
+                        value = torch.tensor(value).to(device)
+                        actual_ext = extra_node[~torch.isin(extra_node, value)]
+                        value = torch.cat((value, actual_ext), dim=0)
+                        #value = np.unique(value)
+                        
+                    value, _ = torch.sort(value)
+                    mappiing = {}
+                    for i in range(len(value)):
+                        mappiing[value[i].item()] = i
+                    M = data.subgraph(value)
+                    M.actual_ext = actual_ext
+                    M.orig_idx = value
+                    if args.cluster_node:
+                        M.x = torch.cat((M.x, torch.tensor(new_features).to(device).float()), dim=0)
+                        M.edge_index = torch.cat((M.edge_index.T, torch.tensor(new_edges, dtype=torch.long).to(device)), dim=0).T
+                        if args.task == "graph_reg":
+                            M.y = torch.cat((M.y, torch.zeros((new_features.shape[0], M.y.shape[1])).to(device)))
+                        else:
+                            M.y = torch.cat((M.y, torch.zeros(len(new_features)).to(device)))
+                        for new_node in actual_ext:
+                            mappiing[new_node.item()] = new_node.item()
+                    M.map_dict = mappiing
+                    if args.extra_node:
+                        M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool).to(device)
+                    elif args.cluster_node:
+                        M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
                     else:
-                        M.y = torch.cat((M.y, torch.zeros(len(new_features)).to(device)))
-                    for new_node in actual_ext:
-                        mappiing[new_node.item()] = new_node.item()
-                M.map_dict = mappiing
-                if args.extra_node:
-                    M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool).to(device)
-                elif args.cluster_node:
-                    M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
-                else:
-                    M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
-                new_subgraph_list.append(M_t)
-                subgraph_list.append(M)
+                        M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
+                    M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
+                    new_subgraph_list.append(M_t)
+                    subgraph_list.append(M)
+            else:
+                for key, value in tqdm(meta_node_2_node.items()):
+                    value = np.sort(value)
+                    node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
+                    actual_ext = np.array([], dtype=np.compat.long)
+                    num_nodes = len(value)
+                    if args.cluster_node:
+                        new_edges = np.array([], dtype=np.compat.long)
+                        new_features = np.array([])
+                        meta_node_2_new_node = {}
+                        for node in value:
+                            N_node = neighbour(data, node)
+                            Nt_node = N_node[~np.isin(N_node, value)]
+                            connected_clusters = neighbor_2_cluster(Nt_node, node_2_comp_node, comp_node_2_meta_node)
+                            for cluster in connected_clusters:
+                                if cluster not in meta_node_2_new_node.keys():
+                                    meta_node_2_new_node[cluster] = np.array([num_nodes])
+                                    if len(actual_ext.shape) <= 1:
+                                        actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster]), axis=0)
+                                        actual_ext = actual_ext.reshape(1, 1)
+                                    else:
+                                        actual_ext = np.concatenate((actual_ext, meta_node_2_new_node[cluster].reshape(1,1)), axis=0)
+                                    new_feature = C_dot_H_feature[cluster]
+                                    if len(new_features.shape) <= 1:
+                                        new_features = new_feature
+                                        new_features = new_features.reshape(1, len(new_feature))
+                                    else:
+                                        new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
+                                    num_nodes += 1
+                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
+                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
+                                if len(new_edges.shape) <= 1:
+                                    new_edges = np.concatenate((new_edges, e1), axis=0)
+                                    new_edges = new_edges.reshape(1, 2)
+                                    new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
+                                else:
+                                    new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
+                                    new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
+                            
+                        if len(meta_node_2_new_node.keys()) > 1:
+                            cluster_keys = list(meta_node_2_new_node.keys())
+                            for i in range(len(cluster_keys)-1):
+                                for j in range(i+1, len(cluster_keys)):
+                                    if adj[cluster_keys[i], cluster_keys[j]] or adj[cluster_keys[j], cluster_keys[i]]:
+                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.compat.long)
+                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.compat.long)
+                                        new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
+                                        new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
+
+                        value = np.unique(np.sort(value))
+                        value = torch.tensor(value).to(device)
+                    elif args.extra_node:
+                        extra_node = nodes_2_neighbours(data, value)
+                        value = torch.tensor(value).to(device)
+                        actual_ext = extra_node[~torch.isin(extra_node, value)]
+                        value = torch.cat((value, actual_ext), dim=0)
+                        #value = np.unique(value)
+                        
+                    if not torch.is_tensor(value):
+                        value = torch.tensor(value).to(device)
+                    value, _ = torch.sort(value)
+                    mappiing = {}
+                    for i in range(len(value)):
+                        mappiing[value[i].item()] = i
+                    M = data.subgraph(value)
+                    M.actual_ext = actual_ext
+                    M.orig_idx = value
+                    if args.cluster_node:
+                        M.x = torch.cat((M.x, torch.tensor(new_features).to(device).float()), dim=0)
+                        M.edge_index = torch.cat((M.edge_index.T, torch.tensor(new_edges, dtype=torch.long).to(device)), dim=0).T
+                        if args.task == "graph_reg":
+                            M.y = torch.cat((M.y, torch.zeros((new_features.shape[0], M.y.shape[1])).to(device)))
+                        else:
+                            M.y = torch.cat((M.y, torch.zeros(len(new_features)).to(device)))
+                        for new_node in actual_ext:
+                            mappiing[new_node.item()] = new_node.item()
+                    M.map_dict = mappiing
+                    if args.extra_node:
+                        M.mask = torch.tensor(((len(value) - len(actual_ext))*[True] + [False]*len(actual_ext)), dtype=torch.bool).to(device)
+                    elif args.cluster_node:
+                        M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
+                    else:
+                        M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
+                    M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
+                    new_subgraph_list.append(M_t)
+                    subgraph_list.append(M)
         else:
             comp_node_2_meta_node = {0: 0}
             meta_node_2_node = metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node)

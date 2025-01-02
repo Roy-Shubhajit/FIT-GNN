@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter("ignore")
 import os
 import torch
 import pickle
@@ -9,10 +11,6 @@ import torch_scatter
 from torch.utils.tensorboard import SummaryWriter
 from utils import coarsening_classification, coarsening_regression, load_graph_data
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, ZINC, QM9
-import warnings
-#warnings.simplefilter(action='ignore', category=FutureWarning)
-#warnings.simplefilter(action='ignore', category=UserWarning)
-warnings.simplefilter('ignore') 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def process_dataset(args):

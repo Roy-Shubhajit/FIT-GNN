@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter("ignore")
 import os
 import time
 import torch
@@ -10,10 +12,8 @@ from torch.utils.data import DataLoader as T_DataLoader
 from torch_geometric.loader import DataLoader as G_DataLoader
 from utils import load_data_classification, load_data_regression, train_test_val_split, colater
 from network import Classify_node, Regress_node, Classify_graph_gc, Classify_graph_gs, Regress_graph_gc, Regress_graph_gs
-import warnings
-#warnings.simplefilter(action='ignore', category=FutureWarning)
-#warnings.simplefilter(action='ignore', category=UserWarning)
-warnings.simplefilter('ignore') 
+import logging
+logging.disable(logging.INFO)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if not os.path.exists("results"):
     os.mkdir("results")
