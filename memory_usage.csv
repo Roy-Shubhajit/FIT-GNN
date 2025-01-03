@@ -1,0 +1,2 @@
+dataset ,baseline ,coarsening_ratio ,task     ,memory_usage(MB)
+cora    ,True     ,None             ,node_cls ,             658

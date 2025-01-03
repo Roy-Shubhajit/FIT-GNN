@@ -172,7 +172,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_dir', type=str, required=True)
     parser.add_argument('--task', type = str, default = 'node_cls')
     parser.add_argument('--seed', type = int, default = None)
-    parser.add_argument('--multi_prop', type =bool, default=False)
+    parser.add_argument('--multi_prop', action='store_true')
     parser.add_argument('--property', type = int, default = 0)
     args = parser.parse_args()
 
