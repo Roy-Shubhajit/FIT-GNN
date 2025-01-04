@@ -14,6 +14,7 @@ from utils import load_data_classification, load_data_regression, train_test_val
 from network import Classify_node, Regress_node, Classify_graph_gc, Classify_graph_gs, Regress_graph_gc, Regress_graph_gs
 import logging
 logging.disable(logging.INFO)
+logging.disable(logging.WARNING)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if not os.path.exists("results"):
     os.mkdir("results")
@@ -359,7 +360,7 @@ def node_regression(args, path, dataset, writer, subgraph_list):
 
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,community_used,hidden,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
+            f.write('dataset,coarsening_method,coarsening_ratio,extra_nodes,cluster_node,community_used,hidden,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
         f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")

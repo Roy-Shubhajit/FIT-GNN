@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter("ignore")
 from torch_geometric.datasets import Planetoid, Coauthor, CitationFull, WikipediaNetwork, TUDataset, ZINC, QM9
 from torch_geometric.data import Data
 from ogb.nodeproppred import PygNodePropPredDataset
@@ -8,9 +10,9 @@ import argparse
 from tqdm import tqdm
 import pickle
 import os
-import warnings
-#warnings.simplefilter('ignore')
-
+import logging
+logging.disable(logging.INFO)
+logging.disable(logging.WARNING)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def process_dataset(args):
