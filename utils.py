@@ -164,11 +164,9 @@ def extract_components(H):
 
 def orig_to_new_map(idxs):
     comp_node_2_node, node_2_comp_node = {}, {}
-    num = 0
-    for i in idxs:
-        comp_node_2_node[num] = i
-        node_2_comp_node[i] = num
-        num += 1
+    for i, idx in enumerate(idxs):
+        comp_node_2_node[i] = idx
+        node_2_comp_node[idx] = i
     return comp_node_2_node, node_2_comp_node
 
 def subgraph_mapping(map_dict):
@@ -288,7 +286,22 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
             if len(H.info['orig_idx']) > 10:
                 C_list.append(C)
                 Gc_list.append(Gc)
-            comp_node_2_meta_node = subgraph_mapping(mapping_dict_list)
+            if coarsening_method == "kron" or coarsening_method == "algebraic_JC" or coarsening_method == "affinity_GS":
+                rows, cols = C.nonzero()
+                mapping_dict = {}
+                for i, j in zip(rows, cols):
+                    mapping_dict[j] = i
+                col_sum = C.sum(axis=1)
+                no_node = np.where(col_sum == 0)[0]
+                max_node_in_mapping = np.argwhere(col_sum == col_sum.max())[0][0]
+                other_nodes = set(range(len(H.info['orig_idx']))) - set(mapping_dict.keys())
+                for node in other_nodes:
+                    mapping_dict[node] = max_node_in_mapping
+                for node in no_node:
+                    mapping_dict[node] = max_node_in_mapping
+                comp_node_2_meta_node = mapping_dict
+            else:
+                comp_node_2_meta_node = subgraph_mapping(mapping_dict_list) 
             comp_node_2_meta_node_list.append(comp_node_2_meta_node)
             meta_node_2_node = metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node)
             if args.task == "node_cls":
@@ -520,7 +533,22 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
             if len(H.info['orig_idx']) > 10:
                 C_list.append(C)
                 Gc_list.append(Gc)
-            comp_node_2_meta_node = subgraph_mapping(mapping_dict_list)
+            if coarsening_method == "kron" or coarsening_method == "algebraic_JC" or coarsening_method == "affinity_GS":
+                rows, cols = C.nonzero()
+                mapping_dict = {}
+                for i, j in zip(rows, cols):
+                    mapping_dict[j] = i
+                col_sum = C.sum(axis=1)
+                no_node = np.where(col_sum == 0)[0]
+                max_node_in_mapping = np.argwhere(col_sum == col_sum.max())[0][0]
+                other_nodes = set(range(len(H.info['orig_idx']))) - set(mapping_dict.keys())
+                for node in other_nodes:
+                    mapping_dict[node] = max_node_in_mapping
+                for node in no_node:
+                    mapping_dict[node] = max_node_in_mapping
+                comp_node_2_meta_node = mapping_dict
+            else:
+                comp_node_2_meta_node = subgraph_mapping(mapping_dict_list)
             meta_node_2_node = metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node)
             if args.task == "graph_reg":
                 for key, value in meta_node_2_node.items():

@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter("ignore")
 import numpy as np
 import pygsp as gsp
 from pygsp import graphs, filters, reduction
@@ -126,24 +128,20 @@ def coarsen(
                 coarsening_list = matching_greedy(G, weights=weights, r=r_cur)
                 
         iC = get_coarsening_matrix(G, coarsening_list)
-        #print(f"Got coarsening matrix at level {level}")
         if iC.shape[1] - iC.shape[0] <= 2:
             for i in range(G.N):
                 mapping_dict[i] = i
             mapping_dict_list.append(mapping_dict)
             break  # avoid too many levels for so few nodes
-        #print("created mapping_dict")
         C = iC.dot(C)
 
         Wc = graph_utils.zero_diag(coarsen_matrix(G.W, iC))  # coarsen and remove self-loops
         Wc = (Wc + Wc.T) / 2  # this is only needed to avoid pygsp complaining for tiny errors
 
-        #print("Calculated C, Wc")
         if not hasattr(G, "coords"):
             Gc = gsp.graphs.Graph(Wc)
         else:
             Gc = gsp.graphs.Graph(Wc, coords=coarsen_vector(G.coords, iC))
-        #print("Built Gc")
         n = Gc.N
         '''new_num = 0
         in_list = False
@@ -168,20 +166,20 @@ def coarsen(
                     mapping_dict[i] = new_num
                     new_num += 1'''
         mapping_dict = {i:i for i in range(N)}
-        for sublist in coarsening_list:
-            sort_sublist = sorted(sublist)
-            for i in sort_sublist:
-                mapping_dict[i] = sort_sublist[0]
-        mapped_keys = {}
-        for i, key in enumerate(sorted(set(mapping_dict.values()))): ##### Added sorted(set(.)) to match the outputs of both the functions
-            mapped_keys[key] = i
-        for key, value in mapping_dict.items():
-            mapping_dict[key] = mapped_keys[value]
+        if method == "variation_neighborhoods":
+            for sublist in coarsening_list:
+                sort_sublist = sorted(sublist)
+                for i in sort_sublist:
+                    mapping_dict[i] = sort_sublist[0]
+            mapped_keys = {}
+            for i, key in enumerate(sorted(set(mapping_dict.values()))): ##### Added sorted(set(.)) to match the outputs of both the functions
+                mapped_keys[key] = i
+            for key, value in mapping_dict.items():
+                mapping_dict[key] = mapped_keys[value]
                     
         mapping_dict_list.append(mapping_dict)
         if n <= n_target:
             break
-        #print(f"level = {level}, n = {n}")
     return C, Gc, mapping_dict_list
 
 
@@ -211,7 +209,6 @@ def coarsen_matrix(W, C):
 def lift_matrix(W, C):
     P = C.power(2)
     return (P.T).dot(W.dot(P))
-
 
 def get_coarsening_matrix(G, partitioning):
     """
@@ -252,7 +249,6 @@ def get_coarsening_matrix(G, partitioning):
     C._shape = (G.N - len(rows_to_delete), G.N)
 
     C = sp.sparse.csc_matrix(C)
-
     # check that this is a projection matrix
     # assert sp.sparse.linalg.norm( ((C.T).dot(C))**2 - ((C.T).dot(C)) , ord='fro') < 1e-5
 
