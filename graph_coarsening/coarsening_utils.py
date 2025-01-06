@@ -166,7 +166,7 @@ def coarsen(
                     mapping_dict[i] = new_num
                     new_num += 1'''
         mapping_dict = {i:i for i in range(N)}
-        if method == "variation_neighborhoods":
+        if method == "variation_neighborhoods" or method == "variation_cliques":
             for sublist in coarsening_list:
                 sort_sublist = sorted(sublist)
                 for i in sort_sublist:
@@ -176,7 +176,6 @@ def coarsen(
                 mapped_keys[key] = i
             for key, value in mapping_dict.items():
                 mapping_dict[key] = mapped_keys[value]
-                    
         mapping_dict_list.append(mapping_dict)
         if n <= n_target:
             break
@@ -581,7 +580,7 @@ def contract_variation_linear(G, A=None, K=10, r=0.5, mode="neighborhood"):
     if "cliques" in mode:
         import networkx as nx
 
-        Gnx = nx.from_scipy_sparse_matrix(G.W)
+        Gnx = nx.from_scipy_sparse_array(G.W)
         for clique in nx.find_cliques(Gnx):
             family.append(CandidateSet(np.array(clique)))
 
