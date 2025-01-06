@@ -533,7 +533,7 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
             if len(H.info['orig_idx']) > 10:
                 C_list.append(C)
                 Gc_list.append(Gc)
-            if coarsening_method == "kron" or coarsening_method == "algebraic_JC" or coarsening_method == "affinity_GS":
+            if coarsening_method == "kron" or coarsening_method == "algebraic_JC" or coarsening_method == "heavy_edge" or coarsening_method == "variation_edges":
                 rows, cols = C.nonzero()
                 mapping_dict = {}
                 for i, j in zip(rows, cols):
