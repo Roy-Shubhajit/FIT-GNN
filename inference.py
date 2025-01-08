@@ -234,7 +234,7 @@ parser.add_argument('--coarsening_ratio', type=float, default=0.5)
 parser.add_argument('--coarsening_method', type=str, default='variation_neighborhoods')
 parser.add_argument('--task', type = str, default = 'node_cls')
 parser.add_argument('--seed', type = int, default = None)
-parser.add_argument('--multi_prop', type = bool, default = False)
+parser.add_argument('--multi_prop', action='store_true')
 parser.add_argument('--property', type = int, default = 0)
 parser.add_argument('--num_test_samples', type = int, default = 20)                                                                             ### Number of test samples 
 parser.add_argument('--path_b', type = str, default = "./save/node_cls/baselines/")                                                             ### Path for baseline model
@@ -243,7 +243,7 @@ parser.add_argument('--path_gs', type = str, default = "./save/node_cls/cora_fix
 parser.add_argument('--model_name_gs', type = str, default = "model.pt")                                                                        ### Subgraph model name
 parser.add_argument('--path_gc', type = str, default = "./save/graph_cls/AIDS_Gc_train_2_Gc_infer_0.5_variation_neighborhoods_extra/")          ### Path for coarsened graph model
 parser.add_argument('--model_name_gc', type = str, default = "model.pt")                                                                        ### Coarsened graph model name
-parser.add_argument('--baseline', type = bool, default = False)                                                                                 ### If True, baseline model results will be saved
+parser.add_argument('--baseline', action='store_true')                                                                                 ### If True, baseline model results will be saved
 args = parser.parse_args()
 
 args = arg_correction(args)
@@ -268,6 +268,7 @@ print("Coarsening Method: ", args.coarsening_method)
 print("Coarsening Ratio: ", args.coarsening_ratio)
 print("Extra Node: ", args.extra_node)
 print("Cluster Node: ", args.cluster_node)
+print("Community:", args.use_community_detection)
 print("\n###############################################")
 
 
@@ -376,6 +377,16 @@ if args.task == "graph_cls":
         else:
             print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.argmax().item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
         print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+
+        # Remove set_gc, set_gs and y_ from device memory
+        if args.exp_setup == "Gc_train_2_Gc_infer":
+            set_gc = set_gc.cpu()
+            y_ = y_.cpu()
+            del set_gc, y_
+        else:
+            set_gs = set_gs.cpu()
+            y_ = y_.cpu()
+            del set_gs, y_
     
     if args.exp_setup == "Gc_train_2_Gc_infer":
         print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAccuracy (coarsened graph): {np.sum(np.array(all_label_gc) == np.array(all_out_gc))}/{num}")
@@ -495,6 +506,17 @@ elif args.task == "graph_reg":
             else:
                 print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
             print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+        
+        # Remove set_gc, set_gs and y_ from device memory
+        if args.exp_setup == "Gc_train_2_Gc_infer":
+            set_gc = set_gc.cpu()
+            y_ = y_.cpu()
+            del set_gc, y_
+        else:
+            set_gs = set_gs.cpu()
+            y_ = y_.cpu()
+            del set_gs, y_
+
     if args.exp_setup == "Gc_train_2_Gc_infer":
         print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAverage Loss (coarsened graph): {np.mean(losses_gc)}")
     else:
@@ -504,12 +526,14 @@ elif args.task == "graph_reg":
 elif args.task == "node_cls":
 
     if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
+        print("Loading saved graphs...")
         subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
         candidate = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl', 'rb'))
         C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
         Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
         args.num_features = dataset[0].x.shape[1]
     else:
+        print("Coarsening graphs...")
         args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
     args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset[0], candidate, C_list, Gc_list, args.experiment, subgraph_list)
     if args.normalize_features:
@@ -519,9 +543,9 @@ elif args.task == "node_cls":
     for i in np.random.permutation(len(graphs)):
         if num != args.num_test_samples:
             if args.cluster_node:
-                index = np.random.choice(subgraph_list[i].orig_idx, 1)[0]
+                index = np.random.choice(subgraph_list[i].orig_idx.cpu(), 1)[0]
             elif args.extra_node:
-                index = np.random.choice(subgraph_list[i].orig_idx[~np.isin(subgraph_list[i].orig_idx, subgraph_list[i].actual_ext)], 1)[0]
+                index = np.random.choice(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())], 1)[0]
             j = subgraph_list[i].map_dict[index]
             indices.append((index, j, i))
             num += 1
@@ -541,33 +565,31 @@ elif args.task == "node_cls":
     loss_fn = torch.nn.NLLLoss().to(device)
     model_gs.load_state_dict(torch.load(args.path_gs + args.model_name_gs))
     model_gs.eval()
-
     for index, j, i in indices:
         x = graphs[i].x.to(device)
         y = graphs[i].y.to(device)
         edge_index = graphs[i].edge_index.to(device)
         t1 = time()
         out_gs = model_gs(x, edge_index).to(device)
-        t2 = time()
-        
+        t2 = time()       
+        loss_gs = loss_fn(out_gs[j], y[j])
+        all_label_gs.append(y[j].item())        
+        all_out_gs.append(out_gs[j].argmax().item())
+        losses_gs.append(loss_gs.item())
+        times_gs.append(t2 - t1)
+        print(f"\nSubgraph-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j].argmax().item()}\nOutput: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
         # Remove x, y and edge_index from device memory
         x = x.cpu()
         y = y.cpu()
         edge_index = edge_index.cpu()
         del x, y, edge_index
-        
-        loss_gs = loss_fn(out_gs[j], y[j])
-        all_label_gs.append(y[j].item())
-        all_out_gs.append(out_gs[j].argmax().item())
-        losses_gs.append(loss_gs.item())
-        times_gs.append(t2 - t1)
-        print(f"\nSubgraph-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j].argmax().item()}\nOutput: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
-    
+
     # Baseline model
     model_b = Net1(dataset[0].x.shape[1], args.hidden, args.num_layers2, args.num_classes).to(device)
     loss_fn = torch.nn.NLLLoss().to(device)
     model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
     model_b.eval()
+    fig = plt.figure()
     for i in range(num):
         x_ = dataset[0].x.to(device)
         y_ = dataset[0].y.to(device)
@@ -581,7 +603,6 @@ elif args.task == "node_cls":
         losses_b.append(loss_b.item())
         times_b.append(t4 - t3)
         print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]].argmax().item()}\nOutput: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
-    
     print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAccuracy (subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
     print(f"Average time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
 
@@ -644,6 +665,12 @@ elif args.task == "node_reg":
         losses_gs.append(loss_gs.item())
         times_gs.append(t2 - t1)
         print(f"Subgraph-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
+
+        # Remove x, y and edge_index from device memory
+        x = x.cpu()
+        y = y.cpu()
+        edge_index = edge_index.cpu()
+        del x, y, edge_index
     
     print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAverage Loss (subgraph): {np.mean(losses_gs)}")
     print(f"Average time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")

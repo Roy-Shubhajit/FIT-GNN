@@ -193,7 +193,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
     all_loss = []
     all_acc = []
     all_time = []
-    args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset[0], candidate, C_list, Gc_list, args.experiment, subgraph_list)
+    args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset, candidate, C_list, Gc_list, args.experiment, subgraph_list)
     del dataset, candidate, C_list, Gc_list, subgraph_list
     torch.cuda.empty_cache()
     if args.normalize_features:
