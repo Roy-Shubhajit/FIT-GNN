@@ -75,7 +75,7 @@ def node_infer_Gs(args, model, graph_data, loss_fn, infer_type):
                 continue
         n = n + 1
     if args.task == 'node_cls':
-        loss = loss_fn(all_out, all_label.type(torch.long))
+        loss = loss_fn(all_out, all_label.type(torch.long).flatten())
         total_loss += loss.item()
         acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
     else:
@@ -106,7 +106,7 @@ def node_train_Gs(model, graph_data, loss_fn, optimizer, args):
             continue
         n = n + 1
     if args.task == 'node_cls':
-        loss = loss_fn(all_out, all_label.type(torch.long))
+        loss = loss_fn(all_out, all_label.type(torch.long).flatten())
     else:
         loss = loss_fn(all_out.view(-1, 1), all_label.view(-1, 1))
     loss.backward()
@@ -193,14 +193,14 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
     all_loss = []
     all_acc = []
     all_time = []
-
+    args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset[0], candidate, C_list, Gc_list, args.experiment, subgraph_list)
+    del dataset, candidate, C_list, Gc_list, subgraph_list
+    torch.cuda.empty_cache()
+    if args.normalize_features:
+        coarsen_features = F.normalize(coarsen_features, p=1)
+    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False)
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
-        args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset[0], candidate, C_list, Gc_list, args.experiment, subgraph_list)
-        if args.normalize_features:
-            coarsen_features = F.normalize(coarsen_features, p=1)
-        graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False)
-
         model = Classify_node(args).to(device)
         loss_fn = torch.nn.NLLLoss().to(device)
         model.reset_parameters()

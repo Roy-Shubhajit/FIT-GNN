@@ -5,7 +5,9 @@ from torch_geometric.data import Data
 from ogb.nodeproppred import PygNodePropPredDataset
 from torch_geometric.data import DataLoader
 import torch
-from utils import coarsening_classification, coarsening_regression, load_graph_data
+import igraph as ig
+import leidenalg
+from utils import coarsening_classification, coarsening_regression, load_graph_data, merge_communities
 import argparse
 from tqdm import tqdm
 import pickle
@@ -201,12 +203,40 @@ if __name__ == '__main__':
 
 if args.task == 'node_cls':
     dataset = dataset.to(device)
-    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
+    data = dataset[0]
+    if args.use_community_detection:
+        graph_type = "community"
+        print("Using community detection")
+        g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
+        part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
+        mapping = {}
+        for i, c in enumerate(part.membership):
+            if int(c) not in mapping.keys():
+                mapping[int(c)] = []
+            mapping[int(c)].append(i)
+        data = merge_communities(data, mapping, 165000)
+        del dataset
+        torch.save(data, f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
+    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
     
 elif args.task == 'node_reg':
     dataset = dataset.to(device)
-    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
+    data = dataset[0]
+    if args.use_community_detection:
+        graph_type = "community"
+        print("Using community detection")
+        g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
+        part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
+        mapping = {}
+        for i, c in enumerate(part.membership):
+            if int(c) not in mapping.keys():
+                mapping[int(c)] = []
+            mapping[int(c)].append(i)
+        data = merge_communities(data, mapping, 165000)
+        del dataset
+        torch.save(data, f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
+    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, data, 1-args.coarsening_ratio, args.coarsening_method)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', subgraph_list=subgraph_list)
     
 elif args.task == 'graph_cls':

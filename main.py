@@ -4,16 +4,19 @@ import os
 import torch
 import pickle
 import argparse
+import igraph as ig
+import leidenalg
 from run import *
 from tqdm import tqdm
 from ogb.nodeproppred import PygNodePropPredDataset
 import torch_scatter
 from torch.utils.tensorboard import SummaryWriter
-from utils import coarsening_classification, coarsening_regression, load_graph_data
+from utils import coarsening_classification, coarsening_regression, load_graph_data, merge_communities
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, ZINC, QM9
 import logging
 logging.disable(logging.INFO)
 logging.disable(logging.WARNING)
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def process_dataset(args):
@@ -205,29 +208,63 @@ if __name__ == "__main__":
     
     if args.task == 'node_cls':
         dataset = dataset.to(device)
+        data = dataset[0]
+        
         if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
             print("Loading saved graphs...")
             subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
             candidate = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl', 'rb'))
             C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
             Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
-            args.num_features = dataset[0].x.shape[1]
+            if args.use_community_detection:
+                data = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
+                del dataset
+            args.num_features = data.x.shape[1]
         else:
+            if args.use_community_detection:
+                print("Using community detection")
+                g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
+                part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
+                mapping = {}
+                for i, c in enumerate(part.membership):
+                    if int(c) not in mapping.keys():
+                        mapping[int(c)] = []
+                    mapping[int(c)].append(i)
+                data = merge_communities(data, mapping, 165000)
+                del dataset
+                torch.save(data, f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
             print("Coarsening graphs...")
-            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
+            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
             save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
-        node_classification(args, path, dataset, writer, candidate, C_list, Gc_list, subgraph_list)
+        node_classification(args, path, data, writer, candidate, C_list, Gc_list, subgraph_list)
     elif args.task == 'node_reg':
         dataset = dataset.to(device)
+        data = dataset[0]
+
         if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
             print("Loading saved graphs...")
             subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
+            if args.use_community_detection:
+                data = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
+                del dataset
             args.num_features = dataset[0].x.shape[1]
         else:
+            if args.use_community_detection:
+                print("Using community detection")
+                g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
+                part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
+                mapping = {}
+                for i, c in enumerate(part.membership):
+                    if int(c) not in mapping.keys():
+                        mapping[int(c)] = []
+                    mapping[int(c)].append(i)
+                data = merge_communities(data, mapping, 165000)
+                del dataset
+                torch.save(data, f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
             print("Coarsening graphs...")
             args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
             save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', subgraph_list=subgraph_list)
-        node_regression(args, path, dataset, writer, subgraph_list)     
+        node_regression(args, path, data, writer, subgraph_list)     
     elif args.task == 'graph_cls':
         new_dataset = []
         Gc_ = []

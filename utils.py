@@ -251,16 +251,6 @@ def merge_communities(data, mapping, k):
     return new_data
 
 def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
-    if args.use_community_detection:
-        print("Using community detection")
-        g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
-        part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
-        mapping = {}
-        for i, c in enumerate(part.membership):
-            if int(c) not in mapping.keys():
-                mapping[int(c)] = []
-            mapping[int(c)].append(i)
-        data = merge_communities(data, mapping, 165000)
     G = gsp.graphs.Graph(W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr()) #W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr()
     components = G.extract_components()
     candidate = sorted(components, key=lambda x: len(x.info['orig_idx']), reverse=True)
@@ -499,16 +489,6 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
     return data.x.shape[1], candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST
 
 def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
-    if args.use_community_detection:
-        print("Using community detection")
-        g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
-        part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
-        mapping = {}
-        for i, c in enumerate(part.membership):
-            if int(c) not in mapping.keys():
-                mapping[int(c)] = []
-            mapping[int(c)].append(i)
-        data = merge_communities(data, mapping, 165000)
     G = gsp.graphs.Graph(W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr())
     components = G.extract_components()
     candidate = sorted(components, key=lambda x: len(x.info['orig_idx']), reverse=True)
@@ -751,7 +731,11 @@ def splits_classification(data, num_classes, exp):
     if exp!='fixed':
         indices = []
         for i in range(num_classes):
-            index = (data.y == i).nonzero().view(-1)
+            if len(data.y.shape) > 1:
+                labels = data.y.flatten()
+                index = (labels == i).nonzero().view(-1)
+            else:
+                index = (data.y == i).nonzero().view(-1)
             index = index[torch.randperm(index.size(0))]
             indices.append(index)
 
@@ -787,7 +771,7 @@ def splits_regression(data, train_ratio, val_ratio):
     return data
 
 def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, subgraph_list):
-    n_classes = len(set(np.array(dataset.y.cpu())))
+    n_classes = torch.unique(dataset.y).shape[0]
     data = splits_classification(dataset, n_classes, exp)
 
     train_mask = data.train_mask
@@ -860,12 +844,17 @@ def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, sub
 
         if len(H.info['orig_idx']) > 10 and torch.sum(H_train_mask)+torch.sum(H_val_mask) > 0:
             train_labels = one_hot(H_labels, n_classes)
+            if train_labels.shape[1] == 1 and train_labels.shape[-1] == n_classes:
+                train_labels = train_labels.squeeze(1)
             train_labels[~H_train_mask] = torch.Tensor([0 for _ in range(n_classes)])
             val_labels = one_hot(H_labels, n_classes)
+            if val_labels.shape[1] == 1 and val_labels.shape[-1] == n_classes:
+                val_labels = val_labels.squeeze(1)
             val_labels[~H_val_mask] = torch.Tensor([0 for _ in range(n_classes)])
+            
             C = C_list[number]
             Gc = Gc_list[number]
-
+            
             new_train_mask = torch.BoolTensor(np.sum(C.dot(train_labels), axis=1))
             mix_label = torch.FloatTensor(C.dot(train_labels))
             mix_label[mix_label > 0] = 1
