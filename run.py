@@ -42,7 +42,7 @@ def node_val_Gc(model, x, edge_index, mask, y, loss_fn):
     loss = loss_fn(out[mask], y[mask])
     return loss.item()
 
-def node_infer_Gs(args, model, graph_data, loss_fn, infer_type):
+def node_infer_Gs_GD(args, model, graph_data, loss_fn, infer_type):
     total_loss = 0
     total_time = 0
     n = 0
@@ -78,16 +78,73 @@ def node_infer_Gs(args, model, graph_data, loss_fn, infer_type):
         loss = loss_fn(all_out, all_label.type(torch.long).flatten())
         total_loss += loss.item()
         acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
+        if args.loss_reduction == 'mean':
+            return total_loss, acc, total_time
+        else:
+            return total_loss/len(all_out), acc, total_time
     else:
         loss = loss_fn(all_out.view(-1, 1), all_label.view(-1, 1))
         total_loss += loss.item()/torch.std(all_label).item()
         acc = 0
-    
-    return total_loss / n, acc, total_time
-
-def node_train_Gs(model, graph_data, loss_fn, optimizer, args):
+        if args.loss_reduction == 'mean':
+            return total_loss, acc, total_time
+        else:
+            return total_loss/len(all_out), acc, total_time
+        
+def node_infer_Gs_MB(args, model, graph_data, loss_fn, infer_type):
     total_loss = 0
+    total_time = 0
     n = 0
+    for graph in graph_data:
+        model.eval()
+        x = graph.x.to(device)
+        y = graph.y.to(device)
+        edge_index = graph.edge_index.to(device)
+        if infer_type == 'test':
+            if True in graph.test_mask:
+                start_time = time.time()
+                out = model(x, edge_index)
+                total_time += time.time() - start_time
+                test_mask = graph.test_mask.to(device)
+                if args.task == 'node_cls':
+                    loss = loss_fn(out[test_mask], y[test_mask].type(torch.long).flatten())
+                else:
+                    loss = loss_fn(out[test_mask].view(-1, 1), y[test_mask].view(-1, 1))
+                all_out = torch.cat((all_out, out[test_mask]), dim=0)
+                all_label = torch.cat((all_label, y[test_mask]), dim=0)
+                total_loss += loss.item()
+            else:
+                continue
+        else:
+            if True in graph.val_mask:
+                start_time = time.time()
+                out = model(x, edge_index)
+                total_time += time.time() - start_time
+                val_mask = graph.val_mask.to(device)
+                if args.task == 'node_cls':
+                    loss = loss_fn(out[val_mask], y[val_mask].type(torch.long).flatten())
+                else:
+                    loss = loss_fn(out[val_mask].view(-1, 1), y[val_mask].view(-1, 1))
+                all_out = torch.cat((all_out, out[val_mask]), dim=0)
+                all_label = torch.cat((all_label, y[val_mask]), dim=0)
+            else:
+                continue
+        n = n + 1
+    if args.task == 'node_cls':
+        acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
+        if args.loss_reduction == 'mean':
+            return total_loss/len(graph_data), acc, total_time
+        else:
+            return total_loss/len(all_out), acc, total_time
+    else:
+        acc = 0
+        if args.loss_reduction == 'mean':
+            return total_loss/len(graph_data), acc, total_time
+        else:
+            return total_loss/len(all_out), acc, total_time
+
+def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
+    total_loss = 0
     all_out = torch.tensor([], dtype=torch.float32).to(device)
     all_label = torch.tensor([], dtype=torch.float32).to(device)
     model.train()
@@ -104,7 +161,6 @@ def node_train_Gs(model, graph_data, loss_fn, optimizer, args):
             all_label = torch.cat((all_label, y[train_mask]), dim=0)
         else:
             continue
-        n = n + 1
     if args.task == 'node_cls':
         loss = loss_fn(all_out, all_label.type(torch.long).flatten())
     else:
@@ -112,7 +168,51 @@ def node_train_Gs(model, graph_data, loss_fn, optimizer, args):
     loss.backward()
     optimizer.step()
     total_loss += loss.item()
-    return total_loss / n
+    if args.loss_reduction == 'mean':
+        if args.task == 'node_cls':
+            return total_loss
+        else:
+            return total_loss/torch.std(all_label).item()
+    else:
+        if args.task == 'node_cls':
+            return total_loss/len(all_out)
+        else:
+            return total_loss/(len(all_out)*torch.std(all_label).item())
+        
+def node_train_Gs_MB(model, graph_data, loss_fn, optimizer, args):
+    total_loss = 0
+    all_out = torch.tensor([], dtype=torch.float32).to(device)
+    all_label = torch.tensor([], dtype=torch.float32).to(device)
+    model.train()
+    optimizer.zero_grad()
+    for graph in graph_data:
+        train_mask = graph.train_mask.to(device)
+        if True in train_mask:
+            x = graph.x.to(device)
+            y = graph.y.to(device)
+            edge_index = graph.edge_index.to(device)
+            out = model(x, edge_index)
+            if args.task == 'node_cls':
+                loss = loss_fn(out[train_mask], y[train_mask].type(torch.long).flatten())
+            else:
+                loss = loss_fn(out[train_mask].view(-1, 1), y[train_mask].view(-1, 1))
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+            all_out = torch.cat((all_out, out[train_mask]), dim=0)
+            all_label = torch.cat((all_label, y[train_mask]), dim=0)
+        else:
+            continue
+    if args.loss_reduction == 'mean':
+        if args.task == 'node_cls':
+            return total_loss/len(graph_data)
+        else:
+            return total_loss/(torch.std(all_label).item()*len(graph_data))
+    else:
+        if args.task == 'node_cls':
+            return total_loss/len(all_out)
+        else:
+            return total_loss/(len(all_out)*torch.std(all_label).item())
 
 def graph_train_Gc(args, model, loader, optimizer, loss_fn):
     total_loss = 0
@@ -194,15 +294,13 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
     all_acc = []
     all_time = []
     args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset, candidate, C_list, Gc_list, args.experiment, subgraph_list)
-    del dataset, candidate, C_list, Gc_list, subgraph_list
-    torch.cuda.empty_cache()
     if args.normalize_features:
         coarsen_features = F.normalize(coarsen_features, p=1)
     graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False)
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
         model = Classify_node(args).to(device)
-        loss_fn = torch.nn.NLLLoss().to(device)
+        loss_fn = torch.nn.NLLLoss(reduction=args.loss_reduction).to(device)
         model.reset_parameters()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         if args.exp_setup == 'Gc_train_2_Gs_train':
@@ -222,9 +320,14 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
             #Train and val on Gs
             model.load_state_dict(torch.load(path+'/model.pt'))
             for epoch in tqdm(range(args.epochs2)):
-                train_loss = node_train_Gs(model, graph_data, loss_fn, optimizer, args)
+                if args.gradient_method == "GD":
+                    train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args)
+                    val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'val')
+                else:
+                    train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer, args)
+                    val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
+                    
                 run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
-                val_loss, val_acc, val_time = node_infer_Gs(args, model, graph_data, loss_fn, 'val')
                 run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
                 run_writer.add_scalar('Gs_val_acc', val_acc, epoch)
 
@@ -233,8 +336,10 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                     torch.save(model.state_dict(), path+'/model.pt')
             #Test on Gs
             model.load_state_dict(torch.load(path+'/model.pt'))
-            test_loss, test_acc, test_time = node_infer_Gs(args, model, graph_data, loss_fn, 'test')
-            
+            if args.gradient_method == "GD":
+                test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'test')
+            else:
+                test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
             writer.add_scalar('Gs_test_loss', test_loss, run)
             writer.add_scalar('Gs_test_acc', test_acc, run)
             all_loss.append(test_loss)
@@ -256,10 +361,14 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                     torch.save(model.state_dict(), path+'/model.pt') 
             #Infer on Gs
             model.load_state_dict(torch.load(path+'/model.pt'))
-            val_loss, val_acc, val_time = node_infer_Gs(args, model, graph_data, loss_fn, 'val')
-            run_writer.add_scalar('Gs_val_loss', val_loss, 0)
-            run_writer.add_scalar('Gs_val_acc', val_acc, 0)
-            test_loss, test_acc, test_time = node_infer_Gs(args, model, graph_data, loss_fn, 'test')
+            if args.gradient_method == "GD":
+                val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'val')
+                test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'test')
+            else:
+                val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
+                test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+            run_writer.add_scalar('Gs_val_loss', val_loss, run)
+            run_writer.add_scalar('Gs_val_acc', val_acc, run)
             writer.add_scalar('Gs_test_acc', test_acc, run)
             writer.add_scalar('Gs_test_loss', test_loss, run)
             all_loss.append(test_loss)
@@ -270,9 +379,14 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
             best_val_loss_Gs =  float('inf')
             #Train on Gs
             for epoch in tqdm(range(args.epochs2)):
-                train_loss = node_train_Gs(model, graph_data, loss_fn, optimizer,args)
+                if args.gradient_method == "GD":
+                    train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer,args)
+                    val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'val')
+                else:
+                    train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer,args)
+                    val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
+
                 run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
-                val_loss, val_acc, val_time = node_infer_Gs(args, model, graph_data, loss_fn, 'val')
                 run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
                 run_writer.add_scalar('Gs_val_acc', val_acc, epoch)
 
@@ -281,7 +395,11 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                     torch.save(model.state_dict(), path+'/model.pt')
             #Test on Gs
             model.load_state_dict(torch.load(path+'/model.pt'))
-            test_loss, test_acc, test_time = node_infer_Gs(args, model, graph_data, loss_fn, 'test')
+            if args.gradient_method == "GD":
+                test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'test')
+            else:
+                test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+                
             writer.add_scalar('Gs_test_loss', test_loss, run)
             writer.add_scalar('Gs_test_acc', test_acc, run)
             all_loss.append(test_loss)
@@ -322,23 +440,28 @@ def node_regression(args, path, dataset, writer, subgraph_list):
     all_loss = []
     all_acc = []
     all_time = []
+    graphs = load_data_regression(args, dataset, subgraph_list)
+    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False)
 
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
-        graphs = load_data_regression(args, dataset, subgraph_list)
-        graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False)
 
         model = Regress_node(args).to(device)
-        loss_fn = torch.nn.L1Loss().to(device)
+        loss_fn = torch.nn.L1Loss(reduction=args.loss_reduction).to(device)
         model.reset_parameters()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         
         best_val_loss_Gs =  float('inf')
         #Train on Gs
         for epoch in tqdm(range(args.epochs2)):
-            train_loss = node_train_Gs(model, graph_data, loss_fn, optimizer,args)
+            if args.gradient_method == "GD":
+                train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer,args)
+                val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'val')
+            else:
+                train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer,args)
+                val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
+                
             run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
-            val_loss, val_acc, val_time = node_infer_Gs(args, model, graph_data, loss_fn, 'val')
             run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
             run_writer.add_scalar('Gs_val_acc', val_acc, epoch)
 
@@ -348,7 +471,10 @@ def node_regression(args, path, dataset, writer, subgraph_list):
         
         #Test on Gs
         model.load_state_dict(torch.load(path+'/model.pt'))
-        test_loss, test_acc, test_time = node_infer_Gs(args, model, graph_data, loss_fn, 'test')
+        if args.gradient_method == "GD":
+            test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'test')
+        else:
+            test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
         writer.add_scalar('Gs_test_loss', test_loss, run)
         writer.add_scalar('Gs_test_acc', test_acc, run)
         all_loss.append(test_loss)

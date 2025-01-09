@@ -51,6 +51,15 @@ def process_dataset(args):
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
+    elif args.dataset == "ogbn-arxiv":
+        dataset = PygNodePropPredDataset(name="ogbn-arxiv", root='/hdfs1/Data/weather/CoarseGNN_Shubhajit/CoPart-GNN/dataset/')
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
+        args.task = 'node_cls'
+    elif args.dataset == "ogbn-proteins":
+        dataset = PygNodePropPredDataset(name="ogbn-proteins", root='/hdfs1/Data/weather/CoarseGNN_Shubhajit/CoPart-GNN/dataset/')
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
     #Node Regression
     elif args.dataset == 'chameleon':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
@@ -171,6 +180,7 @@ if __name__ == "__main__":
     parser.add_argument('--super_graph', action='store_true')
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--weight_decay', type=float, default=0.0005)
+    parser.add_argument('--gradient_method', type=str, default='GD') #GD: Gradient_Descent, MB: Mini_Batch
     parser.add_argument('--use_community_detection', action='store_true')
     parser.add_argument('--normalize_features', action='store_true')
     parser.add_argument('--coarsening_ratio', type=float, default=0.5)
@@ -179,12 +189,13 @@ if __name__ == "__main__":
     parser.add_argument('--task', type = str, default = 'node_cls')
     parser.add_argument('--seed', type = int, default = None)
     parser.add_argument('--multi_prop', action='store_true')
+    parser.add_argument('--loss_reduction', type = str, default = 'mean')
     parser.add_argument('--property', type = int, default = 0)
     args = parser.parse_args()
 
     args = arg_correction(args)
     dataset, args = process_dataset(args)
-    if (args.task == 'node_cls' or args.task == 'node_reg') and dataset[0].num_nodes > 165000:
+    if (args.task == 'node_cls' or args.task == 'node_reg') and dataset[0].num_nodes > 170000:
         args.use_community_detection = True
 
     path = f"save/{args.task}/"+args.output_dir+"/"
@@ -219,9 +230,10 @@ if __name__ == "__main__":
             C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
             Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
             if args.use_community_detection:
-                data = torch.load(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
+                args.num_classes = torch.unique(dataset.y).shape[0]
                 del dataset
                 torch.cuda.empty_cache()
+                data = torch.load(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
             args.num_features = data.x.shape[1] # data.x is a matrix (nodes, features)
         else:
             if args.use_community_detection:
@@ -234,6 +246,7 @@ if __name__ == "__main__":
                         mapping[int(c)] = []
                     mapping[int(c)].append(i)
                 data = merge_communities(data, mapping, 165000)
+                args.num_classes = torch.unique(dataset.y).shape[0]
                 del dataset
                 torch.cuda.empty_cache()
                 torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')

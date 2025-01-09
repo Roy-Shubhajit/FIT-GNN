@@ -771,7 +771,7 @@ def splits_regression(data, train_ratio, val_ratio):
     return data
 
 def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, subgraph_list):
-    n_classes = torch.unique(dataset.y).shape[0]
+    n_classes = args.num_classes
     data = splits_classification(dataset, n_classes, exp)
 
     train_mask = data.train_mask
