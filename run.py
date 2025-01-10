@@ -95,6 +95,8 @@ def node_infer_Gs_MB(args, model, graph_data, loss_fn, infer_type):
     total_loss = 0
     total_time = 0
     n = 0
+    all_out = torch.tensor([], dtype=torch.float32).to(device)
+    all_label = torch.tensor([], dtype=torch.float32).to(device)
     for graph in graph_data:
         model.eval()
         x = graph.x.to(device)
@@ -127,21 +129,24 @@ def node_infer_Gs_MB(args, model, graph_data, loss_fn, infer_type):
                     loss = loss_fn(out[val_mask].view(-1, 1), y[val_mask].view(-1, 1))
                 all_out = torch.cat((all_out, out[val_mask]), dim=0)
                 all_label = torch.cat((all_label, y[val_mask]), dim=0)
+                total_loss += loss.item()
             else:
                 continue
         n = n + 1
-    if args.task == 'node_cls':
-        acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
-        if args.loss_reduction == 'mean':
+    if args.loss_reduction == 'mean':
+        if args.task == 'node_cls':
+            acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
             return total_loss/len(graph_data), acc, total_time
         else:
-            return total_loss/len(all_out), acc, total_time
+            acc  = 0
+            return total_loss/(torch.std(all_label).item()*len(graph_data)), acc, total_time
     else:
-        acc = 0
-        if args.loss_reduction == 'mean':
-            return total_loss/len(graph_data), acc, total_time
-        else:
+        if args.task == 'node_cls':
+            acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
             return total_loss/len(all_out), acc, total_time
+        else:
+            acc = 0
+            return total_loss/(len(all_out)*torch.std(all_label).item()), acc, total_time
 
 def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
     total_loss = 0
