@@ -222,6 +222,7 @@ if __name__ == "__main__":
     if args.task == 'node_cls':
         dataset = dataset.to(device)
         data = dataset[0]
+        args.num_classes = torch.unique(data.y).shape[0]
         
         if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
             print("Loading saved graphs...")
@@ -246,7 +247,6 @@ if __name__ == "__main__":
                         mapping[int(c)] = []
                     mapping[int(c)].append(i)
                 data = merge_communities(data, mapping, 165000)
-                args.num_classes = torch.unique(dataset.y).shape[0]
                 del dataset
                 torch.cuda.empty_cache()
                 torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')

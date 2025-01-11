@@ -905,6 +905,9 @@ def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, sub
     coarsen_edge = torch.LongTensor(coarsen_edge)
     coarsen_train_labels = coarsen_train_labels.long()
     coarsen_val_labels = coarsen_val_labels.long()
+    for graph in new_graphs:
+        graph = graph.cpu()
+    print(new_graphs[0].x.device)
 
     return n_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, new_graphs
     

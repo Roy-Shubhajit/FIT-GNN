@@ -157,6 +157,7 @@ def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
     for graph in graph_data:
         train_mask = graph.train_mask.to(device)
         if True in train_mask:
+            # To Do: Remove .to(device) if not needed
             x = graph.x.to(device)
             y = graph.y.to(device)
             edge_index = graph.edge_index.to(device)
@@ -301,7 +302,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
     args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset, candidate, C_list, Gc_list, args.experiment, subgraph_list)
     if args.normalize_features:
         coarsen_features = F.normalize(coarsen_features, p=1)
-    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False)
+    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False, pin_memory = True)
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
         model = Classify_node(args).to(device)
@@ -446,7 +447,7 @@ def node_regression(args, path, dataset, writer, subgraph_list):
     all_acc = []
     all_time = []
     graphs = load_data_regression(args, dataset, subgraph_list)
-    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False)
+    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False, pin_memory = True)
 
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
@@ -514,9 +515,9 @@ def node_regression(args, path, dataset, writer, subgraph_list):
 def graph_classification(args, path, writer, dataset):
     train_split, test_split, val_split = train_test_val_split(dataset, shuffle=True)
     colater_fn = colater()
-    train_loader = T_DataLoader(train_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn)
-    test_loader = T_DataLoader(test_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn)
-    val_loader = T_DataLoader(val_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn)
+    train_loader = T_DataLoader(train_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn, pin_memory = True)
+    test_loader = T_DataLoader(test_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn, pin_memory = True)
+    val_loader = T_DataLoader(val_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn, pin_memory = True)
 
     model_gc = Classify_graph_gc(args).to(device)
     model_gs = Classify_graph_gs(args).to(device)
