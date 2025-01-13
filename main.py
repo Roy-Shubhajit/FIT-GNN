@@ -296,7 +296,7 @@ if __name__ == "__main__":
         else:
             print("Coarsening graphs...")
             for i in tqdm(range(len(dataset))):
-                try:
+                # try:
                     graph = dataset[i]
                     graph = graph.to(device)
                     args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
@@ -307,8 +307,8 @@ if __name__ == "__main__":
                     Gc_.append(Gc)
                     classes.add(graph.y.item())
                     saved_graph_list.append(i)
-                except:
-                    pass
+                # except:
+                #     pass
             save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
         args.num_classes = len(classes)
         del dataset

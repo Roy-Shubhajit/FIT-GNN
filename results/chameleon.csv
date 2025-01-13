@@ -30,3 +30,4 @@ chameleon ,variation_cliques       ,             0.7 ,False       ,True         
 chameleon ,variation_edges         ,             0.5 ,False       ,True         ,False          ,   512 ,   1 ,         2 ,         1 ,0.01  ,1.0158851146697998   ,0.0007757598174995428 +/- 0.0                  ,0.0007757598174995428
 chameleon ,variation_edges         ,             0.7 ,False       ,True         ,False          ,   512 ,   1 ,         2 ,         1 ,0.01  ,2.2892069816589355   ,0.0006883883791844842 +/- 0.0                  ,0.0006883883791844842
 
+chameleon,variation_neighborhoods,0.3,True,False,False,512,1,2,128,0.01,0.02554154396057129,2.5116300261835813 +/- 0.0,2.5116300261835813

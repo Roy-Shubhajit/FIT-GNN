@@ -319,9 +319,12 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                         actual_ext = extra_node[~torch.isin(extra_node, value)]
                         value = torch.cat((value, actual_ext), dim=0)
                         #value = np.unique(value)
-                        
+
+                    #if value is not tensor, convert it into tensor
+                    if not torch.is_tensor(value):
+                        value = torch.tensor(value).to(device)    
                     value, _ = torch.sort(value)
-                    #value = torch.tensor(value).to(device)
+                    # value = torch.tensor(value).to(device)
                     mappiing = {}
                     for i in range(len(value)):
                         mappiing[value[i].item()] = i
@@ -469,7 +472,10 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                         actual_ext = extra_node[~torch.isin(extra_node, value)]
                         value = torch.cat((value, actual_ext), dim=0)
                         #value = np.unique(value)
-                        
+                    
+                    #if value is not tensor, convert it into tensor
+                    if not torch.is_tensor(value):
+                        value = torch.tensor(value).to(device)    
                     value, _ = torch.sort(value)
                     mappiing = {}
                     for i in range(len(value)):
@@ -677,47 +683,27 @@ def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, sub
 
     new_graphs = []
 
-    if args.super_graph:
-        for graph in subgraph_list:
-            F = Data(x=graph.x, edge_index=graph.edge_index, y=graph.y, num_classes=n_classes)
-            F.train_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            F.val_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            F.test_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            for node, new_node in graph.orig_idx_2_sub_super_graph.items():
-                if train_mask[node]:
-                    F.train_mask[new_node] = True
-                if val_mask[node]:
-                    F.val_mask[new_node] = True
-                if test_mask[node]:
-                    F.test_mask[new_node] = True
-                if new_node in graph.actual_ext:
-                    F.train_mask[new_node] = False
-                    F.val_mask[new_node] = False
-                    F.test_mask[new_node] = False
-            new_graphs.append(F)
-
-    else:
-        for graph in subgraph_list:
-            F = Data(x=graph.x, edge_index=graph.edge_index, y=graph.y, num_classes=n_classes)
-            F.train_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            F.val_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            F.test_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            for node, new_node in graph.map_dict.items():
-                if train_mask[node]:
-                    F.train_mask[new_node] = True
-                if val_mask[node]:
-                    F.val_mask[new_node] = True
-                if test_mask[node]:
-                    F.test_mask[new_node] = True
-                if args.extra_node and node in graph.actual_ext:
-                    F.train_mask[new_node] = False
-                    F.val_mask[new_node] = False
-                    F.test_mask[new_node] = False
-                if args.cluster_node and new_node in graph.actual_ext:
-                    F.train_mask[new_node] = False
-                    F.val_mask[new_node] = False
-                    F.test_mask[new_node] = False
-            new_graphs.append(F)
+    for graph in subgraph_list:
+        F = Data(x=graph.x, edge_index=graph.edge_index, y=graph.y, num_classes=n_classes)
+        F.train_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
+        F.val_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
+        F.test_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
+        for node, new_node in graph.map_dict.items():
+            if train_mask[node]:
+                F.train_mask[new_node] = True
+            if val_mask[node]:
+                F.val_mask[new_node] = True
+            if test_mask[node]:
+                F.test_mask[new_node] = True
+            if args.extra_node and node in graph.actual_ext:
+                F.train_mask[new_node] = False
+                F.val_mask[new_node] = False
+                F.test_mask[new_node] = False
+            if args.cluster_node and new_node in graph.actual_ext:
+                F.train_mask[new_node] = False
+                F.val_mask[new_node] = False
+                F.test_mask[new_node] = False
+        new_graphs.append(F)
 
     while number < len(candidate):
         H = candidate[number]
@@ -804,47 +790,28 @@ def load_data_regression(args, dataset, subgraph_list):
     test_mask = data.test_mask
     new_graphs = []
 
-    if args.super_graph:
-        for graph in subgraph_list:
-            F = Data(x=graph.x, edge_index=graph.edge_index, y=graph.y)
-            F.train_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            F.val_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            F.test_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            for node, new_node in graph.orig_idx_2_sub_super_graph.items():
-                if train_mask[node]:
-                    F.train_mask[new_node] = True
-                if val_mask[node]:
-                    F.val_mask[new_node] = True
-                if test_mask[node]:
-                    F.test_mask[new_node] = True
-                if new_node in graph.actual_ext:
-                    F.train_mask[new_node] = False
-                    F.val_mask[new_node] = False
-                    F.test_mask[new_node] = False
-            new_graphs.append(F)
+    for graph in subgraph_list:
+        F = Data(x=graph.x, edge_index=graph.edge_index, y=graph.y)
+        F.train_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
+        F.val_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
+        F.test_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
+        for node, new_node in graph.map_dict.items():
+            if train_mask[node]:
+                F.train_mask[new_node] = True
+            if val_mask[node]:
+                F.val_mask[new_node] = True
+            if test_mask[node]:
+                F.test_mask[new_node] = True
+            if args.extra_node and node in graph.actual_ext:
+                F.train_mask[new_node] = False
+                F.val_mask[new_node] = False
+                F.test_mask[new_node] = False
+            if args.cluster_node and new_node in graph.actual_ext:
+                F.train_mask[new_node] = False
+                F.val_mask[new_node] = False
+                F.test_mask[new_node] = False
+        new_graphs.append(F)
 
-    else:
-        for graph in subgraph_list:
-            F = Data(x=graph.x, edge_index=graph.edge_index, y=graph.y)
-            F.train_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            F.val_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            F.test_mask = torch.zeros(graph.x.shape[0], dtype=torch.bool)
-            for node, new_node in graph.map_dict.items():
-                if train_mask[node]:
-                    F.train_mask[new_node] = True
-                if val_mask[node]:
-                    F.val_mask[new_node] = True
-                if test_mask[node]:
-                    F.test_mask[new_node] = True
-                if args.extra_node and node in graph.actual_ext:
-                    F.train_mask[new_node] = False
-                    F.val_mask[new_node] = False
-                    F.test_mask[new_node] = False
-                if args.cluster_node and new_node in graph.actual_ext:
-                    F.train_mask[new_node] = False
-                    F.val_mask[new_node] = False
-                    F.test_mask[new_node] = False
-            new_graphs.append(F)
     for graph in new_graphs:
         graph = graph.cpu()
 

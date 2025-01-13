@@ -301,7 +301,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
     args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset, candidate, C_list, Gc_list, args.experiment, subgraph_list)
     if args.normalize_features:
         coarsen_features = F.normalize(coarsen_features, p=1)
-    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False, pin_memory = True)
+    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False, pin_memory = False)
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
         model = Classify_node(args).to(device)
@@ -446,7 +446,7 @@ def node_regression(args, path, dataset, writer, subgraph_list):
     all_acc = []
     all_time = []
     graphs = load_data_regression(args, dataset, subgraph_list)
-    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False, pin_memory = True)
+    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False, pin_memory = False)
 
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
@@ -514,9 +514,9 @@ def node_regression(args, path, dataset, writer, subgraph_list):
 def graph_classification(args, path, writer, dataset):
     train_split, test_split, val_split = train_test_val_split(dataset, shuffle=True)
     colater_fn = colater()
-    train_loader = T_DataLoader(train_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn, pin_memory = True)
-    test_loader = T_DataLoader(test_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn, pin_memory = True)
-    val_loader = T_DataLoader(val_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn, pin_memory = True)
+    train_loader = T_DataLoader(train_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn, pin_memory = False)
+    test_loader = T_DataLoader(test_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn, pin_memory = False)
+    val_loader = T_DataLoader(val_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn, pin_memory = False)
 
     model_gc = Classify_graph_gc(args).to(device)
     model_gs = Classify_graph_gs(args).to(device)
@@ -533,7 +533,7 @@ def graph_classification(args, path, writer, dataset):
         for epoch in tqdm(range(args.epochs1)):
             train_loss = graph_train_Gc(args, model_gc, train_loader, optimizer_gc, loss_fn)
             writer.add_scalar('Gc_train_loss', train_loss, epoch)
-            val_loss = graph_val_Gc(args, model_gc, val_loader, loss_fn)
+            val_loss, val_acc = graph_val_Gc(args, model_gc, val_loader, loss_fn)
             writer.add_scalar('Gc_val_loss', val_loss, epoch)
             if val_loss < best_val_loss_Gc or epoch == 0:
                 best_val_loss_Gc = val_loss

@@ -3,3 +3,4 @@ ZINC_subset,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,True,False,512,2,2,1
 ZINC_subset,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,True,False,512,2,2,1,1,128,0.01,10.764594274280553
 ZINC_subset,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,True,False,512,2,2,1,1,128,0.01,27.283926634626976
 ZINC_subset,variation_neighborhoods,0.5,Gc_train_2_Gc_infer,True,False,512,2,2,300,300,128,0.0001,1.0719139933586121
+ZINC_subset,variation_neighborhoods,0.5,Gc_train_2_Gc_infer,True,False,False,512,2,2,1,1,128,0.01,55.31638603210449

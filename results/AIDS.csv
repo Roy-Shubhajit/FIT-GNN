@@ -4,3 +4,4 @@ AIDS,algebraic_JC,0.7,Gc_train_2_Gs_train,False,True,512,2,2,1,1,128,0.01,0.5037
 AIDS,algebraic_JC,0.7,Gc_train_2_Gs_train,False,True,512,2,2,1,1,128,0.01,0.48835286498069763,0.8189655172413793
 AIDS,variation_neighborhoods,0.5,Gc_train_2_Gc_infer,True,False,512,2,2,100,100,128,0.01,0.5056110173463821,0.7931034482758621
 AIDS,variation_neighborhoods,0.5,Gc_train_2_Gc_infer,True,False,512,2,2,300,300,128,0.0001,0.5117966830730438,0.8448275862068966
+AIDS,variation_neighborhoods,0.7,Gc_train_2_Gs_train,False,False,False,512,2,2,1,1,128,0.01,0.5452412515878677,0.8017241379310345
