@@ -10,3 +10,5 @@ ZINC_subset,False,Gc_train_2_Gc_infer,variation_neighborhoods,0.5,True,False,512
 ZINC_subset,True,None,None,None,None,None,512,20,2,None,0.01,0.45956565204419586,1.8320888936519624,1.289245976431249,None
 ZINC_subset,False,Gc_train_2_Gc_infer,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.0030848352532637747,1.763943722844124,1.3635463288443492,NoneZINC_subset,True,None,None,None,None,None,512,20,2,None,0.01,0.46101405746058416,1.7546580374240874,1.170304328743756,None
 ZINC_subset,False,Gc_train_2_Gc_infer,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.0028796572434274773,1.6874921143054962,1.2514681806561527,None
+ZINC_subset,False,Gc_train_2_Gc_infer,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.0034883649725663034,47.59437732696533,12.347675200694683,None
+ZINC_subset,False,Gs_train_2_Gs_infer,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.11164690318860505,6.818118762969971,2.2076739949075166,None

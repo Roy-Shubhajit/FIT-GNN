@@ -1,3 +1,5 @@
+import warnings
+warnings.simplefilter("ignore")
 import os
 import torch
 import pickle
@@ -12,8 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_max_pool, global_mean_pool
-import warnings
-warnings.simplefilter('ignore')
+from tqdm import tqdm
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 class Classify_graph(torch.nn.Module):
@@ -248,8 +249,10 @@ args = parser.parse_args()
 
 args = arg_correction(args)
 dataset, args = process_dataset(args)
-dataset = dataset.to(device)
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# for i in tqdm(range(len(dataset)), colour='blue'):
+#     dataset[i] = dataset[i].to(device)
+# print(dataset[0].x.device)
+# quit()
 
 node_type = "d"
 if args.extra_node:
@@ -306,6 +309,7 @@ if args.task == "graph_cls":
     num = 0
     new_datasets = []
     if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
+        print("Loading saved graphs...")
         Gs_ = torch.load(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt")
         Gc_ = pickle.load(open(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl", "rb"))
         saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
@@ -320,11 +324,12 @@ if args.task == "graph_cls":
     else:
         for i in np.random.permutation(len(dataset)):
             if num != args.num_test_samples:
+                graph = dataset[i].to(device)
                 try:
-                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
-                    Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+                    Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
                     Gs = subgraph_list
-                    new_datasets.append([[dataset[i], Gc, Gs]])
+                    new_datasets.append([[graph, Gc, Gs]])
                     num += 1
                 except:
                     continue
@@ -363,23 +368,26 @@ if args.task == "graph_cls":
                 loss_gs = loss_fn(out_gs, y_)
                 losses_gs.append(loss_gs.item())
 
-        # Baseline model
-        G = new_datasets[j][0][0].to(device)
-        y = G.y.to(device).type(torch.long)
-        t3 = time()
-        out_b = model_b(G)
-        t4 = time()
-        times_b.append(t4-t3)
-        all_out_b.append(out_b.argmax().item())
-        all_label_b.append(y.item())
-        loss_b = loss_fn(out_b, y)
-        losses_b.append(loss_b.item())
+        if args.baseline:
+            # Baseline model
+            G = new_datasets[j][0][0].to(device)
+            y = G.y.to(device).type(torch.long)
+            t3 = time()
+            out_b = model_b(G)
+            t4 = time()
+            times_b.append(t4-t3)
+            all_out_b.append(out_b.argmax().item())
+            all_label_b.append(y.item())
+            loss_b = loss_fn(out_b, y)
+            losses_b.append(loss_b.item())
 
         if args.exp_setup == "Gc_train_2_Gc_infer":
             print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.argmax().item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
         else:
             print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.argmax().item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-        print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+        
+        if args.baseline:
+            print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
 
         # Remove set_gc, set_gs and y_ from device memory
         if args.exp_setup == "Gc_train_2_Gc_infer":
@@ -387,7 +395,6 @@ if args.task == "graph_cls":
             y_ = y_.cpu()
             del set_gc, y_
         else:
-            set_gs = set_gs.cpu()
             y_ = y_.cpu()
             del set_gs, y_
     
@@ -395,7 +402,9 @@ if args.task == "graph_cls":
         print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAccuracy (coarsened graph): {np.sum(np.array(all_label_gc) == np.array(all_out_gc))}/{num}")
     else:
         print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAccuracy (subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
-    print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
+    
+    if args.baseline:
+        print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
 
 elif args.task == "graph_reg":
     
@@ -427,6 +436,7 @@ elif args.task == "graph_reg":
     new_datasets = []
 
     if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
+        print("Loading saved graphs...")
         Gs_ = torch.load(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt")
         Gc_ = pickle.load(open(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl", "rb"))
         saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
@@ -441,11 +451,12 @@ elif args.task == "graph_reg":
     else:
         for i in np.random.permutation(len(dataset)):
             if num != args.num_test_samples:
+                graph = dataset[i].to(device)
                 try:
-                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
-                    Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+                    Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
                     Gs = subgraph_list
-                    new_datasets.append([[dataset[i], Gc, Gs]])
+                    new_datasets.append([[graph, Gc, Gs]])
                     num += 1
                 except:
                     continue
@@ -488,31 +499,34 @@ elif args.task == "graph_reg":
                     loss_gs = loss_fn(out_gs, y_)
                 losses_gs.append(loss_gs.item())
         
-        # Baseline model
-        G = new_datasets[j][0][0].to(device)
-        y = G.y.to(device).type(torch.float)
-        t3 = time()
-        out_b = model_b(G)
-        t4 = time()
-        times_b.append(t4-t3)
-        if args.dataset == 'QM9':
-            loss_b = loss_fn(out_b, y[:, args.property].view(-1, 1))
-        else:
-            loss_b = loss_fn(out_b, y)
-        losses_b.append(loss_b.item())
+        if args.baseline:
+            # Baseline model
+            G = new_datasets[j][0][0].to(device)
+            y = G.y.to(device).type(torch.float)
+            t3 = time()
+            out_b = model_b(G)
+            t4 = time()
+            times_b.append(t4-t3)
+            if args.dataset == 'QM9':
+                loss_b = loss_fn(out_b, y[:, args.property].view(-1, 1))
+            else:
+                loss_b = loss_fn(out_b, y)
+            losses_b.append(loss_b.item())
         
         if args.dataset == 'QM9':
             if args.exp_setup == "Gc_train_2_Gc_infer":
                 print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gc.item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
             else:
                 print(f"\nSubgraph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-            print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+            if args.baseline:
+                print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
         else:
             if args.exp_setup == "Gc_train_2_Gc_infer":
                 print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
             else:
                 print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-            print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+            if args.baseline:
+                print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
         
         # Remove set_gc, set_gs and y_ from device memory
         if args.exp_setup == "Gc_train_2_Gc_infer":
@@ -520,7 +534,6 @@ elif args.task == "graph_reg":
             y_ = y_.cpu()
             del set_gc, y_
         else:
-            set_gs = set_gs.cpu()
             y_ = y_.cpu()
             del set_gs, y_
 
@@ -528,10 +541,12 @@ elif args.task == "graph_reg":
         print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAverage Loss (coarsened graph): {np.mean(losses_gc)}")
     else:
         print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAverage Loss (subgraph): {np.mean(losses_gs)}")
-    print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
+    if args.baseline:
+        print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
 
 elif args.task == "node_cls":
-
+    dataset = dataset.to(device)
+    args.num_classes = torch.unique(dataset.y).shape[0]
     if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
         print("Loading saved graphs...")
         subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
@@ -540,7 +555,6 @@ elif args.task == "node_cls":
         Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
         args.num_features = dataset[0].x.shape[1]
         if args.use_community_detection:
-            args.num_classes = torch.unique(dataset.y).shape[0]
             del dataset
             torch.cuda.empty_cache()
             data = torch.load(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
@@ -596,31 +610,36 @@ elif args.task == "node_cls":
         y = y.cpu()
         edge_index = edge_index.cpu()
         del x, y, edge_index
-
-    # Baseline model
-    model_b = Net1(dataset[0].x.shape[1], args.hidden, args.num_layers2, args.num_classes).to(device)
-    loss_fn = torch.nn.NLLLoss().to(device)
-    model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
-    model_b.eval()
-    fig = plt.figure()
-    for i in range(num):
-        x_ = dataset[0].x.to(device)
-        y_ = dataset[0].y.to(device)
-        edge_index_ = dataset[0].edge_index.to(device)
-        t3 = time()
-        out_b = model_b(x_, edge_index_).to(device)
-        t4 = time()
-        loss_b = loss_fn(out_b[indices[i][0]], y_[indices[i][0]])
-        all_label_b.append(y_[indices[i][0]].item())
-        all_out_b.append(out_b[indices[i][0]].argmax().item())
-        losses_b.append(loss_b.item())
-        times_b.append(t4 - t3)
-        print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]].argmax().item()}\nOutput: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
+    
+    if args.baseline:
+        # Baseline model
+        model_b = Net1(dataset[0].x.shape[1], args.hidden, args.num_layers2, args.num_classes).to(device)
+        loss_fn = torch.nn.NLLLoss().to(device)
+        model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
+        model_b.eval()
+        fig = plt.figure()
+        for i in range(num):
+            x_ = dataset[0].x.to(device)
+            y_ = dataset[0].y.to(device)
+            edge_index_ = dataset[0].edge_index.to(device)
+            t3 = time()
+            out_b = model_b(x_, edge_index_).to(device)
+            t4 = time()
+            loss_b = loss_fn(out_b[indices[i][0]], y_[indices[i][0]])
+            all_label_b.append(y_[indices[i][0]].item())
+            all_out_b.append(out_b[indices[i][0]].argmax().item())
+            losses_b.append(loss_b.item())
+            times_b.append(t4 - t3)
+            print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]].argmax().item()}\nOutput: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
     print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAccuracy (subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
-    print(f"Average time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
+    
+    if args.baseline:
+        print(f"Average time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
 
 elif args.task == "node_reg":
+    dataset = dataset.to(device)
     if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
+        print("Loading saved graphs...")
         subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
         args.num_features = dataset[0].x.shape[1]
     else:
@@ -641,24 +660,25 @@ elif args.task == "node_reg":
         else:
             break
     
-    # Baseline model
-    model_b = Regress_node(args).to(device)
-    loss_fn = torch.nn.L1Loss().to(device)
-    model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
-    model_b.eval()
-    losses_b = []
-    times_b = []
-    for i in range(num):
-        x_ = dataset[0].x.to(device)
-        y_ = dataset[0].y.to(device)
-        edge_index_ = dataset[0].edge_index.to(device)
-        t3 = time()
-        out_b = model_b(x_, edge_index_).to(device)
-        t4 = time()
-        loss_b = loss_fn(out_b[indices[i][0]][0], y_[indices[i][0]])
-        losses_b.append(loss_b.item())
-        times_b.append(t4 - t3)
-        print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
+    if args.baseline:
+        # Baseline model
+        model_b = Regress_node(args).to(device)
+        loss_fn = torch.nn.L1Loss().to(device)
+        model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
+        model_b.eval()
+        losses_b = []
+        times_b = []
+        for i in range(num):
+            x_ = dataset[0].x.to(device)
+            y_ = dataset[0].y.to(device)
+            edge_index_ = dataset[0].edge_index.to(device)
+            t3 = time()
+            out_b = model_b(x_, edge_index_).to(device)
+            t4 = time()
+            loss_b = loss_fn(out_b[indices[i][0]][0], y_[indices[i][0]])
+            losses_b.append(loss_b.item())
+            times_b.append(t4 - t3)
+            print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
 
     # Subgraph based model
     model_gs = Regress_node(args).to(device)
@@ -686,7 +706,9 @@ elif args.task == "node_reg":
         del x, y, edge_index
     
     print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAverage Loss (subgraph): {np.mean(losses_gs)}")
-    print(f"Average time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
+
+    if args.baseline:
+        print(f"Average time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
 
 if not os.path.exists("inference_results"):
     os.makedirs("inference_results")

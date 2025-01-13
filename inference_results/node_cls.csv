@@ -19,3 +19,6 @@ cora,True,fixed,None,None,None,None,None,512,10,2,None,0.01,0.002070082558525933
 cora,False,fixed,Gs_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,10,2,128,0.001,0.015094969007703993,2.2014763469472767,2.882164516022055,0.6
 cora,True,fixed,None,None,None,None,None,512,10,2,None,0.01,0.001742892795138889,1.626282739918679,1.3631391378477622,0.5
 cora,False,fixed,Gs_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,10,2,128,0.001,0.013607263565063477,1.7346103625837714,1.971291509612526,0.5
+cora,False,fixed,Gs_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,10,2,128,0.001,0.0031585693359375,1.7040902376174927,0.8730485211146493,0.2
+cora,False,fixed,Gs_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,10,2,128,0.001,0.00272573365105523,2.015452128648758,1.1098466595269068,0.2
+cora,False,fixed,Gs_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,10,2,128,0.001,0.0042674806382921,1.7466217517852782,0.32352575534509537,0.0

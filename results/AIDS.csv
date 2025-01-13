@@ -17,3 +17,5 @@ AIDS,variation_neighborhoods,0.1,Gc_train_2_Gs_train,False,True,False,512,2,2,2,
 AIDS,variation_neighborhoods,0.1,Gc_train_2_Gs_train,True,False,False,512,2,2,2,2,128,0.01,0.5124806240200996,0.75
 AIDS,variation_neighborhoods,0.1,Gc_train_2_Gc_infer,False,True,False,512,2,2,2,2,128,0.01,0.5233911722898483,0.7844827586206896
 AIDS,variation_neighborhoods,0.1,Gc_train_2_Gc_infer,True,False,False,512,2,2,2,2,128,0.01,0.5159154161810875,0.853448275862069
+AIDS,variation_neighborhoods,0.5,Gc_train_2_Gc_infer,True,False,False,512,2,2,1,1,128,0.01,0.5283076912164688,0.7413793103448276
+AIDS,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,False,False,False,512,2,2,1,1,128,0.01,0.6822377443313599,0.8017241379310345
