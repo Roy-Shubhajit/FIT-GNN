@@ -106,15 +106,10 @@ def process_dataset(args):
     return dataset, args
 
 def arg_correction(args):
-    if args.super_graph:
-        args.cluster_node = False
+    if args.cluster_node:
         args.extra_node = False
-    elif args.cluster_node:
-        args.extra_node = False
-        args.super_graph = False
     elif args.extra_node:
         args.cluster_node = False
-        args.super_graph = False
     return args
 
 def save(args, path, candidate = None, C_list = None, Gc_list = None, subgraph_list = None, saved_graph_list = None):
@@ -177,7 +172,6 @@ if __name__ == "__main__":
     parser.add_argument('--early_stopping', type=int, default=10)
     parser.add_argument('--extra_node', action='store_true')
     parser.add_argument('--cluster_node', action='store_true')
-    parser.add_argument('--super_graph', action='store_true')
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--weight_decay', type=float, default=0.0005)
     parser.add_argument('--gradient_method', type=str, default='GD') #GD: Gradient_Descent, MB: Mini_Batch
@@ -251,7 +245,7 @@ if __name__ == "__main__":
                 torch.cuda.empty_cache()
                 torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
             print("Coarsening graphs...")
-            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
+            args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
             save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
         node_classification(args, path, data, writer, candidate, C_list, Gc_list, subgraph_list)
     elif args.task == 'node_reg':
@@ -281,7 +275,7 @@ if __name__ == "__main__":
                 torch.cuda.empty_cache()
                 torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
             print("Coarsening graphs...")
-            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, data, 1-args.coarsening_ratio, args.coarsening_method)
+            args.num_features, subgraph_list = coarsening_regression(args, data, 1-args.coarsening_ratio, args.coarsening_method)
             save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', subgraph_list=subgraph_list)
         node_regression(args, path, data, writer, subgraph_list)
     elif args.task == 'graph_cls':
@@ -305,7 +299,7 @@ if __name__ == "__main__":
                 try:
                     graph = dataset[i]
                     graph = graph.to(device)
-                    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
                     Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
                     Gs = subgraph_list
                     new_dataset.append((graph, Gc, Gs))
@@ -339,7 +333,7 @@ if __name__ == "__main__":
                 try:
                     graph = dataset[i]
                     graph = graph.to(device)
-                    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
                     Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
                     Gs = subgraph_list
                     new_dataset.append((graph, Gc, Gs))

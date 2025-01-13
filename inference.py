@@ -112,15 +112,10 @@ class Net2(torch.nn.Module):
         return x
 
 def arg_correction(args):
-    if args.super_graph:    
-        args.cluster_node = False
+    if args.cluster_node:
         args.extra_node = False
-    elif args.cluster_node:
-        args.extra_node = False
-        args.super_graph = False
     elif args.extra_node:
         args.cluster_node = False
-        args.super_graph = False
     return args
 
 def process_dataset(args):
@@ -225,7 +220,6 @@ parser.add_argument('--val_ratio', type=float, default=0.2)
 parser.add_argument('--early_stopping', type=int, default=10)
 parser.add_argument('--extra_node', action='store_true')
 parser.add_argument('--cluster_node', action='store_true')
-parser.add_argument('--super_graph', action='store_true')
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--weight_decay', type=float, default=0.0005)
 parser.add_argument('--use_community_detection', action='store_true')
@@ -320,7 +314,7 @@ if args.task == "graph_cls":
     else:
         for i in test_indices:
             try:
-                args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
+                args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
                 Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
                 Gs = subgraph_list
                 new_datasets.append([[dataset[i], Gc, Gs]])
@@ -437,7 +431,7 @@ elif args.task == "graph_reg":
     else:
         for i in test_indices:
             try:
-                args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
+                args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
                 Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
                 Gs = subgraph_list
                 new_datasets.append([[dataset[i], Gc, Gs]])
@@ -534,7 +528,7 @@ elif args.task == "node_cls":
         args.num_features = dataset[0].x.shape[1]
     else:
         print("Coarsening graphs...")
-        args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
+        args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
     args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset[0], candidate, C_list, Gc_list, args.experiment, subgraph_list)
     if args.normalize_features:
             coarsen_features = F.normalize(coarsen_features, p=1)
@@ -611,7 +605,7 @@ elif args.task == "node_reg":
         subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
         args.num_features = dataset[0].x.shape[1]
     else:
-        args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
+        args.num_features, subgraph_list = coarsening_regression(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
     graphs = load_data_regression(args, dataset[0], subgraph_list)
 
     indices = []

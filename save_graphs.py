@@ -112,15 +112,10 @@ def process_dataset(args):
     return dataset, args
 
 def arg_correction(args):
-    if args.super_graph:
-        args.cluster_node = False
+    if args.cluster_node:
         args.extra_node = False
-    elif args.cluster_node:
-        args.extra_node = False
-        args.super_graph = False
     elif args.extra_node:
         args.cluster_node = False
-        args.super_graph = False
     return args
 
 def save(args, path, candidate = None, C_list = None, Gc_list = None, subgraph_list = None, saved_graph_list = None):
@@ -178,7 +173,6 @@ if __name__ == '__main__':
     parser.add_argument('--task', type = str, default = 'node_cls')
     parser.add_argument('--multi_prop', action='store_true')
     parser.add_argument('--property', type = int, default = 0)
-    parser.add_argument('--super_graph', action='store_true')
     parser.add_argument('--num_random_nodes', type=int, default=100)
     parser.add_argument('--use_community_detection', action='store_true')
     # parser.add_argument('--experiment', type=str, default='fixed')
@@ -217,7 +211,7 @@ if args.task == 'node_cls':
         data = merge_communities(data, mapping, 165000)
         del dataset
         torch.save(data, f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
-    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
+    args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
     
 elif args.task == 'node_reg':
@@ -236,7 +230,7 @@ elif args.task == 'node_reg':
         data = merge_communities(data, mapping, 165000)
         del dataset
         torch.save(data, f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
-    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, data, 1-args.coarsening_ratio, args.coarsening_method)
+    args.num_features,subgraph_list = coarsening_regression(args, data, 1-args.coarsening_ratio, args.coarsening_method)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', subgraph_list=subgraph_list)
     
 elif args.task == 'graph_cls':
@@ -248,7 +242,7 @@ elif args.task == 'graph_cls':
         try:
             graph = dataset[i]
             graph = graph.to(device)
-            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+            args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
             saved_graph_list.append(i)
             # Gs = subgraph_list
@@ -269,7 +263,7 @@ else:
         try:
             graph = dataset[i]
             graph = graph.to(device)
-            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+            args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
             saved_graph_list.append(i)
             # Gs = subgraph_list

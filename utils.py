@@ -33,70 +33,6 @@ def train_test_val_split(dataset, shuffle=True):
             test.append(dataset[idx[i]])
     return train, test, val
 
-def create_super_graph(dataset, component_2_subgraphs, CLIST, GcLIST):
-    sub_super_graph_list = []
-    for component in component_2_subgraphs.keys():
-        if sum(g.x.shape[0] for g in component_2_subgraphs[component]) > 1:
-            sub_super_graph = DataLoader(component_2_subgraphs[component], batch_size=len(component_2_subgraphs[component]), shuffle=False)
-            for graph in sub_super_graph:
-                G_new = Data(x = graph.x, y = graph.y, edge_index = graph.edge_index, ptr = graph.ptr)
-                orig_idx_2_sub_super_graph = dict() 
-                for idx, node in enumerate(graph.orig_idx):
-                    orig_idx_2_sub_super_graph[node.item()] = idx
-                cluster_node_2_sub_super_graph = (G_new.x.shape[0]) + np.arange(G_new.ptr.shape[0]-1)
-                new_edges = np.array([], dtype=np.compat.long)
-                actual_ext = set()
-                for node in range(G_new.x.shape[0]):
-                    N_node_in_orig = neighbour(dataset[0], graph.orig_idx[node].item())
-                    N_node_in_subgraph = neighbour(G_new, node)
-                    Nt_node = []
-                    for n_node in N_node_in_orig:
-                        if orig_idx_2_sub_super_graph[n_node] not in N_node_in_subgraph:
-                            Nt_node.append(orig_idx_2_sub_super_graph[n_node])
-                    Nt_node = np.array(Nt_node)
-                    cluster_nodes = []
-                    if Nt_node.shape[0] >= 1:
-                        for nt_node in Nt_node:
-                            cluster_nodes.append(np.argwhere(nt_node >= G_new.ptr.numpy())[-1][0])
-                            actual_ext.add(cluster_nodes[-1])
-                            e1 = np.array([node, cluster_node_2_sub_super_graph[cluster_nodes[-1]]], dtype=np.compat.long)
-                            e2 = np.array([cluster_node_2_sub_super_graph[cluster_nodes[-1]], node], dtype=np.compat.long)
-                            if len(new_edges.shape) <= 1:
-                                new_edges = np.concatenate((new_edges, e1), axis=0)
-                                new_edges = new_edges.reshape(1, 2)
-                                new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
-                            else:
-                                new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
-                                new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
-
-                actual_ext = list(actual_ext)
-                G_new.actual_ext = torch.tensor(np.array(actual_ext) + (G_new.x.shape[0]), dtype = float)
-                coar_adj_mat = GcLIST[component].A.toarray()
-                for i in range(len(G_new.actual_ext)-1):
-                    for j in range(i+1, len(G_new.actual_ext)):
-                        if coar_adj_mat[actual_ext[i],actual_ext[j]] or coar_adj_mat[actual_ext[j],actual_ext[i]]:
-                            e1 = np.array([G_new.actual_ext[i].item(), G_new.actual_ext[j].item()], dtype=np.compat.long)
-                            e2 = np.array([G_new.actual_ext[j].item(), G_new.actual_ext[i].item()], dtype=np.compat.long)
-                            new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
-                            new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
-
-                cluster_features = CLIST[component].dot(G_new.x)
-                G_new.x = torch.cat((G_new.x, torch.tensor(cluster_features).float()), dim = 0)
-                G_new.y = torch.cat((G_new.y, torch.zeros(len(cluster_features)).long()), dim = 0)
-                G_new.edge_index = torch.cat((G_new.edge_index.T, torch.tensor(new_edges, dtype=torch.long)), dim=0).T
-                G_new.num_classes = graph.num_classes[0]
-                G_new.orig_idx_2_sub_super_graph = orig_idx_2_sub_super_graph
-        else:
-            actual_ext = []
-            for idx, node in enumerate(component_2_subgraphs[component][0].orig_idx):
-                    orig_idx_2_sub_super_graph[node.item()] = idx
-            G_new = Data(x=component_2_subgraphs[component][0].x, y=component_2_subgraphs[component][0].y, 
-                         edge_index=component_2_subgraphs[component][0].edge_index, num_classes=component_2_subgraphs[component][0].num_classes[0], 
-                         actual_ext=actual_ext, orig_idx_2_sub_super_graph=orig_idx_2_sub_super_graph)
-        sub_super_graph_list.append(G_new)
-
-    return sub_super_graph_list
-
 def create_distribution_tensor(input_tensor, class_count):
     if input_tensor.dtype != torch.int64:
         input_tensor = input_tensor.long()
@@ -188,57 +124,6 @@ def metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node):
             metanode_2_node[metanode] = np.append(metanode_2_node[metanode], comp_node_2_node[comp_node])
     return metanode_2_node
 
-def modularity(edge_index, communities, degrees):
-    row, col = edge_index
-    m = degrees.sum()
-    modularity_score = 0.0
-    for c in torch.unique(communities):
-        community_nodes = (communities == c).nonzero(as_tuple=True)[0]
-        k_i = degrees[community_nodes].sum()
-        e_ii = 0.0
-        for node in community_nodes:
-            neighbors = col[row == node]
-            e_ii += (communities[neighbors] == c).sum().item()
-        modularity_score += (e_ii / m) - (k_i / m) ** 2
-
-    return modularity_score
-
-def louvain(data, max_iter=10):
-    edge_index = data.edge_index
-    num_nodes = data.num_nodes
-    degrees = degree(edge_index[0], num_nodes, dtype=torch.float).to(device)
-    communities = torch.arange(num_nodes).to(device)
-
-    prev_modularity = -1.0
-    for _ in range(max_iter):
-        for node in range(num_nodes):
-            neighbors = edge_index[1, edge_index[0] == node]
-            best_community = communities[node]
-            best_modularity = prev_modularity
-
-            for community in torch.unique(communities[neighbors]):
-                temp_communities = communities.clone()
-                temp_communities[node] = community
-                new_modularity = modularity(edge_index, temp_communities, degrees)
-
-                if new_modularity > best_modularity:
-                    best_modularity = new_modularity
-                    best_community = community
-
-            communities[node] = best_community
-
-        current_modularity = modularity(edge_index, communities, degrees)
-        if abs(current_modularity - prev_modularity) < 1e-5:
-            break
-        prev_modularity = current_modularity
-
-    mapping = {}
-    for i, c in enumerate(communities):
-        if int(c) not in mapping.keys():
-            mapping[int(c)] = []
-        mapping[int(c)].append(i)
-    return mapping
-
 def merge_communities(data, mapping, k):
     sorted_mapping = sorted(mapping.items(), key=lambda x: len(x[1]), reverse=True)
     new_nodes = torch.tensor([], dtype=torch.long).to(device)
@@ -261,10 +146,9 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
     GcLIST = []
     comp_node_2_meta_node_list = []
     subgraph_list=[]
-    component_2_subgraphs = {}
     while number < len(candidate):
         H = candidate[number]
-        new_subgraph_list = []
+        
         H_feature = data.x[H.info['orig_idx']].cpu()
         comp_node_2_node, node_2_comp_node = orig_to_new_map(H.info['orig_idx'])
         if len(H.info['orig_idx']) > 1:
@@ -377,9 +261,7 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                         M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
                     else:
                         M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
-                    M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
                     M.map_dict = mappiing
-                    new_subgraph_list.append(M_t)
                     subgraph_list.append(M)
             else:
                 for key, value in meta_node_2_node.items():
@@ -461,9 +343,9 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                         M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
                     else:
                         M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
-                    M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
+                    
                     M.map_dict = mappiing
-                    new_subgraph_list.append(M_t)
+                    
                     subgraph_list.append(M)   
         else:
             comp_node_2_meta_node = {0: 0}
@@ -482,11 +364,12 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                 M.map_dict = mappiing
                 M.mask = torch.tensor([True], dtype=torch.bool).to(device)
                 subgraph_list.append(M)
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
-                new_subgraph_list.append(M_t)
-        component_2_subgraphs[number] = new_subgraph_list
+     
         number += 1
-    return data.x.shape[1], candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST
+    if args.task == "node_cls":
+        return data.x.shape[1], candidate, C_list, Gc_list, subgraph_list
+    else:
+        return data.x.shape[1], candidate, subgraph_list, CLIST, GcLIST
 
 def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
     G = gsp.graphs.Graph(W=to_scipy_sparse_matrix(edge_index=data.edge_index, num_nodes=data.num_nodes).tocsr())
@@ -498,10 +381,9 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
     CLIST = []
     GcLIST = [] 
     subgraph_list=[]
-    component_2_subgraphs = {}
     while number < len(candidate):
         H = candidate[number]
-        new_subgraph_list = []
+        
         H_feature = data.x[H.info['orig_idx']].cpu()
         comp_node_2_node, node_2_comp_node = orig_to_new_map(H.info['orig_idx'])
         if len(H.info['orig_idx']) > 1:
@@ -611,8 +493,8 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                         M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
                     else:
                         M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
-                    M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
-                    new_subgraph_list.append(M_t)
+                    
+                    
                     subgraph_list.append(M)
             else:
                 for key, value in tqdm(meta_node_2_node.items()):
@@ -697,8 +579,8 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                         M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
                     else:
                         M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
-                    M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
-                    new_subgraph_list.append(M_t)
+                    
+                    
                     subgraph_list.append(M)
         else:
             comp_node_2_meta_node = {0: 0}
@@ -716,11 +598,14 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                 M.map_dict = mappiing
                 M.mask = torch.tensor([True], dtype=torch.bool).to(device)
                 subgraph_list.append(M)
-                M_t = Data(x = M.x, y = M.y, edge_index = M.edge_index, orig_idx = M.orig_idx, mask = M.mask)
-                new_subgraph_list.append(M_t)
-        component_2_subgraphs[number] = new_subgraph_list
+                
+                
         number += 1
-    return data.x.shape[1], candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST
+    
+    if args.task == "node_reg":
+        return data.x.shape[1], subgraph_list
+    else:
+        return data.x.shape[1], candidate, subgraph_list, CLIST, GcLIST
 
 def index_to_mask(index, size):
     mask = torch.zeros(size, dtype=torch.bool, device=index.device)
