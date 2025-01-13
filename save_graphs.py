@@ -112,15 +112,10 @@ def process_dataset(args):
     return dataset, args
 
 def arg_correction(args):
-    if args.super_graph:
-        args.cluster_node = False
+    if args.cluster_node:
         args.extra_node = False
-    elif args.cluster_node:
-        args.extra_node = False
-        args.super_graph = False
     elif args.extra_node:
         args.cluster_node = False
-        args.super_graph = False
     return args
 
 def save(args, path, candidate = None, C_list = None, Gc_list = None, subgraph_list = None, saved_graph_list = None):
@@ -178,25 +173,9 @@ if __name__ == '__main__':
     parser.add_argument('--task', type = str, default = 'node_cls')
     parser.add_argument('--multi_prop', action='store_true')
     parser.add_argument('--property', type = int, default = 0)
-    parser.add_argument('--super_graph', action='store_true')
     parser.add_argument('--num_random_nodes', type=int, default=100)
     parser.add_argument('--use_community_detection', action='store_true')
-    # parser.add_argument('--experiment', type=str, default='fixed')
-    # parser.add_argument('--runs', type=int, default=20)
-    # parser.add_argument('--exp_setup', type=str, default='Gc_train_2_Gs_infer')
-    # parser.add_argument('--hidden', type=int, default=512)
-    # parser.add_argument('--epochs1', type=int, default=100)   
-    # parser.add_argument('--epochs2', type=int, default=300)
-    # parser.add_argument('--num_layers1', type=int, default=2)
-    # parser.add_argument('--num_layers2', type=int, default=2)
-    # parser.add_argument('--batch_size', type=int, default=128)
-    # parser.add_argument('--train_ratio', type=float, default=0.3)
-    # parser.add_argument('--val_ratio', type=float, default=0.2)
-    # parser.add_argument('--early_stopping', type=int, default=10)
-    # parser.add_argument('--lr', type=float, default=0.01)
-    # parser.add_argument('--weight_decay', type=float, default=0.0005)
-    # parser.add_argument('--output_dir', type=str, required=True)
-    # parser.add_argument('--seed', type = int, default = None)
+    
     args = parser.parse_args()
     args = arg_correction(args)
     dataset, args = process_dataset(args)
@@ -217,7 +196,7 @@ if args.task == 'node_cls':
         data = merge_communities(data, mapping, 165000)
         del dataset
         torch.save(data, f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
-    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
+    args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
     
 elif args.task == 'node_reg':
@@ -236,7 +215,7 @@ elif args.task == 'node_reg':
         data = merge_communities(data, mapping, 165000)
         del dataset
         torch.save(data, f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
-    args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, data, 1-args.coarsening_ratio, args.coarsening_method)
+    args.num_features, subgraph_list = coarsening_regression(args, data, 1-args.coarsening_ratio, args.coarsening_method)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', subgraph_list=subgraph_list)
     
 elif args.task == 'graph_cls':
@@ -244,20 +223,15 @@ elif args.task == 'graph_cls':
     Gs_ = []
     saved_graph_list = []
     classes = set()
-    for i in tqdm(range(len(dataset))):
-        try:
+    for i in tqdm(range(len(dataset)), colour='blue'):
             graph = dataset[i]
             graph = graph.to(device)
-            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+            args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
             saved_graph_list.append(i)
-            # Gs = subgraph_list
-            # new_dataset.append((dataset[i], Gc, Gs))
             Gc_.append(Gc)
             Gs_.append(subgraph_list)
             classes.add(graph.y.item())
-        except:
-            pass
     args.num_classes = len(classes)
     save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
     
@@ -265,11 +239,11 @@ else:
     Gc_ = []
     Gs_ = []
     saved_graph_list = []
-    for i in tqdm(range(len(dataset))):
+    for i in tqdm(range(len(dataset)), colour='blue'):
         try:
             graph = dataset[i]
             graph = graph.to(device)
-            args.num_features, candidate, C_list, Gc_list, subgraph_list, component_2_subgraphs, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+            args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
             saved_graph_list.append(i)
             # Gs = subgraph_list

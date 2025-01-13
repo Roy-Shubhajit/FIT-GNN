@@ -1,6 +1,19 @@
-dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,best_test_acc
-AIDS,algebraic_JC,0.7,Gc_train_2_Gs_train,False,True,512,2,2,1,1,128,0.01,0.5016221404075623,0.8706896551724138
-AIDS,algebraic_JC,0.7,Gc_train_2_Gs_train,False,True,512,2,2,1,1,128,0.01,0.5037232935428619,0.8103448275862069
-AIDS,algebraic_JC,0.7,Gc_train_2_Gs_train,False,True,512,2,2,1,1,128,0.01,0.48835286498069763,0.8189655172413793
-AIDS,variation_neighborhoods,0.5,Gc_train_2_Gc_infer,True,False,512,2,2,100,100,128,0.01,0.5056110173463821,0.7931034482758621
-AIDS,variation_neighborhoods,0.5,Gc_train_2_Gc_infer,True,False,512,2,2,300,300,128,0.0001,0.5117966830730438,0.8448275862068966
+dataset ,coarsening_method       ,coarsening_ratio ,exp_setup           ,extra_nodes ,cluster_node ,hidden ,num_layers1 ,num_layers2 ,epochs1 ,epochs2 ,batch_size ,lr     ,best_test_loss      ,best_test_acc
+AIDS    ,algebraic_JC            ,             0.7 ,Gc_train_2_Gs_train ,False       ,True         ,   512 ,          2 ,          2 ,      1 ,      1 ,       128 ,0.01   ,0.5016221404075623  ,0.8706896551724138
+AIDS    ,algebraic_JC            ,             0.7 ,Gc_train_2_Gs_train ,False       ,True         ,   512 ,          2 ,          2 ,      1 ,      1 ,       128 ,0.01   ,0.5037232935428619  ,0.8103448275862069
+AIDS    ,algebraic_JC            ,             0.7 ,Gc_train_2_Gs_train ,False       ,True         ,   512 ,          2 ,          2 ,      1 ,      1 ,       128 ,0.01   ,0.48835286498069763 ,0.8189655172413793
+AIDS    ,variation_neighborhoods ,             0.5 ,Gc_train_2_Gc_infer ,True        ,False        ,   512 ,          2 ,          2 ,    100 ,    100 ,       128 ,0.01   ,0.5056110173463821  ,0.7931034482758621
+AIDS    ,variation_neighborhoods ,             0.5 ,Gc_train_2_Gc_infer ,True        ,False        ,   512 ,          2 ,          2 ,    300 ,    300 ,       128 ,0.0001 ,0.5117966830730438  ,0.8448275862068966
+AIDS    ,variation_neighborhoods ,             0.5 ,Gc_train_2_Gc_infer ,True        ,False        ,   512 ,          2 ,          2 ,    300 ,    300 ,       128 ,0.0001 ,0.5069140419363976  ,0.8189655172413793
+AIDS    ,variation_neighborhoods ,             0.5 ,Gc_train_2_Gs_infer ,True        ,False        ,   512 ,          2 ,          2 ,    300 ,    300 ,       128 ,0.0001 ,0.4869324043393135  ,0.853448275862069
+AIDS    ,variation_neighborhoods ,             0.5 ,Gc_train_2_Gs_infer ,True        ,False        ,   512 ,          2 ,          2 ,    300 ,    300 ,       128 ,0.0001 ,0.5384837239980698  ,0.7241379310344828
+AIDS,variation_neighborhoods,0.1,Gc_train_2_Gc_infer,False,True,False,512,2,2,2,2,128,0.01,0.5278361812233925,0.8448275862068966
+AIDS,variation_neighborhoods,0.1,Gc_train_2_Gc_infer,True,False,False,512,2,2,2,2,128,0.01,0.4953739196062088,0.896551724137931
+AIDS,variation_neighborhoods,0.1,Gc_train_2_Gs_infer,False,True,False,512,2,2,2,2,128,0.01,0.6877837032079697,0.7672413793103449
+AIDS,variation_neighborhoods,0.1,Gc_train_2_Gs_infer,True,False,False,512,2,2,2,2,128,0.01,0.69291190803051,0.5603448275862069
+AIDS,variation_neighborhoods,0.1,Gs_train_2_Gs_infer,False,True,False,512,2,2,2,2,128,0.01,0.5189461782574654,0.7241379310344828
+AIDS,variation_neighborhoods,0.1,Gs_train_2_Gs_infer,True,False,False,512,2,2,2,2,128,0.01,0.5282402783632278,0.8275862068965517
+AIDS,variation_neighborhoods,0.1,Gc_train_2_Gs_train,False,True,False,512,2,2,2,2,128,0.01,0.49954957515001297,0.8017241379310345
+AIDS,variation_neighborhoods,0.1,Gc_train_2_Gs_train,True,False,False,512,2,2,2,2,128,0.01,0.5124806240200996,0.75
+AIDS,variation_neighborhoods,0.1,Gc_train_2_Gc_infer,False,True,False,512,2,2,2,2,128,0.01,0.5233911722898483,0.7844827586206896
+AIDS,variation_neighborhoods,0.1,Gc_train_2_Gc_infer,True,False,False,512,2,2,2,2,128,0.01,0.5159154161810875,0.853448275862069
