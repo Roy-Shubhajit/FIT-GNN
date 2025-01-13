@@ -3,6 +3,7 @@ import torch
 import pickle
 import argparse
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM9, ZINC
+from ogb.nodeproppred import PygNodePropPredDataset
 from utils import load_graph_data, coarsening_classification, coarsening_regression, coarsening_classification, coarsening_regression, load_data_classification, load_data_regression, colater 
 from torch.utils.data import DataLoader as T_DataLoader
 from network import Classify_graph_gs, Regress_graph_gs, Classify_node, Regress_node, Classify_graph_gc, Regress_graph_gc
@@ -142,6 +143,11 @@ def process_dataset(args):
         args.task = 'node_cls'
     elif args.dataset == 'pubmed':
         dataset = Planetoid(root='./dataset', name=args.dataset)
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
+        args.task = 'node_cls'
+    elif args.dataset == "ogbn-products":
+        dataset = PygNodePropPredDataset(name="ogbn-products", root='/hdfs1/Data/weather/CoarseGNN_Hrriday/OGB/dataset/')
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
@@ -533,6 +539,12 @@ elif args.task == "node_cls":
         C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
         Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
         args.num_features = dataset[0].x.shape[1]
+        if args.use_community_detection:
+            args.num_classes = torch.unique(dataset.y).shape[0]
+            del dataset
+            torch.cuda.empty_cache()
+            data = torch.load(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
+            dataset = [data]
     else:
         print("Coarsening graphs...")
         args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
