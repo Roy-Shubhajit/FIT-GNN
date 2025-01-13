@@ -157,7 +157,6 @@ def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
     for graph in graph_data:
         train_mask = graph.train_mask.to(device)
         if True in train_mask:
-            # To Do: Remove .to(device) if not needed
             x = graph.x.to(device)
             y = graph.y.to(device)
             edge_index = graph.edge_index.to(device)

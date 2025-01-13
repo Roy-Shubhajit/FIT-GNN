@@ -907,7 +907,7 @@ def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, sub
     coarsen_val_labels = coarsen_val_labels.long()
     for graph in new_graphs:
         graph = graph.cpu()
-    print(new_graphs[0].x.device)
+    # print(new_graphs[0].x.device)
 
     return n_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, new_graphs
     
@@ -960,6 +960,8 @@ def load_data_regression(args, dataset, subgraph_list):
                     F.val_mask[new_node] = False
                     F.test_mask[new_node] = False
             new_graphs.append(F)
+    for graph in new_graphs:
+        graph = graph.cpu()
 
     return new_graphs
 
