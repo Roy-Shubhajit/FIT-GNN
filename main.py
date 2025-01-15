@@ -110,6 +110,8 @@ def arg_correction(args):
         args.extra_node = False
     elif args.extra_node:
         args.cluster_node = False
+    if args.experiment == 'fixed' and args.dataset == 'ogbn-products':
+        args.experiment = 'random'
     return args
 
 def save(args, path, candidate = None, C_list = None, Gc_list = None, subgraph_list = None, saved_graph_list = None):
@@ -240,7 +242,7 @@ if __name__ == "__main__":
                     if int(c) not in mapping.keys():
                         mapping[int(c)] = []
                     mapping[int(c)].append(i)
-                data = merge_communities(data, mapping, 165000)
+                data = merge_communities(data, mapping, 100000)
                 del dataset
                 torch.cuda.empty_cache()
                 torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
@@ -270,7 +272,7 @@ if __name__ == "__main__":
                     if int(c) not in mapping.keys():
                         mapping[int(c)] = []
                     mapping[int(c)].append(i)
-                data = merge_communities(data, mapping, 165000)
+                data = merge_communities(data, mapping, 100000)
                 del dataset
                 torch.cuda.empty_cache()
                 torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
@@ -291,8 +293,6 @@ if __name__ == "__main__":
             saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
             for i in range(len(saved_graph_list)):
                 classes.add(dataset[saved_graph_list[i]].y.item())
-                for subgraph in Gs_[i]:
-                    subgraph = subgraph.cpu()
                 new_dataset.append((dataset[saved_graph_list[i]], Gc_[i], Gs_[i]))
             args.num_features = dataset[0].x.shape[1]
         else:
@@ -302,8 +302,6 @@ if __name__ == "__main__":
                 graph = graph.to(device)
                 args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
                 Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
-                for subgraph in subgraph_list:
-                    subgraph = subgraph.cpu()
                 Gs = subgraph_list
                 new_dataset.append((graph, Gc, Gs))
                 Gs_.append(Gs)
@@ -327,8 +325,6 @@ if __name__ == "__main__":
             Gs_ = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
             saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
             for i in range(len(saved_graph_list)):
-                for subgraph in Gs_[i]:
-                    subgraph = subgraph.cpu()
                 new_dataset.append((dataset[saved_graph_list[i]], Gc_[i], Gs_[i]))
             args.num_features = dataset[0].x.shape[1]
         else:
@@ -339,8 +335,6 @@ if __name__ == "__main__":
                     graph = graph.to(device)
                     args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
                     Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
-                    for subgraph in subgraph_list:
-                        subgraph = subgraph.cpu()
                     Gs = subgraph_list
                     new_dataset.append((graph, Gc, Gs))
                     Gs_.append(Gs)
@@ -349,6 +343,4 @@ if __name__ == "__main__":
                 except:
                     pass
             save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
-        del dataset
-        torch.cuda.empty_cache()
         graph_regression(args, path, writer, new_dataset)

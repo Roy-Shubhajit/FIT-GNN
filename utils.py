@@ -263,9 +263,7 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                     else:
                         M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
                     M.map_dict = mappiing
-                    subgraph_list.append(M.cpu())
-                    del M
-                    torch.cuda.empty_cache()              
+                    subgraph_list.append(M)           
             else:
                 for key, value in meta_node_2_node.items():
                     value = np.sort(value)
@@ -348,9 +346,8 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                     else:
                         M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
                     M.map_dict = mappiing
-                    subgraph_list.append(M.cpu())
-                    del M
-                    torch.cuda.empty_cache()   
+                    subgraph_list.append(M)
+
         else:
             comp_node_2_meta_node = {0: 0}
             comp_node_2_meta_node_list.append(comp_node_2_meta_node)
@@ -367,9 +364,8 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                     mappiing[value[i].item()] = i
                 M.map_dict = mappiing
                 M.mask = torch.tensor([True], dtype=torch.bool).to(device)
-                subgraph_list.append(M.cpu())
-                del M
-                torch.cuda.empty_cache()
+                subgraph_list.append(M)
+
         number += 1
     if args.task == "node_cls":
         return data.x.shape[1], candidate, C_list, Gc_list, subgraph_list
@@ -501,9 +497,7 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                         M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
                     else:
                         M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
-                    subgraph_list.append(M.cpu())
-                    del M
-                    torch.cuda.empty_cache()
+                    subgraph_list.append(M)
             else:
                 for key, value in tqdm(meta_node_2_node.items(), colour='blue'):
                     value = np.sort(value)
@@ -587,9 +581,7 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                         M.mask = torch.tensor([True]*len(value) + [False]*len(actual_ext), dtype=torch.bool).to(device)
                     else:
                         M.mask = torch.tensor([True]*len(value), dtype=torch.bool).to(device)
-                    subgraph_list.append(M.cpu())
-                    del M
-                    torch.cuda.empty_cache()
+                    subgraph_list.append(M)
         else:
             comp_node_2_meta_node = {0: 0}
             meta_node_2_node = metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node)
@@ -633,10 +625,16 @@ def splits_classification(data, num_classes, exp):
             train_index = torch.cat([i[:20] for i in indices], dim=0)
             val_index = torch.cat([i[20:50] for i in indices], dim=0)
             test_index = torch.cat([i[50:] for i in indices], dim=0)
-        else:
+        elif exp == 'few':
             train_index = torch.cat([i[:5] for i in indices], dim=0)
             val_index = torch.cat([i[5:10] for i in indices], dim=0)
             test_index = torch.cat([i[10:] for i in indices], dim=0)
+        elif exp == 'ogbn_split':
+            num_nodes = np.random.permutation(data.num_nodes)
+            train_index = torch.tensor(num_nodes[:int(0.08*data.num_nodes)], dtype=torch.long)
+            val_index = torch.tensor(num_nodes[int(0.08*data.num_nodes):int(0.1*data.num_nodes)], dtype=torch.long)
+            test_index = torch.tensor(num_nodes[int(0.1*data.num_nodes):], dtype=torch.long)
+            
 
         data.train_mask = index_to_mask(train_index, size=data.num_nodes)
         data.val_mask = index_to_mask(val_index, size=data.num_nodes)
@@ -775,9 +773,8 @@ def load_data_classification(args, dataset, candidate, C_list, Gc_list, exp, sub
     coarsen_edge = torch.LongTensor(coarsen_edge)
     coarsen_train_labels = coarsen_train_labels.long()
     coarsen_val_labels = coarsen_val_labels.long()
-    for graph in new_graphs:
-        graph = graph.cpu()
-
+    del dataset, candidate, C_list, Gc_list, subgraph_list
+    torch.cuda.empty_cache()
     return n_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, new_graphs
     
 def load_data_regression(args, dataset, subgraph_list):
@@ -809,8 +806,6 @@ def load_data_regression(args, dataset, subgraph_list):
                 F.val_mask[new_node] = False
                 F.test_mask[new_node] = False
         new_graphs.append(F)
-    for graph in new_graphs:
-        graph = graph.cpu()
     return new_graphs
 
 def load_graph_data(data, C_LIST, GC_LIST, candidate):
@@ -911,3 +906,83 @@ class colater:
             GS.append(graph_data[2])
         GC_batch = Batch.from_data_list(GC)
         return GC_batch, GS, Y, batch_tensor
+    
+class NLLLoss_numpy:
+    """
+    A class to compute the Negative Log-Likelihood (NLL) Loss.
+    """
+    def __init__(self, reduction='mean'):
+        """
+        Initialize the NLLLoss class.
+
+        Parameters:
+        reduction (str): Specifies the reduction to apply to the output:
+                         - 'mean': return the mean of the loss.
+                         - 'sum': return the sum of the loss.
+        """
+        if reduction not in ['mean', 'sum']:
+            raise ValueError("Reduction must be 'mean' or 'sum'.")
+        self.reduction = reduction
+
+    def compute_loss(self, log_probs, targets):
+        """
+        Compute the NLL Loss.
+
+        Parameters:
+        log_probs (numpy.ndarray): Log probabilities of the predictions with shape (N, C),
+                                   where N is the number of samples and C is the number of classes.
+        targets (numpy.ndarray): True target indices with shape (N,).
+
+        Returns:
+        float: The NLL loss.
+        """
+        if len(log_probs.shape) != 2:
+            raise ValueError("log_probs must be a 2D array with shape (N, C).")
+        if len(targets.shape) != 1 or targets.shape[0] != log_probs.shape[0]:
+            raise ValueError("targets must be a 1D array with the same number of elements as rows in log_probs.")
+        if not np.all((targets >= 0) & (targets < log_probs.shape[1])):
+            raise ValueError("Targets must contain valid class indices.")
+
+        # Extract the log probabilities corresponding to the target classes
+        nll_values = -log_probs[np.arange(log_probs.shape[0]), targets]
+
+        # Apply the reduction
+        if self.reduction == 'mean':
+            return np.mean(nll_values)
+        elif self.reduction == 'sum':
+            return np.sum(nll_values)
+        
+class L1Loss_numpy:
+    """
+    A class to compute the L1 Loss.
+    """
+    def __init__(self, reduction='mean'):
+        """
+        Initialize the L1Loss class.
+
+        Parameters:
+        reduction (str): Specifies the reduction to apply to the output:
+                         - 'mean': return the mean of the loss.
+                         - 'sum': return the sum of the loss.
+        """
+        if reduction not in ['mean', 'sum']:
+            raise ValueError("Reduction must be 'mean' or 'sum'.")
+        self.reduction = reduction
+
+    def compute_loss(self, predictions, targets):
+        """
+        Compute the L1 Loss.
+
+        Parameters:
+        predictions (numpy.ndarray): Predicted values with shape (N,).
+        targets (numpy.ndarray): True target values with shape (N,).
+
+        Returns:
+        float: The L1 loss.
+        """
+        if len(predictions.shape) != 1 or predictions.shape[0] != targets.shape[0]:
+            raise ValueError("Predictions and targets must be 1D arrays with the same number of elements.")
+        if self.reduction == 'mean':
+            return np.mean(np.abs(predictions - targets))
+        elif self.reduction == 'sum':
+            return np.sum(np.abs(predictions - targets))

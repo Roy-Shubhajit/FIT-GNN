@@ -1,12 +1,13 @@
-dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,std_loss,property
-ZINC_subset,True,None,None,None,None,None,512,5,2,None,0.01,0.4355485439300537,64.27597198486328,13.140306982209264,None
-ZINC_subset,False,Gc_train_2_Gs_infer,variation_neighborhoods,0.5,True,False,512,5,2,128,0.001,0.025416553020477295,43.57133178710937,0.5862580484889709,None
-ZINC_subset,True,None,None,None,None,None,512,20,2,None,0.01,0.44335960087023285,63.55776748657227,10.52773742734658,None
-ZINC_subset,False,Gc_train_2_Gc_infer,variation_neighborhoods,0.5,True,False,c512,20,2,128,0.001,0.0031479785316868834,1.376607245951891,0.6704062073656571,None
-ZINC_subset,True,None,None,None,None,None,512,20,2,None,0.01,0.45427326152199193,64.02829170227051,11.502396695077916,None
-ZINC_subset,False,Gc_train_2_Gc_infer,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.0029128225226151315,1.6222614509053528,0.9462228790296155,None
-ZINC_subset,True,None,None,None,None,None,512,20,2,None,0.01,0.4662211819698936,1.4151410430669784,1.10569119421529,None
-ZINC_subset,False,Gc_train_2_Gc_infer,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.0027578002528140418,1.3838724189903586,1.227284715467016,None
-ZINC_subset,True,None,None,None,None,None,512,20,2,None,0.01,0.45956565204419586,1.8320888936519624,1.289245976431249,None
-ZINC_subset,False,Gc_train_2_Gc_infer,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.0030848352532637747,1.763943722844124,1.3635463288443492,NoneZINC_subset,True,None,None,None,None,None,512,20,2,None,0.01,0.46101405746058416,1.7546580374240874,1.170304328743756,None
-ZINC_subset,False,Gc_train_2_Gc_infer,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.0028796572434274773,1.6874921143054962,1.2514681806561527,None
+dataset     ,baseline ,exp_setup           ,coarsening_method       ,coarsening_ratio ,extra_node ,cluster_node ,hidden ,num_test_samples ,num_layers ,batch_size ,lr    ,avg_inf_time          ,avg_loss            ,property
+ZINC_subset ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,               5 ,         2 ,None       ,0.01  ,0.4355485439300537    ,64.27597198486328   ,None
+ZINC_subset ,False    ,Gc_train_2_Gs_infer ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,               5 ,         2 ,128        ,0.001 ,0.025416553020477295  ,43.57133178710937   ,None
+ZINC_subset ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  ,0.44335960087023285   ,63.55776748657227   ,None
+ZINC_subset ,False    ,Gc_train_2_Gc_infer ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,              20 ,         2 ,128        ,0.001 ,0.0031479785316868834 , 1.376607245951891  ,None
+ZINC_subset ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  ,0.45427326152199193   ,64.02829170227051   ,None
+ZINC_subset ,False    ,Gc_train_2_Gc_infer ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,              20 ,         2 ,128        ,0.001 ,0.0029128225226151315 , 1.6222614509053528 ,None
+ZINC_subset ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  ,0.4662211819698936    , 1.4151410430669784 ,None
+ZINC_subset ,False    ,Gc_train_2_Gc_infer ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,              20 ,         2 ,128        ,0.001 ,0.0027578002528140418 , 1.3838724189903586 ,None
+ZINC_subset ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  ,0.45956565204419586   , 1.8320888936519624 ,None
+ZINC_subset ,False    ,Gc_train_2_Gc_infer ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,              20 ,         2 ,128        ,0.001 ,0.0030848352532637747 , 1.763943722844124  ,None
+ZINC_subset ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  ,0.46101405746058416   , 1.7546580374240874 ,None
+ZINC_subset ,False    ,Gc_train_2_Gc_infer ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,              20 ,         2 ,128        ,0.001 ,0.0028796572434274773 , 1.6874921143054962 ,None

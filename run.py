@@ -10,7 +10,7 @@ import torch_scatter
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader as T_DataLoader
 from torch_geometric.loader import DataLoader as G_DataLoader
-from utils import load_data_classification, load_data_regression, train_test_val_split, colater
+from utils import load_data_classification, load_data_regression, train_test_val_split, colater, NLLLoss_numpy, L1Loss_numpy
 from network import Classify_node, Regress_node, Classify_graph_gc, Classify_graph_gs, Regress_graph_gc, Regress_graph_gs
 import logging
 logging.disable(logging.INFO)
@@ -46,57 +46,134 @@ def node_infer_Gs_GD(args, model, graph_data, loss_fn, infer_type):
     total_loss = 0
     total_time = 0
     n = 0
-    all_out = torch.tensor([], dtype=torch.float32).to(device)
-    all_label = torch.tensor([], dtype=torch.float32).to(device)
+    all_out = np.array([])
+    all_label = np.array([])
+    if args.task == 'node_cls':
+        all_out = all_out.astype(np.int32)
+        all_out = all_out.reshape(0, args.num_classes)
+        all_label = all_label.astype(np.int32)
     for graph in graph_data:
         model.eval()
-        x = graph.x.to(device)
-        y = graph.y.to(device)
-        edge_index = graph.edge_index.to(device)
         if infer_type == 'test':
             if True in graph.test_mask:
+                x = graph.x.to(device)
+                y = graph.y.to(device)
+                edge_index = graph.edge_index.to(device)
                 start_time = time.time()
                 out = model(x, edge_index)
                 total_time += time.time() - start_time
                 test_mask = graph.test_mask.to(device)
-                all_out = torch.cat((all_out, out[test_mask]), dim=0)
-                all_label = torch.cat((all_label, y[test_mask]), dim=0)
+                if args.task == 'node_reg':
+                    all_out = np.concatenate((all_out,out[test_mask].flatten().cpu().detach().numpy()), axis=0)
+                else:
+                    all_out = np.concatenate((all_out,out[test_mask].cpu().detach().numpy()), axis=0)
+                all_label = np.concatenate((all_label, y[test_mask].flatten().cpu().numpy()))
+                del x, y, edge_index, test_mask
+                torch.cuda.empty_cache()
+                n += 1
             else:
                 continue
         else:
             if True in graph.val_mask:
+                x = graph.x.to(device)
+                y = graph.y.to(device)
+                edge_index = graph.edge_index.to(device)
                 start_time = time.time()
                 out = model(x, edge_index)
                 total_time += time.time() - start_time
                 val_mask = graph.val_mask.to(device)
-                all_out = torch.cat((all_out, out[val_mask]), dim=0)
-                all_label = torch.cat((all_label, y[val_mask]), dim=0)
+                if args.task == 'node_reg':
+                    all_out = np.concatenate((all_out,out[val_mask].flatten().cpu().detach().numpy()), axis=0)
+                else:
+                    all_out = np.concatenate((all_out,out[val_mask].cpu().detach().numpy()), axis=0)
+                all_label = np.concatenate((all_label, y[val_mask].flatten().cpu().numpy()))
+                del x, y, edge_index, val_mask
+                torch.cuda.empty_cache()
+                n += 1
             else:
                 continue
-        n = n + 1
     if args.task == 'node_cls':
-        loss = loss_fn(all_out, all_label.type(torch.long).flatten())
+        loss = loss_fn.compute_loss(all_out, all_label)
         total_loss += loss.item()
-        acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
+        acc = np.sum(np.argmax(all_out,axis=1) == all_label) / len(all_label)
         if args.loss_reduction == 'mean':
             return total_loss, acc, total_time
         else:
             return total_loss/len(all_out), acc, total_time
     else:
-        loss = loss_fn(all_out.view(-1, 1), all_label.view(-1, 1))
-        total_loss += loss.item()/torch.std(all_label).item()
+        loss = loss_fn.compute_loss(all_out, all_label)
+        total_loss += loss.item()
+        total_loss = total_loss / np.std((all_label)).item()
         acc = 0
         if args.loss_reduction == 'mean':
             return total_loss, acc, total_time
         else:
             return total_loss/len(all_out), acc, total_time
         
+# def node_infer_Gs_GD(args, model, graph_data, loss_fn, infer_type):
+#     total_loss = 0
+#     total_time = 0
+#     # all_out = torch.tensor([]).to(device)
+#     # all_label = torch.tensor([]).to(device)
+#     all_out = np.array([])
+#     all_label = np.array([])
+#     if args.task == 'node_cls':
+#         all_out = all_out.astype(np.int32)
+#         all_label = all_label.astype(np.int32)
+#     for graph in graph_data:
+#         model.eval()
+#         if infer_type == 'test':
+#             if True in graph.test_mask:
+#                 x = graph.x.to(device)
+#                 y = graph.y.to(device)
+#                 edge_index = graph.edge_index.to(device)
+#                 start_time = time.time()
+#                 out = model(x, edge_index)
+#                 total_time += time.time() - start_time
+#                 test_mask = graph.test_mask.to(device)
+#                 all_out = np.concatenate((all_out,torch.argmax(out[test_mask], 1).cpu().numpy()))
+#                 all_label = np.concatenate((all_label, y[test_mask].flatten().cpu().numpy()))
+#                 del x, y, edge_index, test_mask
+#                 torch.cuda.empty_cache()
+#             else:
+#                 continue
+#         else:
+#             if True in graph.val_mask:
+#                 x = graph.x.to(device)
+#                 y = graph.y.to(device)
+#                 edge_index = graph.edge_index.to(device)
+#                 start_time = time.time()
+#                 out = model(x, edge_index)
+#                 total_time += time.time() - start_time
+#                 val_mask = graph.val_mask.to(device)
+#                 all_out = np.concatenate((all_out,torch.argmax(out[val_mask], 1).cpu().numpy()))
+#                 all_label = np.concatenate((all_label, y[val_mask].flatten().cpu().numpy()))
+#                 del x, y, edge_index, val_mask
+#                 torch.cuda.empty_cache()
+#             else:
+#                 continue
+#     if args.task == 'node_cls':
+#         loss = loss_fn(all_out, all_label.type(torch.long).flatten())
+#         total_loss += loss.item()
+#         acc = np.sum(all_out == all_label) / len(all_label)
+#         if args.loss_reduction == 'mean':
+#             return total_loss, acc, total_time
+#         else:
+#             return total_loss/len(all_out), acc, total_time
+#     else:
+#         loss = loss_fn(torch.tensor(all_out).view(-1, 1), torch.tensor(all_label).view(-1, 1))
+#         total_loss += loss.item()/np.std(all_label).item()
+#         acc = 0
+#         if args.loss_reduction == 'mean':
+#             return total_loss, acc, total_time
+#         else:
+#             return total_loss/len(all_out), acc, total_time
+        
 def node_infer_Gs_MB(args, model, graph_data, loss_fn, infer_type):
     total_loss = 0
     total_time = 0
-    n = 0
-    all_out = torch.tensor([], dtype=torch.float32).to(device)
-    all_label = torch.tensor([], dtype=torch.float32).to(device)
+    all_out = torch.tensor([]).to(device)
+    all_label = torch.tensor([]).to(device)
     for graph in graph_data:
         model.eval()
         x = graph.x.to(device)
@@ -115,6 +192,8 @@ def node_infer_Gs_MB(args, model, graph_data, loss_fn, infer_type):
                 all_out = torch.cat((all_out, out[test_mask]), dim=0)
                 all_label = torch.cat((all_label, y[test_mask]), dim=0)
                 total_loss += loss.item()
+                del x, y, edge_index, test_mask
+                torch.cuda.empty_cache()
             else:
                 continue
         else:
@@ -130,9 +209,11 @@ def node_infer_Gs_MB(args, model, graph_data, loss_fn, infer_type):
                 all_out = torch.cat((all_out, out[val_mask]), dim=0)
                 all_label = torch.cat((all_label, y[val_mask]), dim=0)
                 total_loss += loss.item()
+                del x, y, edge_index, val_mask
+                torch.cuda.empty_cache()
             else:
                 continue
-        n = n + 1
+        
     if args.loss_reduction == 'mean':
         if args.task == 'node_cls':
             acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
@@ -150,8 +231,8 @@ def node_infer_Gs_MB(args, model, graph_data, loss_fn, infer_type):
 
 def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
     total_loss = 0
-    all_out = torch.tensor([], dtype=torch.float32).to(device)
-    all_label = torch.tensor([], dtype=torch.float32).to(device)
+    all_out = torch.tensor([]).to(device)
+    all_label = torch.tensor([]).to(device)
     model.train()
     optimizer.zero_grad()
     for graph in graph_data:
@@ -161,11 +242,13 @@ def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
             y = graph.y.to(device)
             edge_index = graph.edge_index.to(device)
             out = model(x, edge_index)
-            
             all_out = torch.cat((all_out, out[train_mask]), dim=0)
             all_label = torch.cat((all_label, y[train_mask]), dim=0)
         else:
             continue
+        del x, y, edge_index, train_mask
+        torch.cuda.empty_cache()
+            
     if args.task == 'node_cls':
         loss = loss_fn(all_out, all_label.type(torch.long).flatten())
     else:
@@ -186,8 +269,8 @@ def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
         
 def node_train_Gs_MB(model, graph_data, loss_fn, optimizer, args):
     total_loss = 0
-    all_out = torch.tensor([], dtype=torch.float32).to(device)
-    all_label = torch.tensor([], dtype=torch.float32).to(device)
+    all_out = torch.tensor([]).to(device)
+    all_label = torch.tensor([]).to(device)
     model.train()
     optimizer.zero_grad()
     for graph in graph_data:
@@ -206,6 +289,8 @@ def node_train_Gs_MB(model, graph_data, loss_fn, optimizer, args):
             total_loss += loss.item()
             all_out = torch.cat((all_out, out[train_mask]), dim=0)
             all_label = torch.cat((all_label, y[train_mask]), dim=0)
+            del x, y, edge_index, train_mask
+            torch.cuda.empty_cache()
         else:
             continue
     if args.loss_reduction == 'mean':
@@ -301,12 +386,13 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
     args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, dataset, candidate, C_list, Gc_list, args.experiment, subgraph_list)
     if args.normalize_features:
         coarsen_features = F.normalize(coarsen_features, p=1)
-    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False, pin_memory=True)
+    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False)
     
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1), )
         model = Classify_node(args).to(device)
         loss_fn = torch.nn.NLLLoss(reduction=args.loss_reduction).to(device)
+        loss_fn_np = NLLLoss_numpy(reduction=args.loss_reduction)
         model.reset_parameters()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         if args.exp_setup == 'Gc_train_2_Gs_train':
@@ -331,8 +417,8 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
             for epoch in tqdm(range(args.epochs2), desc=f"Run {run+1}", colour='green'):
                 if args.gradient_method == "GD":
                     train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args)
-                    val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'test')
+                    val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
+                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
                 else:
                     train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer, args)
                     val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
@@ -367,8 +453,8 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                 val_loss_gc = node_val_Gc(model, coarsen_features, coarsen_edge, coarsen_val_mask, coarsen_val_labels, loss_fn)
                 
                 if args.gradient_method == "GD":
-                    val_loss_gs, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'test')
+                    val_loss_gs, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
+                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
                 else:
                     val_loss_gs, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
                     test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
@@ -391,6 +477,9 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
             all_time.append(best_test_time)
 
         elif args.exp_setup == 'Gs_train_2_Gs_infer':
+            if run == 0:
+                del coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge
+                torch.cuda.empty_cache()
             best_val_loss_Gs =  float('inf')
             best_test_loss = float('inf')
             best_test_acc = 0
@@ -399,8 +488,8 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
             for epoch in tqdm(range(args.epochs2), desc=f"Run {run+1}", colour='green'):
                 if args.gradient_method == "GD":
                     train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer,args)
-                    val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'test')
+                    val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
+                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
                 else:
                     train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer,args)
                     val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
@@ -458,12 +547,13 @@ def node_regression(args, path, dataset, writer, subgraph_list):
     all_acc = []
     all_time = []
     graphs = load_data_regression(args, dataset, subgraph_list)
-    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False, pin_memory=True)
+    graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=False, pin_memory=False)
 
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
         model = Regress_node(args).to(device)
         loss_fn = torch.nn.L1Loss(reduction=args.loss_reduction).to(device)
+        loss_fn_np = L1Loss_numpy(reduction=args.loss_reduction)
         model.reset_parameters()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         
@@ -475,8 +565,8 @@ def node_regression(args, path, dataset, writer, subgraph_list):
         for epoch in tqdm(range(args.epochs2), desc=f"Run {run+1}", colour='green'):
             if args.gradient_method == "GD":
                 train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer,args)
-                val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'val')
-                test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn, 'test')
+                val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
+                test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
             else:
                 train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer,args)
                 val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')

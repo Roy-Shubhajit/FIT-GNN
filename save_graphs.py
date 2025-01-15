@@ -193,7 +193,7 @@ if args.task == 'node_cls':
             if int(c) not in mapping.keys():
                 mapping[int(c)] = []
             mapping[int(c)].append(i)
-        data = merge_communities(data, mapping, 165000)
+        data = merge_communities(data, mapping, 100000)
         del dataset
         torch.save(data, f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
     args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
@@ -212,7 +212,7 @@ elif args.task == 'node_reg':
             if int(c) not in mapping.keys():
                 mapping[int(c)] = []
             mapping[int(c)].append(i)
-        data = merge_communities(data, mapping, 165000)
+        data = merge_communities(data, mapping, 100000)
         del dataset
         torch.save(data, f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{graph_type}_data.pt')
     args.num_features, subgraph_list = coarsening_regression(args, data, 1-args.coarsening_ratio, args.coarsening_method)

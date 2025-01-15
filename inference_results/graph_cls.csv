@@ -1,13 +1,13 @@
-dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,std_loss,acc
-AIDS,True,None,None,None,None,None,512,20,2,None,0.01,0.4369237548426578,0.6621169477701188,0.06380715620059348,0.75
-AIDS,False,Gc_train_2_Gs_train,algebraic_JC,0.7,False,True,512,20,2,128,0.001,0.029226980711284437,0.5654870957136154,0.42695859008899584,0.75
-AIDS,True,None,None,None,None,None,512,5,2,None,0.01,0.40511059761047363,0.6281358480453492,0.007426234791662439,1.0
-AIDS,False,Gc_train_2_Gs_train,algebraic_JC,0.7,False,True,512,5,2,128,0.001,0.01764678955078125,0.3192741274833679,0.002803145499054108,1.0
-AIDS,True,None,None,None,None,None,512,5,2,None,0.01,0.4267798662185669,0.6568685531616211,0.06174430789061734,0.8
-AIDS,False,Gc_train_2_Gs_train,algebraic_JC,0.7,False,True,512,5,2,128,0.001,0.02443850040435791,0.5169082641601562,0.3950644715745813,0.8
-AIDS,True,None,None,None,None,None,512,5,2,None,0.01,0.4031384587287903,0.6163313269615174,0.003717582654169252,1.0
-AIDS,False,Gc_train_2_Gs_train,algebraic_JC,0.7,False,True,512,5,2,128,0.001,0.017174839973449707,0.3164420425891876,0.0006093766484118624,1.0
-AIDS,True,None,None,None,None,None,512,20,2,None,0.01,0.40457848498695775,0.6286007821559906,0.03287966908717633,0.95
-AIDS,False,Gc_train_2_Gc_infer,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.0029097481777793483,0.3649226278066635,0.21697895639905204,0.95
-AIDS,True,None,None,None,None,None,512,20,2,None,0.01,0.4154666599474455,0.6465098857879639,0.05600634685817669,0.85
-AIDS,False,Gc_train_2_Gc_infer,variation_neighborhoods,0.5,True,False,512,20,2,128,0.001,0.003856056614925987,0.4647092089056969,0.3551634709463341,0.85
+dataset ,baseline ,exp_setup           ,coarsening_method       ,coarsening_ratio ,extra_node ,cluster_node ,hidden ,num_test_samples ,num_layers ,batch_size ,lr    ,avg_inf_time          ,avg_loss           ,acc
+AIDS    ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  ,0.4369237548426578    ,0.6621169477701188 ,0.75
+AIDS    ,False    ,Gc_train_2_Gs_train ,algebraic_JC            ,0.7              ,False      ,True         ,   512 ,              20 ,         2 ,128        ,0.001 ,0.029226980711284437  ,0.5654870957136154 ,0.75
+AIDS    ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,               5 ,         2 ,None       ,0.01  ,0.40511059761047363   ,0.6281358480453492 ,1.0
+AIDS    ,False    ,Gc_train_2_Gs_train ,algebraic_JC            ,0.7              ,False      ,True         ,   512 ,               5 ,         2 ,128        ,0.001 ,0.01764678955078125   ,0.3192741274833679 ,1.0
+AIDS    ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,               5 ,         2 ,None       ,0.01  ,0.4267798662185669    ,0.6568685531616211 ,0.8
+AIDS    ,False    ,Gc_train_2_Gs_train ,algebraic_JC            ,0.7              ,False      ,True         ,   512 ,               5 ,         2 ,128        ,0.001 ,0.02443850040435791   ,0.5169082641601562 ,0.8
+AIDS    ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,               5 ,         2 ,None       ,0.01  ,0.4031384587287903    ,0.6163313269615174 ,1.0
+AIDS    ,False    ,Gc_train_2_Gs_train ,algebraic_JC            ,0.7              ,False      ,True         ,   512 ,               5 ,         2 ,128        ,0.001 ,0.017174839973449707  ,0.3164420425891876 ,1.0
+AIDS    ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  ,0.40457848498695775   ,0.6286007821559906 ,0.95
+AIDS    ,False    ,Gc_train_2_Gc_infer ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,              20 ,         2 ,128        ,0.001 ,0.0029097481777793483 ,0.3649226278066635 ,0.95
+AIDS    ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  ,0.4154666599474455    ,0.6465098857879639 ,0.85
+AIDS    ,False    ,Gc_train_2_Gc_infer ,variation_neighborhoods ,0.5              ,True       ,False        ,   512 ,              20 ,         2 ,128        ,0.001 ,0.003856056614925987  ,0.4647092089056969 ,0.85

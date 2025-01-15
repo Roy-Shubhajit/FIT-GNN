@@ -1,8 +1,11 @@
+import warnings
+warnings.simplefilter("ignore")
 import os
 import torch
 import pickle
 import argparse
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM9, ZINC
+from ogb.nodeproppred import PygNodePropPredDataset
 from utils import load_graph_data, coarsening_classification, coarsening_regression, coarsening_classification, coarsening_regression, load_data_classification, load_data_regression, colater 
 from torch.utils.data import DataLoader as T_DataLoader
 from network import Classify_graph_gs, Regress_graph_gs, Classify_node, Regress_node, Classify_graph_gc, Regress_graph_gc
@@ -11,8 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_max_pool, global_mean_pool
-import warnings
-warnings.simplefilter('ignore')
+from tqdm import tqdm
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 class Classify_graph(torch.nn.Module):
@@ -145,6 +147,11 @@ def process_dataset(args):
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
+    elif args.dataset == "ogbn-products":
+        dataset = PygNodePropPredDataset(name="ogbn-products", root='/hdfs1/Data/weather/CoarseGNN_Hrriday/OGB/dataset/')
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
+        args.task = 'node_cls'
     #Node Regression
     elif args.dataset == 'chameleon':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
@@ -242,8 +249,13 @@ args = parser.parse_args()
 
 args = arg_correction(args)
 dataset, args = process_dataset(args)
-dataset = dataset.to(device)
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# for i in tqdm(range(len(dataset)), colour='blue'):
+#     dataset[i] = dataset[i].to(device)
+# print(dataset[0].x.device)
+# quit()
+
+if (args.task == 'node_cls' or args.task == 'node_reg') and dataset[0].num_nodes > 170000:
+    args.use_community_detection = True
 
 node_type = "d"
 if args.extra_node:
@@ -300,6 +312,7 @@ if args.task == "graph_cls":
     num = 0
     new_datasets = []
     if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
+        print("Loading saved graphs...")
         Gs_ = torch.load(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt")
         Gc_ = pickle.load(open(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl", "rb"))
         saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
@@ -314,11 +327,12 @@ if args.task == "graph_cls":
     else:
         for i in np.random.permutation(len(dataset)):
             if num != args.num_test_samples:
+                graph = dataset[i].to(device)
                 try:
-                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
-                    Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+                    Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
                     Gs = subgraph_list
-                    new_datasets.append([[dataset[i], Gc, Gs]])
+                    new_datasets.append([[graph, Gc, Gs]])
                     num += 1
                 except:
                     continue
@@ -357,23 +371,26 @@ if args.task == "graph_cls":
                 loss_gs = loss_fn(out_gs, y_)
                 losses_gs.append(loss_gs.item())
 
-        # Baseline model
-        G = new_datasets[j][0][0].to(device)
-        y = G.y.to(device).type(torch.long)
-        t3 = time()
-        out_b = model_b(G)
-        t4 = time()
-        times_b.append(t4-t3)
-        all_out_b.append(out_b.argmax().item())
-        all_label_b.append(y.item())
-        loss_b = loss_fn(out_b, y)
-        losses_b.append(loss_b.item())
+        if args.baseline:
+            # Baseline model
+            G = new_datasets[j][0][0].to(device)
+            y = G.y.to(device).type(torch.long)
+            t3 = time()
+            out_b = model_b(G)
+            t4 = time()
+            times_b.append(t4-t3)
+            all_out_b.append(out_b.argmax().item())
+            all_label_b.append(y.item())
+            loss_b = loss_fn(out_b, y)
+            losses_b.append(loss_b.item())
 
         if args.exp_setup == "Gc_train_2_Gc_infer":
             print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.argmax().item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
         else:
             print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.argmax().item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-        print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+        
+        if args.baseline:
+            print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
 
         # Remove set_gc, set_gs and y_ from device memory
         if args.exp_setup == "Gc_train_2_Gc_infer":
@@ -381,7 +398,6 @@ if args.task == "graph_cls":
             y_ = y_.cpu()
             del set_gc, y_
         else:
-            set_gs = set_gs.cpu()
             y_ = y_.cpu()
             del set_gs, y_
     
@@ -389,7 +405,9 @@ if args.task == "graph_cls":
         print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAccuracy (coarsened graph): {np.sum(np.array(all_label_gc) == np.array(all_out_gc))}/{num}")
     else:
         print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAccuracy (subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
-    print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
+    
+    if args.baseline:
+        print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
 
 elif args.task == "graph_reg":
     
@@ -421,6 +439,7 @@ elif args.task == "graph_reg":
     new_datasets = []
 
     if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
+        print("Loading saved graphs...")
         Gs_ = torch.load(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt")
         Gc_ = pickle.load(open(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl", "rb"))
         saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
@@ -435,11 +454,12 @@ elif args.task == "graph_reg":
     else:
         for i in np.random.permutation(len(dataset)):
             if num != args.num_test_samples:
+                graph = dataset[i].to(device)
                 try:
-                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, dataset[i], 1-args.coarsening_ratio, args.coarsening_method)
-                    Gc = load_graph_data(dataset[i], CLIST, GcLIST, candidate)
+                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+                    Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
                     Gs = subgraph_list
-                    new_datasets.append([[dataset[i], Gc, Gs]])
+                    new_datasets.append([[graph, Gc, Gs]])
                     num += 1
                 except:
                     continue
@@ -482,31 +502,34 @@ elif args.task == "graph_reg":
                     loss_gs = loss_fn(out_gs, y_)
                 losses_gs.append(loss_gs.item())
         
-        # Baseline model
-        G = new_datasets[j][0][0].to(device)
-        y = G.y.to(device).type(torch.float)
-        t3 = time()
-        out_b = model_b(G)
-        t4 = time()
-        times_b.append(t4-t3)
-        if args.dataset == 'QM9':
-            loss_b = loss_fn(out_b, y[:, args.property].view(-1, 1))
-        else:
-            loss_b = loss_fn(out_b, y)
-        losses_b.append(loss_b.item())
+        if args.baseline:
+            # Baseline model
+            G = new_datasets[j][0][0].to(device)
+            y = G.y.to(device).type(torch.float)
+            t3 = time()
+            out_b = model_b(G)
+            t4 = time()
+            times_b.append(t4-t3)
+            if args.dataset == 'QM9':
+                loss_b = loss_fn(out_b, y[:, args.property].view(-1, 1))
+            else:
+                loss_b = loss_fn(out_b, y)
+            losses_b.append(loss_b.item())
         
         if args.dataset == 'QM9':
             if args.exp_setup == "Gc_train_2_Gc_infer":
                 print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gc.item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
             else:
                 print(f"\nSubgraph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-            print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+            if args.baseline:
+                print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
         else:
             if args.exp_setup == "Gc_train_2_Gc_infer":
                 print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
             else:
                 print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-            print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
+            if args.baseline:
+                print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
         
         # Remove set_gc, set_gs and y_ from device memory
         if args.exp_setup == "Gc_train_2_Gc_infer":
@@ -514,7 +537,6 @@ elif args.task == "graph_reg":
             y_ = y_.cpu()
             del set_gc, y_
         else:
-            set_gs = set_gs.cpu()
             y_ = y_.cpu()
             del set_gs, y_
 
@@ -522,10 +544,12 @@ elif args.task == "graph_reg":
         print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAverage Loss (coarsened graph): {np.mean(losses_gc)}")
     else:
         print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAverage Loss (subgraph): {np.mean(losses_gs)}")
-    print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
+    if args.baseline:
+        print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
 
 elif args.task == "node_cls":
-
+    dataset = dataset.to(device)
+    args.num_classes = torch.unique(dataset.y).shape[0]
     if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
         print("Loading saved graphs...")
         subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
@@ -533,6 +557,11 @@ elif args.task == "node_cls":
         C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
         Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
         args.num_features = dataset[0].x.shape[1]
+        if args.use_community_detection:
+            del dataset
+            torch.cuda.empty_cache()
+            data = torch.load(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
+            dataset = [data]
     else:
         print("Coarsening graphs...")
         args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, dataset[0], 1-args.coarsening_ratio, args.coarsening_method)
@@ -540,18 +569,78 @@ elif args.task == "node_cls":
     if args.normalize_features:
             coarsen_features = F.normalize(coarsen_features, p=1)
     indices = []
+    true_indices = []
+    false_indices = []
     num = 0
-    for i in np.random.permutation(len(graphs)):
-        if num != args.num_test_samples:
-            if args.cluster_node:
-                index = np.random.choice(subgraph_list[i].orig_idx.cpu(), 1)[0]
-            elif args.extra_node:
-                index = np.random.choice(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())], 1)[0]
-            j = subgraph_list[i].map_dict[index]
-            indices.append((index, j, i))
-            num += 1
-        else:
-            break
+    test_num = args.num_test_samples
+    no_graphs = len(graphs)
+    rat = test_num // no_graphs
+    # To do: assert if arg.num_test_samples > total nodes in the graphs
+    # To do: check for default nodes
+    permu = np.random.permutation(no_graphs)
+    maskie = [False]*no_graphs
+
+    if test_num <= no_graphs:
+        for i in np.random.permutation(len(graphs)):
+            if num != args.num_test_samples:
+                if args.cluster_node:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), 1)[0]
+                elif args.extra_node:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())], 1)[0]
+                j = subgraph_list[i].map_dict[index]
+                indices.append((index, j, i))
+                num += 1
+            else:
+                break
+    else:
+        for i in permu:
+            if test_num > 0:
+                if args.cluster_node:
+                    if len(subgraph_list[i].orig_idx.cpu()) >= rat:
+                        maskie[i] = True
+                        test_num = test_num - rat
+                elif args.extra_node:
+                    if len(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())]) >= rat:
+                        maskie[i] = True
+                        test_num = test_num - rat
+            else:
+                break
+
+        for i in permu:
+            if maskie[i] == True:
+                if args.cluster_node:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), rat)
+                elif args.extra_node:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())], rat)
+                true_indices.append((index, i)) # one test sample: index = original node index in community graph, j = renamed index of node in that subgraph, i = index of subgraph in subgraph list
+            else:
+                if test_num > 0:
+                    if args.cluster_node:
+                        index = subgraph_list[i].orig_idx.cpu()
+                    elif args.extra_node:
+                        index = subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())]
+                    test_num = test_num - len(index)
+                    for ind in index:
+                        ind = ind.item()
+                        indices.append((ind, subgraph_list[i].map_dict[ind], i)) # one test sample: index = original node index in community graph, j = renamed index of node in that subgraph, i = index of subgraph in subgraph list   
+        
+        for itr in true_indices:
+            if test_num > 0:
+                if args.cluster_node:
+                    index = subgraph_list[itr[1]].orig_idx.cpu()[~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), itr[0])]
+                elif args.extra_node:
+                    index = subgraph_list[itr[1]].orig_idx.cpu()[~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), subgraph_list[itr[1]].actual_ext.cpu()) & ~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), itr[0])]
+                test_num = test_num - len(index)
+                for ind in index:
+                    ind = ind.item()
+                    indices.append((ind, subgraph_list[itr[1]].map_dict[ind], itr[1]))
+            
+            for ind in itr[0]:
+                ind = ind.item()
+                indices.append((ind, subgraph_list[itr[1]].map_dict[ind], itr[1]))
+
+    num = len(indices)
+
     losses_b = []
     losses_gs = []
     times_b = []
@@ -566,49 +655,54 @@ elif args.task == "node_cls":
     loss_fn = torch.nn.NLLLoss().to(device)
     model_gs.load_state_dict(torch.load(args.path_gs + args.model_name_gs))
     model_gs.eval()
-    for index, j, i in indices:
+    for index, j, i in tqdm(indices, colour='blue'):
         x = graphs[i].x.to(device)
         y = graphs[i].y.to(device)
         edge_index = graphs[i].edge_index.to(device)
         t1 = time()
         out_gs = model_gs(x, edge_index).to(device)
         t2 = time()       
-        loss_gs = loss_fn(out_gs[j], y[j])
+        loss_gs = loss_fn(out_gs[j].reshape(1,-1), y[j].reshape(1))
         all_label_gs.append(y[j].item())        
         all_out_gs.append(out_gs[j].argmax().item())
         losses_gs.append(loss_gs.item())
         times_gs.append(t2 - t1)
-        print(f"\nSubgraph-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j].argmax().item()}\nOutput: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
+        #print(f"\nSubgraph-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j].argmax().item()}\nOutput: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
         # Remove x, y and edge_index from device memory
         x = x.cpu()
         y = y.cpu()
         edge_index = edge_index.cpu()
         del x, y, edge_index
-
-    # Baseline model
-    model_b = Net1(dataset[0].x.shape[1], args.hidden, args.num_layers2, args.num_classes).to(device)
-    loss_fn = torch.nn.NLLLoss().to(device)
-    model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
-    model_b.eval()
-    fig = plt.figure()
-    for i in range(num):
-        x_ = dataset[0].x.to(device)
-        y_ = dataset[0].y.to(device)
-        edge_index_ = dataset[0].edge_index.to(device)
-        t3 = time()
-        out_b = model_b(x_, edge_index_).to(device)
-        t4 = time()
-        loss_b = loss_fn(out_b[indices[i][0]], y_[indices[i][0]])
-        all_label_b.append(y_[indices[i][0]].item())
-        all_out_b.append(out_b[indices[i][0]].argmax().item())
-        losses_b.append(loss_b.item())
-        times_b.append(t4 - t3)
-        print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]].argmax().item()}\nOutput: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
+    
+    if args.baseline:
+        # Baseline model
+        model_b = Net1(dataset[0].x.shape[1], args.hidden, args.num_layers2, args.num_classes).to(device)
+        loss_fn = torch.nn.NLLLoss().to(device)
+        model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
+        model_b.eval()
+        fig = plt.figure()
+        for i in range(num):
+            x_ = dataset[0].x.to(device)
+            y_ = dataset[0].y.to(device)
+            edge_index_ = dataset[0].edge_index.to(device)
+            t3 = time()
+            out_b = model_b(x_, edge_index_).to(device)
+            t4 = time()
+            loss_b = loss_fn(out_b[indices[i][0]], y_[indices[i][0]])
+            all_label_b.append(y_[indices[i][0]].item())
+            all_out_b.append(out_b[indices[i][0]].argmax().item())
+            losses_b.append(loss_b.item())
+            times_b.append(t4 - t3)
+            #print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]].argmax().item()}\nOutput: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
     print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAccuracy (subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
-    print(f"Average time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
+    
+    if args.baseline:
+        print(f"Average time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
 
 elif args.task == "node_reg":
+    dataset = dataset.to(device)
     if os.path.exists(f"./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt"):
+        print("Loading saved graphs...")
         subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
         args.num_features = dataset[0].x.shape[1]
     else:
@@ -616,37 +710,99 @@ elif args.task == "node_reg":
     graphs = load_data_regression(args, dataset[0], subgraph_list)
 
     indices = []
+    true_indices = []
+    false_indices = []
     num = 0
-    for i in np.random.permutation(len(graphs)):
-        if num != args.num_test_samples:
-            if args.cluster_node:
-                index = np.random.choice(subgraph_list[i].orig_idx, 1)[0]
-            elif args.extra_node:
-                index = np.random.choice(subgraph_list[i].orig_idx[~np.isin(subgraph_list[i].orig_idx, subgraph_list[i].actual_ext)], 1)[0]
-            j = subgraph_list[i].map_dict[index]
-            indices.append((index, j, i))
-            num += 1
-        else:
-            break
+    test_num = args.num_test_samples
+    no_graphs = len(graphs)
+    rat = test_num // no_graphs
+    # To do: assert if arg.num_test_samples > total nodes in the graphs
+    # To do: check for default nodes
+    permu = np.random.permutation(no_graphs)
+    maskie = [False]*no_graphs
+
+    if test_num <= no_graphs:
+        for i in np.random.permutation(len(graphs)):
+            if num != args.num_test_samples:
+                if args.cluster_node:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), 1)[0]
+                elif args.extra_node:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())], 1)[0]
+                j = subgraph_list[i].map_dict[index]
+                indices.append((index, j, i))
+                num += 1
+            else:
+                break
+    else:
+        for i in permu:
+            if test_num > 0:
+                if args.cluster_node:
+                    if len(subgraph_list[i].orig_idx.cpu()) >= rat:
+                        maskie[i] = True
+                        test_num = test_num - rat
+                elif args.extra_node:
+                    if len(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())]) >= rat:
+                        maskie[i] = True
+                        test_num = test_num - rat
+            else:
+                break
+
+        for i in permu:
+            if maskie[i] == True:
+                if args.cluster_node:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), rat)
+                elif args.extra_node:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())], rat)
+                true_indices.append((index, i)) # one test sample: index = original node index in community graph, j = renamed index of node in that subgraph, i = index of subgraph in subgraph list
+            else:
+                if test_num > 0:
+                    if args.cluster_node:
+                        index = subgraph_list[i].orig_idx.cpu()
+                    elif args.extra_node:
+                        index = subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())]
+                    test_num = test_num - len(index)
+                    for ind in index:
+                        ind = ind.item()
+                        indices.append((ind, subgraph_list[i].map_dict[ind], i)) # one test sample: index = original node index in community graph, j = renamed index of node in that subgraph, i = index of subgraph in subgraph list   
+        
+        for itr in true_indices:
+            if test_num > 0:
+                if args.cluster_node:
+                    index = subgraph_list[itr[1]].orig_idx.cpu()[~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), itr[0])]
+                elif args.extra_node:
+                    index = subgraph_list[itr[1]].orig_idx.cpu()[~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), subgraph_list[itr[1]].actual_ext.cpu()) & ~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), itr[0])]
+                test_num = test_num - len(index)
+                for ind in index:
+                    ind = ind.item()
+                    indices.append((ind, subgraph_list[itr[1]].map_dict[ind], itr[1]))
+            
+            for ind in itr[0]:
+                ind = ind.item()
+                indices.append((ind, subgraph_list[itr[1]].map_dict[ind], itr[1]))
+
+    num = len(indices)
     
-    # Baseline model
-    model_b = Regress_node(args).to(device)
-    loss_fn = torch.nn.L1Loss().to(device)
-    model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
-    model_b.eval()
-    losses_b = []
-    times_b = []
-    for i in range(num):
-        x_ = dataset[0].x.to(device)
-        y_ = dataset[0].y.to(device)
-        edge_index_ = dataset[0].edge_index.to(device)
-        t3 = time()
-        out_b = model_b(x_, edge_index_).to(device)
-        t4 = time()
-        loss_b = loss_fn(out_b[indices[i][0]][0], y_[indices[i][0]])
-        losses_b.append(loss_b.item())
-        times_b.append(t4 - t3)
-        print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
+    if args.baseline:
+        # Baseline model
+        model_b = Regress_node(args).to(device)
+        loss_fn = torch.nn.L1Loss().to(device)
+        model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
+        model_b.eval()
+        losses_b = []
+        times_b = []
+        y_b = []
+        for i in range(num):
+            x_ = dataset[0].x.to(device)
+            y_ = dataset[0].y.to(device)
+            edge_index_ = dataset[0].edge_index.to(device)
+            t3 = time()
+            out_b = model_b(x_, edge_index_).to(device)
+            t4 = time()
+            loss_b = loss_fn(out_b[indices[i][0]][0], y_[indices[i][0]])
+            losses_b.append(loss_b.item())
+            y_b.append(y_[indices[i][0]].item())
+            times_b.append(t4 - t3)
+            #print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
 
     # Subgraph based model
     model_gs = Regress_node(args).to(device)
@@ -655,7 +811,8 @@ elif args.task == "node_reg":
     model_gs.eval()
     losses_gs = []
     times_gs = []
-    for index, j, i in indices:
+    y_gs = []
+    for index, j, i in tqdm(indices, colour='blue'):
         x = graphs[i].x.to(device)
         y = graphs[i].y.to(device)
         edge_index = graphs[i].edge_index.to(device)
@@ -663,18 +820,21 @@ elif args.task == "node_reg":
         out_gs = model_gs(x, edge_index).to(device)
         t2 = time()
         loss_gs = loss_fn(out_gs[j][0], y[j])
+        y_gs.append(y[j].item())
         losses_gs.append(loss_gs.item())
         times_gs.append(t2 - t1)
-        print(f"Subgraph-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
+        #print(f"Subgraph-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
 
         # Remove x, y and edge_index from device memory
         x = x.cpu()
         y = y.cpu()
         edge_index = edge_index.cpu()
         del x, y, edge_index
-    
-    print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAverage Loss (subgraph): {np.mean(losses_gs)}")
-    print(f"Average time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
+
+    print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAverage Loss (subgraph): {np.mean(losses_gs/np.std(y_gs))}")
+
+    if args.baseline:
+        print(f"Average time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b/np.std(y_b))}")
 
 if not os.path.exists("inference_results"):
     os.makedirs("inference_results")
@@ -682,46 +842,46 @@ if not os.path.exists("inference_results"):
 if not os.path.exists(f"inference_results/{args.task}.csv"):
     with open(f"inference_results/{args.task}.csv", 'w') as f:
         if args.task == "node_cls":
-            f.write("dataset,baseline,experiment,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,std_loss,acc\n")
+            f.write("dataset,baseline,experiment,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,acc\n")
         elif args.task == "node_reg":
-            f.write("dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,std_loss\n")
+            f.write("dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss\n")
         elif args.task == "graph_cls":
-            f.write("dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,std_loss,acc\n")
+            f.write("dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,acc\n")
         elif args.task == "graph_reg":
-            f.write("dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,std_loss,property\n")
+            f.write("dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,property\n")
     f.close()         
 file_path = f"inference_results/{args.task}.csv"
 
 with open(file_path, 'a') as f:
     if args.task == "node_cls":
         if args.baseline:
-            f.write(f"{args.dataset},True,{args.experiment},None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)},{np.sum(np.array(all_label_b) == np.array(all_out_b))/num}\n")
-        f.write(f"{args.dataset},False,{args.experiment},{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},{np.sum(np.array(all_label_gs) == np.array(all_out_gs))/num}\n")
+            f.write(f"{args.dataset},True,{args.experiment},None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.sum(np.array(all_label_b) == np.array(all_out_b))/num}\n")
+        f.write(f"{args.dataset},False,{args.experiment},{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.sum(np.array(all_label_gs) == np.array(all_out_gs))/num}\n")
     elif args.task == "node_reg":
         if args.baseline:
-            f.write(f"{args.dataset},True,None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)}\n")
-        f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)}\n")
+            f.write(f"{args.dataset},True,None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b/np.std(y_b))}\n")
+        f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)/np.std(y_gs)}\n")
     elif args.task == 'graph_cls':
         if args.baseline:
-            f.write(f"{args.dataset},True,None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)},{np.sum(np.array(all_label_b) == np.array(all_out_b))/num}\n")
+            f.write(f"{args.dataset},True,None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.sum(np.array(all_label_b) == np.array(all_out_b))/num}\n")
         if args.exp_setup == "Gc_train_2_Gc_infer":
-            f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gc[1:])},{np.mean(losses_gc)},{np.std(losses_gc)},{np.sum(np.array(all_label_gc) == np.array(all_out_gc))/num}\n")
+            f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gc[1:])},{np.mean(losses_gc)},{np.sum(np.array(all_label_gc) == np.array(all_out_gc))/num}\n")
         else:
-            f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},{np.sum(np.array(all_label_gs) == np.array(all_out_gs))/num}\n")
+            f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.sum(np.array(all_label_gs) == np.array(all_out_gs))/num}\n")
     elif args.task == 'graph_reg':
         if args.baseline:
             if args.dataset == 'QM9':
-                f.write(f"{args.dataset},True,None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)},{args.property}\n")
+                f.write(f"{args.dataset},True,None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{args.property}\n")
             else:
-                f.write(f"{args.dataset},True,None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},{np.std(losses_b)},None\n")
+                f.write(f"{args.dataset},True,None,None,None,None,None,512,{num},{args.num_layers2},None,0.01,{np.mean(times_b[1:])},{np.mean(losses_b)},None\n")
         if args.dataset == 'QM9':
             if args.exp_setup == "Gc_train_2_Gc_infer":
-                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gc[1:])},{np.mean(losses_gc)},{np.std(losses_gc)},{args.property}\n")
+                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gc[1:])},{np.mean(losses_gc)},{args.property}\n")
             else:
-                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},{args.property}\n")
+                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{args.property}\n")
         else:
             if args.exp_setup == "Gc_train_2_Gc_infer":
-                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gc[1:])},{np.mean(losses_gc)},{np.std(losses_gc)},None\n")
+                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gc[1:])},{np.mean(losses_gc)},None\n")
             else:
-                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},{np.std(losses_gs)},None\n")
+                f.write(f"{args.dataset},False,{args.exp_setup},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},512,{num},{args.num_layers2},{args.batch_size},{args.lr},{np.mean(times_gs[1:])},{np.mean(losses_gs)},None\n")
 f.close()

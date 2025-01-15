@@ -1,9 +1,27 @@
-dataset,baseline,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,std_loss
-chameleon,True,None,None,None,None,None,512,20,2,None,0.01,0.0025452689120644017,0.7360281705856323,0.7486167342579244
-chameleon,False,Gs_train_2_Gs_infer,kron,0.3,True,False,512,20,2,128,0.001,0.002202724155626799,4.720588827133179,3.333790061996512
-chameleon,True,None,None,None,None,None,512,5,2,None,0.01,0.0027467012405395508,1.1072372436523437,0.4537148604011322
-chameleon,False,Gs_train_2_Gs_infer,kron,0.3,True,False,512,5,2,128,0.001,0.003203094005584717,3.171876049041748,2.0799448010134807
-chameleon,True,None,None,None,None,None,512,5,2,None,0.01,0.0026137232780456543,0.711276912689209,0.5386416829281544
-chameleon,False,Gs_train_2_Gs_infer,kron,0.3,True,False,512,5,2,128,0.001,0.0029646754264831543,2.95495491027832,1.5082854880426753
-chameleon,True,None,None,None,None,None,512,5,2,None,0.01,0.002561628818511963,0.9160375118255615,0.6180133804602144
-chameleon,False,Gs_train_2_Gs_infer,kron,0.3,True,False,512,5,2,128,0.001,0.0031976699829101562,4.974946784973144,3.539998290849209
+dataset   ,baseline ,exp_setup           ,coarsening_method       ,coarsening_ratio ,extra_node ,cluster_node ,hidden ,num_test_samples ,num_layers ,batch_size ,lr    ,avg_inf_time          ,avg_loss           ,std_loss
+chameleon ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  ,0.0025452689120644017 ,0.7360281705856323 ,0.7486167342579244
+chameleon ,False    ,Gs_train_2_Gs_infer ,kron                    ,0.3              ,True       ,False        ,   512 ,              20 ,         2 ,128        ,0.001 ,0.002202724155626799  ,4.720588827133179  ,3.333790061996512
+chameleon ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,               5 ,         2 ,None       ,0.01  ,0.0027467012405395508 ,1.1072372436523437 ,0.4537148604011322
+chameleon ,False    ,Gs_train_2_Gs_infer ,kron                    ,0.3              ,True       ,False        ,   512 ,               5 ,         2 ,128        ,0.001 ,0.003203094005584717  ,3.171876049041748  ,2.0799448010134807
+chameleon ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,               5 ,         2 ,None       ,0.01  ,0.0026137232780456543 ,0.711276912689209  ,0.5386416829281544
+chameleon ,False    ,Gs_train_2_Gs_infer ,kron                    ,0.3              ,True       ,False        ,   512 ,               5 ,         2 ,128        ,0.001 ,0.0029646754264831543 ,2.95495491027832   ,1.5082854880426753
+chameleon ,True     ,None                ,None                    ,None             ,None       ,None         ,   512 ,               5 ,         2 ,None       ,0.01  ,0.002561628818511963  ,0.9160375118255615 ,0.6180133804602144
+chameleon ,False    ,Gs_train_2_Gs_infer ,kron                    ,0.3              ,True       ,False        ,   512 ,               5 ,         2 ,128        ,0.001 ,0.0031976699829101562 ,4.974946784973144  ,3.539998290849209
+chameleon ,False    ,Gs_train_2_Gc_infer ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,            2331 ,         2 ,128        ,0.001 ,0.001532441147407237  ,1.45674577397576   ,1.462889991270162
+chameleon ,False    ,Gs_train_2_Gc_infer ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,            2330 ,         2 ,128        ,0.001 ,0.001649579146021986  ,1.4472187273492116 ,1.4545786781431773
+chameleon ,False    ,Gs_train_2_Gc_infer ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,            2344 ,         2 ,128        ,0.001 ,0.0015817010092318083 ,1.456277271179616  ,1.4785235038758198
+chameleon ,False    ,Gs_train_2_Gc_infer ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,            2329 ,         2 ,128        ,0.001 ,0.0014968303470677116 ,1.4531642693519182 ,1.4596415135203247
+chameleon ,False    ,Gs_train_2_Gc_infer ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,            2336 ,         2 ,128        ,0.001 ,0.0014921403799118271 ,0.6312987028541028 ,0.6341645346127522
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,2332,2,128,0.001,0.0015179273244496938,0.6309401590743898,0.6348257252379242
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,2333,2,128,0.001,0.0015198723325189555,0.6301336170786134,0.6352116970413655
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,10,2,128,0.001,0.0038525263468424478,0.5812836126392052,0.36515718984308904
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,10,2,128,0.001,0.0022762086656358507,0.9267989776239113,0.6549633675038775
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,10,2,128,0.001,0.003292984432644314,0.7359310943643657,0.389234394123568
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,10,2,128,0.001,0.003070010079277886,0.8442202251777426,0.6980226927397745
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,10,2,128,0.001,0.0017367998758951824,0.8000828737982957,0.5985849528637623
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,10,2,128,0.001,0.003684944576687283,0.5248007014183329,0.43656286801201055
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,10,2,128,0.001,0.002446254094441732,0.8179368012533096,0.5719805595946592
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,10,2,128,0.001,0.0016186502244737414,0.6166961615452667,0.43746041045390344
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,10,2,128,0.001,0.0031734307607014975,0.8582508612386491,0.22177679407577003
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,10,2,128,0.001,0.0024116039276123047,0.4452148035047293,0.33720717255658245
+chameleon,False,Gs_train_2_Gc_infer,variation_neighborhoods,0.3,False,True,512,10,2,128,0.001,0.003177165985107422,0.5838585616853889

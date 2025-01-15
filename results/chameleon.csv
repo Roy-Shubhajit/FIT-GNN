@@ -95,5 +95,4 @@ chameleon ,variation_neighborhoods ,             0.1 ,False       ,True         
 chameleon ,variation_neighborhoods ,             0.1 ,True        ,False        ,False          ,   512 ,  20 ,         2 ,       128 ,0.01   ,0.008373713493347168 ,0.5041423020263981 +/- 0.004128762471940389    ,0.49800532169871425
 chameleon ,variation_neighborhoods ,             0.3 ,False       ,True         ,False          ,   512 ,  20 ,         2 ,       128 ,0.01   ,0.013793015480041504 ,0.4998823593403664 +/- 0.006084670064538663    ,0.48698014289444425
 chameleon ,variation_neighborhoods ,             0.3 ,True        ,False        ,False          ,   512 ,  20 ,         2 ,       128 ,0.01   ,0.016744625568389893 ,0.578746044875975 +/- 0.0068146503330496445    ,0.5639742700225108
-chameleon,variation_neighborhoods,0.1,False,True,False,512,1,2,128,0.01,0.006470203399658203,2.0444038996052853 +/- 0.0,2.0444038996052853
-chameleon,variation_neighborhoods,0.1,True,False,False,512,1,2,128,0.01,0.007629871368408203,1.4299127180763942 +/- 0.0,1.4299127180763942
+

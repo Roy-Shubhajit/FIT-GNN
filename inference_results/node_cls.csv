@@ -1,21 +1,28 @@
-dataset,baseline,experiment,exp_setup,coarsening_method,coarsening_ratio,extra_node,cluster_node,hidden,num_test_samples,num_layers,batch_size,lr,avg_inf_time,avg_loss,std_loss,acc
-cora,True,fixed,None,None,None,None,None,512,20,2,None,0.01,0.0019870180832712273,0.9890360275399871,1.1912131039179725,0.7
-cora,False,fixed,Gc_train_2_Gs_infer,variation_neighborhoods,0.5,False,True,512,20,2,128,0.001,0.0016373082211143092,1.685974234342575,0.2276697642250037,0.55
-cora,True,fixed,None,None,None,None,None,512,5,2,None,0.01,0.0018264055252075195,1.292208341427613,1.191882609471242,0.4
-cora,False,fixed,Gc_train_2_Gs_infer,variation_neighborhoods,0.5,False,True,512,5,2,128,0.001,0.0018810033798217773,1.53609459400177,0.20646842598230272,0.8
-cora,True,fixed,None,None,None,None,None,512,5,2,None,0.01,0.0018289685249328613,0.3104414145462215,0.337657195017335,1.0
-cora,False,fixed,Gc_train_2_Gs_infer,variation_neighborhoods,0.5,False,True,512,5,2,128,0.001,0.0018658638000488281,1.531175923347473,0.26102845567384775,0.6
-cora,True,fixed,None,None,None,None,None,512,5,2,None,0.01,0.0018884539604187012,0.49326777905225755,0.36730614699014597,1.0
-cora,False,fixed,Gc_train_2_Gs_infer,variation_neighborhoods,0.5,False,True,512,5,2,128,0.001,0.0019603371620178223,1.71228768825531,0.19701292084454314,0.6
-cora,True,fixed,None,None,None,None,None,512,20,2,None,0.01,0.0016885180222360712,0.7959594111016486,1.2996609142949371,0.8
-cora,False,fixed,Gs_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,20,2,128,0.001,0.008326241844578794,0.9732911495583096,1.8186783635635184,0.75
-cora,True,fixed,None,None,None,None,None,512,20,2,None,0.01,0.0016804870806242291,0.8100067325867712,1.0213814764797973,0.75
-cora,False,fixed,Gs_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,20,2,128,0.001,0.008414933556004575,1.2028296234435403,2.940572246597074,0.75
-cora,True,fixed,None,None,None,None,None,512,10,2,None,0.01,0.02610182762145996,0.4709790807683021,0.47929334546845354,0.9
-cora,False,fixed,Gs_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,10,2,128,0.001,0.005663447909884983,1.1484253240816542,2.176184967392637,0.7
-cora,True,fixed,None,None,None,None,None,512,10,2,None,0.01,0.02618583043416341,0.29677553734509277,0.5315327744242991,0.9
-cora,False,fixed,Gs_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,10,2,128,0.001,0.013262960645887587,0.32356039732894715,0.7494456054563752,0.9
-cora,True,fixed,None,None,None,None,None,512,10,2,None,0.01,0.002070082558525933,1.8693408697843552,2.8039383623029686,0.6
-cora,False,fixed,Gs_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,10,2,128,0.001,0.015094969007703993,2.2014763469472767,2.882164516022055,0.6
-cora,True,fixed,None,None,None,None,None,512,10,2,None,0.01,0.001742892795138889,1.626282739918679,1.3631391378477622,0.5
-cora,False,fixed,Gs_train_2_Gs_infer,variation_neighborhoods,0.1,False,True,512,10,2,128,0.001,0.013607263565063477,1.7346103625837714,1.971291509612526,0.5
+dataset            ,baseline ,experiment ,exp_setup           ,coarsening_method       ,coarsening_ratio ,extra_node ,cluster_node ,hidden ,num_test_samples ,num_layers ,batch_size ,lr    ,avg_inf_time           ,avg_loss            ,acc
+cora               ,True     ,fixed      ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  , 0.0019870180832712273 ,0.9890360275399871  ,0.7
+cora               ,False    ,fixed      ,Gc_train_2_Gs_infer ,variation_neighborhoods ,0.5              ,False      ,True         ,   512 ,              20 ,         2 ,128        ,0.001 , 0.0016373082211143092 ,1.685974234342575   ,0.55
+cora               ,True     ,fixed      ,None                ,None                    ,None             ,None       ,None         ,   512 ,               5 ,         2 ,None       ,0.01  , 0.0018264055252075195 ,1.292208341427613   ,0.4
+cora               ,False    ,fixed      ,Gc_train_2_Gs_infer ,variation_neighborhoods ,0.5              ,False      ,True         ,   512 ,               5 ,         2 ,128        ,0.001 , 0.0018810033798217773 ,1.53609459400177    ,0.8
+cora               ,True     ,fixed      ,None                ,None                    ,None             ,None       ,None         ,   512 ,               5 ,         2 ,None       ,0.01  , 0.0018289685249328613 ,0.3104414145462215  ,1.0
+cora               ,False    ,fixed      ,Gc_train_2_Gs_infer ,variation_neighborhoods ,0.5              ,False      ,True         ,   512 ,               5 ,         2 ,128        ,0.001 , 0.0018658638000488281 ,1.531175923347473   ,0.6
+cora               ,True     ,fixed      ,None                ,None                    ,None             ,None       ,None         ,   512 ,               5 ,         2 ,None       ,0.01  , 0.0018884539604187012 ,0.49326777905225755 ,1.0
+cora               ,False    ,fixed      ,Gc_train_2_Gs_infer ,variation_neighborhoods ,0.5              ,False      ,True         ,   512 ,               5 ,         2 ,128        ,0.001 , 0.0019603371620178223 ,1.71228768825531    ,0.6
+cora               ,True     ,fixed      ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  , 0.0016885180222360712 ,0.7959594111016486  ,0.8
+cora               ,False    ,fixed      ,Gs_train_2_Gs_infer ,variation_neighborhoods ,0.1              ,False      ,True         ,   512 ,              20 ,         2 ,128        ,0.001 , 0.008326241844578794  ,0.9732911495583096  ,0.75
+cora               ,True     ,fixed      ,None                ,None                    ,None             ,None       ,None         ,   512 ,              20 ,         2 ,None       ,0.01  , 0.0016804870806242291 ,0.8100067325867712  ,0.75
+cora               ,False    ,fixed      ,Gs_train_2_Gs_infer ,variation_neighborhoods ,0.1              ,False      ,True         ,   512 ,              20 ,         2 ,128        ,0.001 , 0.008414933556004575  ,1.2028296234435403  ,0.75
+cora               ,True     ,fixed      ,None                ,None                    ,None             ,None       ,None         ,   512 ,              10 ,         2 ,None       ,0.01  , 0.02610182762145996   ,0.4709790807683021  ,0.9
+cora               ,False    ,fixed      ,Gs_train_2_Gs_infer ,variation_neighborhoods ,0.1              ,False      ,True         ,   512 ,              10 ,         2 ,128        ,0.001 , 0.005663447909884983  ,1.1484253240816542  ,0.7
+cora               ,True     ,fixed      ,None                ,None                    ,None             ,None       ,None         ,   512 ,              10 ,         2 ,None       ,0.01  , 0.02618583043416341   ,0.29677553734509277 ,0.9
+cora               ,False    ,fixed      ,Gs_train_2_Gs_infer ,variation_neighborhoods ,0.1              ,False      ,True         ,   512 ,              10 ,         2 ,128        ,0.001 , 0.013262960645887587  ,0.32356039732894715 ,0.9
+cora               ,True     ,fixed      ,None                ,None                    ,None             ,None       ,None         ,   512 ,              10 ,         2 ,None       ,0.01  , 0.002070082558525933  ,1.8693408697843552  ,0.6
+cora               ,False    ,fixed      ,Gs_train_2_Gs_infer ,variation_neighborhoods ,0.1              ,False      ,True         ,   512 ,              10 ,         2 ,128        ,0.001 , 0.015094969007703993  ,2.2014763469472767  ,0.6
+cora               ,True     ,fixed      ,None                ,None                    ,None             ,None       ,None         ,   512 ,              10 ,         2 ,None       ,0.01  , 0.001742892795138889  ,1.626282739918679   ,0.5
+cora               ,False    ,fixed      ,Gs_train_2_Gs_infer ,variation_neighborhoods ,0.1              ,False      ,True         ,   512 ,              10 ,         2 ,128        ,0.001 , 0.013607263565063477  ,1.7346103625837714  ,0.5
+ogbn-products(cpu) ,True     ,ogbn_split ,None                ,None                    ,None             ,None       ,None         ,   512 ,          163439 ,         2 ,None       ,0.01  ,13.7633                ,2.44359             ,0.3166
+ogbn-products      ,False    ,ogbn_split ,Gs_train_2_Gs_infer ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,          163439 ,         2 ,1          ,0.01  , 0.0018075269787953326 ,NA                  ,0.4018
+ogbn-products(cpu) ,False    ,ogbn_split ,Gs_train_2_Gs_infer ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,          163439 ,         2 ,1          ,0.01  , 1.034659074022715     ,NA                  ,0.4068
+ogbn-products      ,False    ,random     ,Gs_train_2_Gc_infer ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,          160006 ,         2 ,1          ,0.001 , 0.0017619688225322945 ,3.3797437430825705  ,0.4065472544779571
+cora               ,False    ,fixed      ,Gs_train_2_Gc_infer ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,             100 ,         2 ,128        ,0.001 , 0.002263112501664595  ,1.1562510703916087  ,0.73
+cora               ,False    ,fixed      ,Gs_train_2_Gc_infer ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,             100 ,         2 ,128        ,0.001 , 0.0026076610642250136 ,0.548241512022156   ,0.79
+ogbn-products      ,False    ,random     ,Gs_train_2_Gc_infer ,variation_neighborhoods ,0.3              ,False      ,True         ,   512 ,             100 ,         2 ,128        ,0.001 , 0.005244510342376401  ,4.061295447675202   ,0.37

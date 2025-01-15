@@ -1,5 +1,13 @@
-dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss}
-ZINC_subset,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,True,False,512,2,2,1,1,128,0.01,29.20294718262595
-ZINC_subset,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,True,False,512,2,2,1,1,128,0.01,10.764594274280553
-ZINC_subset,variation_neighborhoods,0.5,Gc_train_2_Gs_infer,True,False,512,2,2,1,1,128,0.01,27.283926634626976
-ZINC_subset,variation_neighborhoods,0.5,Gc_train_2_Gc_infer,True,False,512,2,2,300,300,128,0.0001,1.0719139933586121
+dataset     ,coarsening_method       ,coarsening_ratio ,exp_setup           ,extra_nodes ,cluster_node ,community_used ,hidden ,num_layers1 ,num_layers2 ,epochs1 ,epochs2 ,batch_size ,lr   ,best_test_loss
+ZINC_subset ,variation_neighborhoods ,             0.3 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 0.6292062613520175
+ZINC_subset ,variation_neighborhoods ,             0.5 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 0.8594984632070201
+ZINC_subset ,algebraic_JC            ,             0.3 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 0.8228674224857592
+ZINC_subset ,algebraic_JC            ,             0.5 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 0.8101708457053516
+ZINC_subset ,kron                    ,             0.3 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 0.6625776837613977
+ZINC_subset ,kron                    ,             0.5 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 1.2013390407720779
+ZINC_subset ,heavy_edge              ,             0.3 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 2.1139812579306816
+ZINC_subset ,heavy_edge              ,             0.5 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 1.227312741102793
+ZINC_subset ,variation_edges         ,             0.3 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 1.5483029502801522
+ZINC_subset ,variation_edges         ,             0.5 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 1.8829117190945197
+ZINC_subset ,variation_cliques       ,             0.3 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 0.6893074044861719
+ZINC_subset ,variation_cliques       ,             0.5 ,Gc_train_2_Gs_infer ,True        ,False        ,False          ,   512 ,          2 ,          2 ,    100 ,    300 ,       128 ,0.01 , 0.7416358744960995
