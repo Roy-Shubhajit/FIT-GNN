@@ -1,4 +1,4 @@
-# Faster Inference Time for GNNs using coarsening
+# FIT-GNN: Faster Inference Time for GNNs using coarsening
 ---
 ### Parameter Description:
 - `dataset`:
