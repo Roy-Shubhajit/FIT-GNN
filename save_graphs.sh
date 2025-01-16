@@ -25,3 +25,4 @@ done
 #     python save_graphs.py --dataset cora --normalize_features --coarsening_ratio 0.5 --coarsening_method $coarsening_method --extra_node
 # done
 
+# comment
