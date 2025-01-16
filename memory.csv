@@ -1,5 +1,5 @@
 dataset ,baseline ,coarsening_ratio ,task, type, memory_usage(MB)
-cora, False, 0.1, node_cls, cluster, cluster, 1.310488
+cora, False, 0.1, node_cls, cluster, 1.310488
 cora, False, 0.3, node_cls, cluster, 0.648241
 cora, False, 0.5, node_cls, cluster, 0.694089
 cora, False, 0.7, node_cls, cluster, 0.867867
@@ -14,7 +14,7 @@ pubmed, False, 0.3, node_cls, cluster, 0.568776
 pubmed, False, 0.5, node_cls, cluster, 0.570795
 pubmed, False, 0.7, node_cls, cluster, 0.572622
 pubmed, False, 0.9, node_cls, cluster, 0.508871
-chameleon, False, 0.1, node_reg, cluster, cluster, 0.211514
+chameleon, False, 0.1, node_reg, cluster, 0.211514
 chameleon, False, 0.3, node_reg, cluster, 0.246465
 chameleon, False, 0.5, node_reg, cluster, 0.291338
 chameleon, False, 0.7, node_reg, cluster, 0.438378
@@ -28,8 +28,21 @@ crocodile, False, 0.1, node_reg, cluster, 1.182742
 crocodile, False, 0.3, node_reg, cluster, 1.187726
 crocodile, False, 0.5, node_reg, cluster, 1.734522
 crocodile, False, 0.7, node_reg, cluster, 1.865893
-crocodile, False, 0.9, node_reg, 3.076167
-dblp, False, 0.1, node_cls, 6.066918
-dblp, False, 0.3, node_cls, 2.940006
-dblp, False, 0.5, node_cls, 1.84711
-dblp, False, 0.7, node_cls, 1.966275
+crocodile, False, 0.9, node_reg, cluster, 3.076167
+dblp, False, 0.1, node_cls, cluster, 6.066918
+dblp, False, 0.3, node_cls, cluster, 2.940006
+dblp, False, 0.5, node_cls, cluster, 1.84711
+dblp, False, 0.7, node_cls, cluster, 1.966275
+dblp, False, 0.9, node_cls, cluster, 2.229019
+Physics, False, 0.1, node_cls, cluster, 24.024821
+Physics, False, 0.3, node_cls, cluster, 13.087642
+Physics, False, 0.5, node_cls, cluster, 13.388129
+Physics, False, 0.7, node_cls, cluster, 14.353411
+Physics, False, 0.9, node_cls, cluster, 19.754467
+cora, False, 0.1, node_cls, 2.071851
+cora, False, 0.3, node_cls, 1.133853
+cora, False, 0.5, node_cls, 1.017329
+cora, False, 0.7, node_cls, 1.017329
+cora, False, 0.9, node_cls, 0.982439
+citeseer, False, 0.1, node_cls, 31.559472
+citeseer, False, 0.3, node_cls, 3.114007
