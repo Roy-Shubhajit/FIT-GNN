@@ -1,10 +1,10 @@
 # python inference.py --dataset cora --num_test_samples 10 --baseline --coarsening_method variation_neighborhoods --coarsening_ratio 0.1 --experiment fixed --exp_setup Gs_train_2_Gs_infer --cluster_node --path_b save/node_cls/baselines/ --model_name_b baseline_cora_fixed.pt --path_gs save/node_cls/cora_fixed_Gs_train_2_Gs_infer_0.1_variation_neighborhoods_cluster_1_0.01/ --model_name_gs model.pt
 
-# python inference.py --dataset cora --num_test_samples 10 --coarsening_method variation_neighborhoods --coarsening_ratio 0.1 --experiment fixed --exp_setup Gs_train_2_Gs_infer --cluster_node --path_gs /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/node_cls/cora_fixed_Gs_train_2_Gs_infer_0.1_variation_neighborhoods_cluster_1_0.01/ --model_name_gs model.pt
+# python inference.py --dataset cora --num_test_samples 100 --coarsening_method variation_neighborhoods --coarsening_ratio 0.1 --experiment fixed --exp_setup Gs_train_2_Gs_infer --cluster_node --path_gs /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/node_cls/cora_fixed_Gs_train_2_Gs_infer_0.1_variation_neighborhoods_cluster_1_0.01/ --model_name_gs model.pt
 
-# python inference.py --dataset chameleon --num_test_samples 20 --coarsening_method variation_neighborhoods --coarsening_ratio 0.3 --exp_setup Gs_train_2_Gs_infer --extra_node --path_gs /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/node_reg/chameleon_Gs_train_2_Gs_infer_0.3_variation_neighborhoods_extra/ --model_name_gs model.pt
+python inference.py --dataset chameleon --num_test_samples 100000 --coarsening_method variation_neighborhoods --coarsening_ratio 0.3 --exp_setup Gs_train_2_Gs_infer --extra_node --path_gs /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/node_reg/chameleon_Gs_train_2_Gs_infer_0.3_variation_neighborhoods_extra/ --model_name_gs model.pt
 
-python inference.py --dataset AIDS --num_test_samples 20 --coarsening_method variation_neighborhoods --coarsening_ratio 0.5 --exp_setup Gc_train_2_Gc_infer --extra_node --path_gc /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/graph_cls/AIDS_Gc_train_2_Gc_infer_0.5_variation_neighborhoods_extra/ --model_name_gc model.pt
+# python inference.py --dataset AIDS --num_test_samples 20 --coarsening_method variation_neighborhoods --coarsening_ratio 0.5 --exp_setup Gc_train_2_Gc_infer --extra_node --path_gc /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/graph_cls/AIDS_Gc_train_2_Gc_infer_0.5_variation_neighborhoods_extra/ --model_name_gc model.pt
 
 # python inference.py --dataset AIDS --num_test_samples 20 --coarsening_method variation_neighborhoods --coarsening_ratio 0.5 --exp_setup Gc_train_2_Gs_infer --path_gs /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/graph_cls/AIDS_Gc_train_2_Gs_infer_0.5_variation_neighborhoods/ --model_name_gs model.pt
 
@@ -19,4 +19,4 @@ python inference.py --dataset AIDS --num_test_samples 20 --coarsening_method var
 
 # python inference.py --dataset ZINC_subset --num_test_samples 20 --coarsening_method variation_neighborhoods --coarsening_ratio 0.5 --exp_setup Gc_train_2_Gc_infer --extra_node --path_gc /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/graph_reg/ZINC_subset_Gc_train_2_Gc_infer_0.5_variation_neighborhoods_extra/ --model_name_gc model.pt
 
-python inference.py --dataset ZINC_subset --num_test_samples 20 --coarsening_method variation_neighborhoods --coarsening_ratio 0.5 --exp_setup Gs_train_2_Gs_infer --extra_node --path_gs /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/graph_reg/ZINC_subset_Gs_train_2_Gs_infer_0.5_variation_neighborhoods_extra/ --model_name_gs model.pt
+# python inference.py --dataset ZINC_subset --num_test_samples 20 --coarsening_method variation_neighborhoods --coarsening_ratio 0.5 --exp_setup Gs_train_2_Gs_infer --extra_node --path_gs /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/graph_reg/ZINC_subset_Gs_train_2_Gs_infer_0.5_variation_neighborhoods_extra/ --model_name_gs model.pt
