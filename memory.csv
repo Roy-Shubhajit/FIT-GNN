@@ -39,10 +39,43 @@ Physics, False, 0.3, node_cls, cluster, 13.087642
 Physics, False, 0.5, node_cls, cluster, 13.388129
 Physics, False, 0.7, node_cls, cluster, 14.353411
 Physics, False, 0.9, node_cls, cluster, 19.754467
-cora, False, 0.1, node_cls, 2.071851
-cora, False, 0.3, node_cls, 1.133853
-cora, False, 0.5, node_cls, 1.017329
-cora, False, 0.7, node_cls, 1.017329
-cora, False, 0.9, node_cls, 0.982439
-citeseer, False, 0.1, node_cls, 31.559472
-citeseer, False, 0.3, node_cls, 3.114007
+cora, False, 0.1, node_cls, extra, 2.071851
+cora, False, 0.3, node_cls, extra, 1.133853
+cora, False, 0.5, node_cls, extra, 1.017329
+cora, False, 0.7, node_cls, extra, 1.017329
+cora, False, 0.9, node_cls, extra, 0.982439
+citeseer, False, 0.1, node_cls, extra, 31.559472
+citeseer, False, 0.3, node_cls, extra, 3.114007
+citeseer, False, 0.5, node_cls, extra, 1.787776
+citeseer, False, 0.7, node_cls, extra, 1.787776
+citeseer, False, 0.9, node_cls, extra, 1.489012
+pubmed, False, 0.1, node_cls, extra, 0.797535
+pubmed, False, 0.3, node_cls, extra, 0.59014
+pubmed, False, 0.5, node_cls, extra, 0.59014
+pubmed, False, 0.7, node_cls, extra, 0.59014
+pubmed, False, 0.9, node_cls, extra, 0.59014
+chameleon, False, 0.1, node_reg, extra, 0.652658
+chameleon, False, 0.3, node_reg, extra, 0.652658
+chameleon, False, 0.5, node_reg, extra, 0.652658
+chameleon, False, 0.7, node_reg, extra, 0.591619
+chameleon, False, 0.9, node_reg, extra, 0.591619
+squirrel, False, 0.1, node_reg, extra, 7.275075
+squirrel, False, 0.3, node_reg, extra, 7.275075
+squirrel, False, 0.5, node_reg, extra, 7.275075
+squirrel, False, 0.7, node_reg, extra, 6.953074
+squirrel, False, 0.9, node_reg, extra, 6.953074
+crocodile, False, 0.1, node_reg, extra, 4.367932
+crocodile, False, 0.3, node_reg, extra, 4.367932
+crocodile, False, 0.5, node_reg, extra, 4.367932
+crocodile, False, 0.7, node_reg, extra, 3.133861
+crocodile, False, 0.9, node_reg, extra, 3.133861
+dblp, False, 0.1, node_cls, extra, 13.907063
+dblp, False, 0.3, node_cls, extra, 4.663281
+dblp, False, 0.5, node_cls, extra, 2.648861
+dblp, False, 0.7, node_cls, extra, 2.274116
+dblp, False, 0.9, node_cls, extra, 2.274116
+Physics, False, 0.1, node_cls, extra, 63.145543
+Physics, False, 0.3, node_cls, extra, 22.433587
+Physics, False, 0.5, node_cls, extra, 22.433587
+Physics, False, 0.7, node_cls, extra, 22.433587
+Physics, False, 0.9, node_cls, extra, 22.433587
