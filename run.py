@@ -13,6 +13,7 @@ from torch_geometric.loader import DataLoader as G_DataLoader
 from utils import load_data_classification, load_data_regression, train_test_val_split, colater, NLLLoss_numpy, L1Loss_numpy
 from network import Classify_node, Regress_node, Classify_graph_gc, Classify_graph_gs, Regress_graph_gc, Regress_graph_gs
 import logging
+from torch_geometric.profile import get_data_size
 logging.disable(logging.INFO)
 logging.disable(logging.WARNING)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -48,11 +49,13 @@ def node_infer_Gs_GD(args, model, graph_data, loss_fn, infer_type):
     n = 0
     all_out = np.array([])
     all_label = np.array([])
+    max_mem = 0
     if args.task == 'node_cls':
         all_out = all_out.astype(np.int32)
         all_out = all_out.reshape(0, args.num_classes)
         all_label = all_label.astype(np.int32)
     for graph in graph_data:
+        max_mem = max(max_mem, get_data_size(graph))
         model.eval()
         if infer_type == 'test':
             if True in graph.test_mask:
@@ -97,18 +100,18 @@ def node_infer_Gs_GD(args, model, graph_data, loss_fn, infer_type):
         total_loss += loss.item()
         acc = np.sum(np.argmax(all_out,axis=1) == all_label) / len(all_label)
         if args.loss_reduction == 'mean':
-            return total_loss, acc, total_time
+            return total_loss, acc, total_time, max_mem
         else:
-            return total_loss/len(all_out), acc, total_time
+            return total_loss/len(all_out), acc, total_time, max_mem
     else:
         loss = loss_fn.compute_loss(all_out, all_label)
         total_loss += loss.item()
         total_loss = total_loss / np.std((all_label)).item()
         acc = 0
         if args.loss_reduction == 'mean':
-            return total_loss, acc, total_time
+            return total_loss, acc, total_time, max_mem
         else:
-            return total_loss/len(all_out), acc, total_time
+            return total_loss/len(all_out), acc, total_time, max_mem
         
 # def node_infer_Gs_GD(args, model, graph_data, loss_fn, infer_type):
 #     total_loss = 0
@@ -174,7 +177,9 @@ def node_infer_Gs_MB(args, model, graph_data, loss_fn, infer_type):
     total_time = 0
     all_out = torch.tensor([]).to(device)
     all_label = torch.tensor([]).to(device)
+    max_mem = 0
     for graph in graph_data:
+        max_mem = max(max_mem, get_data_size(graph))
         model.eval()
         x = graph.x.to(device)
         y = graph.y.to(device)
@@ -217,17 +222,17 @@ def node_infer_Gs_MB(args, model, graph_data, loss_fn, infer_type):
     if args.loss_reduction == 'mean':
         if args.task == 'node_cls':
             acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
-            return total_loss/len(graph_data), acc, total_time
+            return total_loss/len(graph_data), acc, total_time, max_mem
         else:
             acc  = 0
-            return total_loss/(torch.std(all_label).item()*len(graph_data)), acc, total_time
+            return total_loss/(torch.std(all_label).item()*len(graph_data)), acc, total_time, max_mem
     else:
         if args.task == 'node_cls':
             acc = int(torch.sum(torch.argmax(all_out, dim=1) == all_label).item()) / len(all_label)
-            return total_loss/len(all_out), acc, total_time
+            return total_loss/len(all_out), acc, total_time, max_mem
         else:
             acc = 0
-            return total_loss/(len(all_out)*torch.std(all_label).item()), acc, total_time
+            return total_loss/(len(all_out)*torch.std(all_label).item()), acc, total_time, max_mem
 
 def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
     total_loss = 0
@@ -235,7 +240,9 @@ def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
     all_label = torch.tensor([]).to(device)
     model.train()
     optimizer.zero_grad()
+    max_mem = 0
     for graph in graph_data:
+        max_mem = max(max_mem, get_data_size(graph))
         train_mask = graph.train_mask.to(device)
         if True in train_mask:
             x = graph.x.to(device)
@@ -258,14 +265,14 @@ def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
     total_loss += loss.item()
     if args.loss_reduction == 'mean':
         if args.task == 'node_cls':
-            return total_loss
+            return total_loss, max_mem
         else:
-            return total_loss/torch.std(all_label).item()
+            return total_loss/torch.std(all_label).item(), max_mem
     else:
         if args.task == 'node_cls':
-            return total_loss/len(all_out)
+            return total_loss/len(all_out), max_mem
         else:
-            return total_loss/(len(all_out)*torch.std(all_label).item())
+            return total_loss/(len(all_out)*torch.std(all_label).item()), max_mem
         
 def node_train_Gs_MB(model, graph_data, loss_fn, optimizer, args):
     total_loss = 0
@@ -273,7 +280,9 @@ def node_train_Gs_MB(model, graph_data, loss_fn, optimizer, args):
     all_label = torch.tensor([]).to(device)
     model.train()
     optimizer.zero_grad()
+    max_mem = 0
     for graph in graph_data:
+        max_mem = max(max_mem, get_data_size(graph))
         train_mask = graph.train_mask.to(device)
         if True in train_mask:
             x = graph.x.to(device)
@@ -295,14 +304,14 @@ def node_train_Gs_MB(model, graph_data, loss_fn, optimizer, args):
             continue
     if args.loss_reduction == 'mean':
         if args.task == 'node_cls':
-            return total_loss/len(graph_data)
+            return total_loss/len(graph_data), max_mem
         else:
-            return total_loss/(torch.std(all_label).item()*len(graph_data))
+            return total_loss/(torch.std(all_label).item()*len(graph_data)), max_mem
     else:
         if args.task == 'node_cls':
-            return total_loss/len(all_out)
+            return total_loss/len(all_out), max_mem
         else:
-            return total_loss/(len(all_out)*torch.std(all_label).item())
+            return total_loss/(len(all_out)*torch.std(all_label).item()), max_mem
 
 def graph_train_Gc(args, model, loader, optimizer, loss_fn):
     total_loss = 0
@@ -416,19 +425,22 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
             model.load_state_dict(torch.load(path+'/model.pt'))
             for epoch in tqdm(range(args.epochs2), desc=f"Run {run+1}", colour='green'):
                 if args.gradient_method == "GD":
-                    train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args)
-                    val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
+                    train_loss, train_max_mem = node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args)
+                    val_loss, val_acc, val_time, val_max_mem = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
+                    test_loss, test_acc, test_time, test_max_mem = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
                 else:
-                    train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer, args)
-                    val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+                    train_loss, train_max_mem = node_train_Gs_MB(model, graph_data, loss_fn, optimizer, args)
+                    val_loss, val_acc, val_time, val_max_mem = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
+                    test_loss, test_acc, test_time, test_max_mem = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
                     
                 run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
                 run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
                 run_writer.add_scalar('Gs_val_acc', val_acc, epoch)
                 run_writer.add_scalar('Gs_test_loss', test_loss, epoch)
                 run_writer.add_scalar('Gs_test_acc', test_acc, epoch)
+                run_writer.add_scalar('Gs_train_max_mem', train_max_mem, epoch)
+                run_writer.add_scalar('Gs_val_max_mem', val_max_mem, epoch)
+                run_writer.add_scalar('Gs_test_max_mem', test_max_mem, epoch)
 
                 if val_loss < best_val_loss_Gs or epoch == 0:
                     best_val_loss_Gs = val_loss
@@ -453,11 +465,11 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                 val_loss_gc = node_val_Gc(model, coarsen_features, coarsen_edge, coarsen_val_mask, coarsen_val_labels, loss_fn)
                 
                 if args.gradient_method == "GD":
-                    val_loss_gs, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
+                    val_loss_gs, val_acc, val_time, val_max_mem = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
+                    test_loss, test_acc, test_time, test_max_mem = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
                 else:
-                    val_loss_gs, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+                    val_loss_gs, val_acc, val_time, val_max_mem = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
+                    test_loss, test_acc, test_time, test_max_mem = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
                 
                 run_writer.add_scalar('Gc_val_loss', val_loss_gc, epoch)
                 run_writer.add_scalar('Gc_train_loss', train_loss_gc, epoch)
@@ -465,6 +477,9 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                 run_writer.add_scalar('Gs_val_acc', val_acc, epoch)
                 run_writer.add_scalar('Gs_test_loss', test_loss, epoch)
                 run_writer.add_scalar('Gs_test_acc', test_acc, epoch)
+                run_writer.add_scalar('Gs_val_max_mem', val_max_mem, epoch)
+                run_writer.add_scalar('Gs_test_max_mem', test_max_mem, epoch)
+
                 if val_loss_gc < best_val_loss_Gc or epoch == 0:
                     best_val_loss_Gc = val_loss_gc
                     best_test_loss = test_loss
@@ -487,19 +502,22 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
             #Train on Gs
             for epoch in tqdm(range(args.epochs2), desc=f"Run {run+1}", colour='green'):
                 if args.gradient_method == "GD":
-                    train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer,args)
-                    val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
+                    train_loss, train_max_mem = node_train_Gs_GD(model, graph_data, loss_fn, optimizer,args)
+                    val_loss, val_acc, val_time, val_max_mem = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
+                    test_loss, test_acc, test_time, test_max_mem = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
                 else:
-                    train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer,args)
-                    val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+                    train_loss, train_max_mem = node_train_Gs_MB(model, graph_data, loss_fn, optimizer,args)
+                    val_loss, val_acc, val_time, val_max_mem = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
+                    test_loss, test_acc, test_time, test_max_mem = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
 
                 run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
                 run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
                 run_writer.add_scalar('Gs_val_acc', val_acc, epoch)
                 run_writer.add_scalar('Gs_test_loss', test_loss, epoch)
                 run_writer.add_scalar('Gs_test_acc', test_acc, epoch)
+                run_writer.add_scalar('Gs_train_max_mem', train_max_mem, epoch)
+                run_writer.add_scalar('Gs_val_max_mem', val_max_mem, epoch)
+                run_writer.add_scalar('Gs_test_max_mem', test_max_mem, epoch)
 
                 if val_loss < best_val_loss_Gs or epoch == 0:
                     best_val_loss_Gs = val_loss
@@ -540,6 +558,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
     print(f"best_acc: {top_acc[0]}")
     print(f"top_10_loss: {np.mean(top_loss)} +/- {np.std(top_loss)}")
     print(f"best_loss: {top_loss[0]}")
+    print(f"maximum memory: {test_max_mem}")
     print("#####################################################################")
 
 def node_regression(args, path, dataset, writer, subgraph_list):
@@ -564,17 +583,20 @@ def node_regression(args, path, dataset, writer, subgraph_list):
         #Train on Gs
         for epoch in tqdm(range(args.epochs2), desc=f"Run {run+1}", colour='green'):
             if args.gradient_method == "GD":
-                train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer,args)
-                val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
-                test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
+                train_loss, train_max_mem = node_train_Gs_GD(model, graph_data, loss_fn, optimizer,args)
+                val_loss, val_acc, val_time, val_max_mem = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
+                test_loss, test_acc, test_time, test_max_mem = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
             else:
-                train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer,args)
-                val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
-                test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+                train_loss, train_max_mem = node_train_Gs_MB(model, graph_data, loss_fn, optimizer,args)
+                val_loss, val_acc, val_time, val_max_mem = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
+                test_loss, test_acc, test_time, test_max_mem = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
                 
             run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
             run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
             run_writer.add_scalar('Gs_test_loss', test_loss, epoch)
+            run_writer.add_scalar('Gs_train_max_mem', train_max_mem, epoch)
+            run_writer.add_scalar('Gs_val_max_mem', val_max_mem, epoch)
+            run_writer.add_scalar('Gs_test_max_mem', test_max_mem, epoch)
 
             if val_loss < best_val_loss or epoch == 0:
                 best_val_loss = val_loss
@@ -607,6 +629,7 @@ def node_regression(args, path, dataset, writer, subgraph_list):
     print(f"ave_time: {np.mean(all_time)}")
     print(f"top_10_loss: {np.mean(top_loss)} +/- {np.std(top_loss)}")
     print(f"best_loss: {top_loss[0]}")
+    print(f"maximum memory: {test_max_mem}")
     print("#####################################################################")
 
 def graph_classification(args, path, writer, dataset):
