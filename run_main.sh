@@ -1,5 +1,5 @@
-output_dir="cora_fixed_Gs_train_2_Gs_infer_0.1_variation_neighborhoods_cluster_2_0.01"
-python main.py --dataset cora --experiment fixed --output_dir $output_dir --exp_setup Gs_train_2_Gs_infer --cluster_node --coarsening_method variation_neighborhoods --coarsening_ratio 0.1 --runs 1 --lr 0.01 --batch_size 2 --epochs2 20
+# output_dir="cora_fixed_Gs_train_2_Gs_infer_0.1_variation_neighborhoods_cluster_2_0.01"
+# python main.py --dataset cora --experiment fixed --output_dir $output_dir --exp_setup Gs_train_2_Gs_infer --cluster_node --coarsening_method variation_neighborhoods --coarsening_ratio 0.1 --runs 1 --lr 0.01 --batch_size 300 --epochs2 20
 
 #output_dir="cora_fixed_Gs_train_2_Gs_infer_0.1_variation_neighborhoods_cluster_128_0.01"
 #python main.py --dataset cora --experiment fixed --output_dir $output_dir --exp_setup Gs_train_2_Gs_infer --cluster_node --coarsening_method variation_neighborhoods --coarsening_ratio 0.1 --runs 3 --lr 0.01 --batch_size 128 --epochs2 1
@@ -54,3 +54,28 @@ python main.py --dataset cora --experiment fixed --output_dir $output_dir --exp_
 #         done
 #     done
 # done
+
+underscore="_"
+cluster="cluster"
+extra="extra"
+MB="GD"
+exp_setup=Gs_train_2_Gs_infer
+coarsening_method=variation_neighborhoods
+batch_size=1
+for dataset in squirrel crocodile dblp Physics
+do
+    for coarsening_ratio in 0.1 0.3 0.5 0.7 0.9
+    do
+        output_dir=$dataset$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$cluster$underscore$$batch_size
+        python mem_analysis.py --dataset $dataset --experiment random --output_dir $output_dir --exp_setup $exp_setup --cluster_node --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio  --normalize_features --runs 1  --batch_size $batch_size --epochs1 1 --epochs2 1
+    done
+done
+
+for dataset in cora citeseer pubmed chameleon squirrel crocodile dblp Physics
+do
+    for coarsening_ratio in 0.1 0.3 0.5 0.7 0.9
+    do
+        output_dir=$dataset$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$extra$underscore$$batch_size
+        python mem_analysis.py --dataset $dataset --experiment random --output_dir $output_dir --exp_setup $exp_setup --extra_node --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio  --normalize_features --runs 1  --batch_size $batch_size --epochs1 1 --epochs2 1
+    done
+done

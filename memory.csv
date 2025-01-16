@@ -1,0 +1,35 @@
+dataset ,baseline ,coarsening_ratio ,task, type, memory_usage(MB)
+cora, False, 0.1, node_cls, cluster, cluster, 1.310488
+cora, False, 0.3, node_cls, cluster, 0.648241
+cora, False, 0.5, node_cls, cluster, 0.694089
+cora, False, 0.7, node_cls, cluster, 0.867867
+cora, False, 0.9, node_cls, cluster, 0.97672
+citeseer, False, 0.1, node_cls, cluster, 31.559472
+citeseer, False, 0.3, node_cls, cluster, 2.148424
+citeseer, False, 0.5, node_cls, cluster, 1.253412
+citeseer, False, 0.7, node_cls, cluster, 1.685591
+citeseer, False, 0.9, node_cls, cluster, 1.474853
+pubmed, False, 0.1, node_cls, cluster, 0.613397
+pubmed, False, 0.3, node_cls, cluster, 0.568776
+pubmed, False, 0.5, node_cls, cluster, 0.570795
+pubmed, False, 0.7, node_cls, cluster, 0.572622
+pubmed, False, 0.9, node_cls, cluster, 0.508871
+chameleon, False, 0.1, node_reg, cluster, cluster, 0.211514
+chameleon, False, 0.3, node_reg, cluster, 0.246465
+chameleon, False, 0.5, node_reg, cluster, 0.291338
+chameleon, False, 0.7, node_reg, cluster, 0.438378
+chameleon, False, 0.9, node_reg, cluster, 0.527185
+squirrel, False, 0.1, node_reg, cluster, 1.506572
+squirrel, False, 0.3, node_reg, cluster, 1.60723
+squirrel, False, 0.5, node_reg, cluster, 1.903409
+squirrel, False, 0.7, node_reg, cluster, 3.008933
+squirrel, False, 0.9, node_reg, cluster, 5.753951
+crocodile, False, 0.1, node_reg, cluster, 1.182742
+crocodile, False, 0.3, node_reg, cluster, 1.187726
+crocodile, False, 0.5, node_reg, cluster, 1.734522
+crocodile, False, 0.7, node_reg, cluster, 1.865893
+crocodile, False, 0.9, node_reg, 3.076167
+dblp, False, 0.1, node_cls, 6.066918
+dblp, False, 0.3, node_cls, 2.940006
+dblp, False, 0.5, node_cls, 1.84711
+dblp, False, 0.7, node_cls, 1.966275
