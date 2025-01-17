@@ -79,3 +79,11 @@ Physics, False, 0.3, node_cls, extra, 22.433587
 Physics, False, 0.5, node_cls, extra, 22.433587
 Physics, False, 0.7, node_cls, extra, 22.433587
 Physics, False, 0.9, node_cls, extra, 22.433587
+cora, True, -, -, -, 15.742620
+citeseer, True, -, -, -, 49.488417
+pubmed, True, -, -, -, 41.227007
+chameleon, True, -, -, -, 2.197836
+squirrel, True, -, -, -, 9.074876
+crocodile, True, -, -, -, 11.561716
+dblp, True, -, -, -, 118.121312
+Physics, True, -, -, -, 1169.521068
