@@ -10,8 +10,10 @@ import torch_scatter
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader as T_DataLoader
 from torch_geometric.loader import DataLoader as G_DataLoader
-from utils import load_data_classification, load_data_regression, train_test_val_split, colater, NLLLoss_numpy, L1Loss_numpy
+from utils import load_data_classification, load_data_regression, splits_classification, splits_regression, train_test_val_split, colater, NLLLoss_numpy, L1Loss_numpy
 from network import Classify_node, Regress_node, Classify_graph_gc, Classify_graph_gs, Regress_graph_gc, Regress_graph_gs
+from torch_geometric.profile import get_data_size
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import logging
 logging.disable(logging.INFO)
 logging.disable(logging.WARNING)
@@ -110,65 +112,6 @@ def node_infer_Gs_GD(args, model, graph_data, loss_fn, infer_type):
         else:
             return total_loss/len(all_out), acc, total_time
         
-# def node_infer_Gs_GD(args, model, graph_data, loss_fn, infer_type):
-#     total_loss = 0
-#     total_time = 0
-#     # all_out = torch.tensor([]).to(device)
-#     # all_label = torch.tensor([]).to(device)
-#     all_out = np.array([])
-#     all_label = np.array([])
-#     if args.task == 'node_cls':
-#         all_out = all_out.astype(np.int32)
-#         all_label = all_label.astype(np.int32)
-#     for graph in graph_data:
-#         model.eval()
-#         if infer_type == 'test':
-#             if True in graph.test_mask:
-#                 x = graph.x.to(device)
-#                 y = graph.y.to(device)
-#                 edge_index = graph.edge_index.to(device)
-#                 start_time = time.time()
-#                 out = model(x, edge_index)
-#                 total_time += time.time() - start_time
-#                 test_mask = graph.test_mask.to(device)
-#                 all_out = np.concatenate((all_out,torch.argmax(out[test_mask], 1).cpu().numpy()))
-#                 all_label = np.concatenate((all_label, y[test_mask].flatten().cpu().numpy()))
-#                 del x, y, edge_index, test_mask
-#                 torch.cuda.empty_cache()
-#             else:
-#                 continue
-#         else:
-#             if True in graph.val_mask:
-#                 x = graph.x.to(device)
-#                 y = graph.y.to(device)
-#                 edge_index = graph.edge_index.to(device)
-#                 start_time = time.time()
-#                 out = model(x, edge_index)
-#                 total_time += time.time() - start_time
-#                 val_mask = graph.val_mask.to(device)
-#                 all_out = np.concatenate((all_out,torch.argmax(out[val_mask], 1).cpu().numpy()))
-#                 all_label = np.concatenate((all_label, y[val_mask].flatten().cpu().numpy()))
-#                 del x, y, edge_index, val_mask
-#                 torch.cuda.empty_cache()
-#             else:
-#                 continue
-#     if args.task == 'node_cls':
-#         loss = loss_fn(all_out, all_label.type(torch.long).flatten())
-#         total_loss += loss.item()
-#         acc = np.sum(all_out == all_label) / len(all_label)
-#         if args.loss_reduction == 'mean':
-#             return total_loss, acc, total_time
-#         else:
-#             return total_loss/len(all_out), acc, total_time
-#     else:
-#         loss = loss_fn(torch.tensor(all_out).view(-1, 1), torch.tensor(all_label).view(-1, 1))
-#         total_loss += loss.item()/np.std(all_label).item()
-#         acc = 0
-#         if args.loss_reduction == 'mean':
-#             return total_loss, acc, total_time
-#         else:
-#             return total_loss/len(all_out), acc, total_time
-        
 def node_infer_Gs_MB(args, model, graph_data, loss_fn, infer_type):
     total_loss = 0
     total_time = 0
@@ -235,7 +178,9 @@ def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
     all_label = torch.tensor([]).to(device)
     model.train()
     optimizer.zero_grad()
+    max_mem = 0
     for graph in graph_data:
+        max_mem = max(max_mem, get_data_size(graph))
         train_mask = graph.train_mask.to(device)
         if True in train_mask:
             x = graph.x.to(device)
@@ -256,6 +201,7 @@ def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
     loss.backward()
     optimizer.step()
     total_loss += loss.item()
+    print(f"Max memory allocated: {max_mem}")
     if args.loss_reduction == 'mean':
         if args.task == 'node_cls':
             return total_loss
@@ -398,9 +344,6 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
         if args.exp_setup == 'Gc_train_2_Gs_train':
             best_val_loss_Gc =  float('inf')
             best_val_loss_Gs =  float('inf')
-            best_test_loss = float('inf')
-            best_test_acc = 0
-            best_test_time = 0
             #Train and Val on Gc
             for epoch in tqdm(range(args.epochs1), desc=f"Run {run+1}", colour='red'):
                 train_loss = node_train_Gc(model, coarsen_features, coarsen_edge, coarsen_train_mask, coarsen_train_labels, loss_fn, optimizer)
@@ -418,99 +361,91 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                 if args.gradient_method == "GD":
                     train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args)
                     val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
                 else:
                     train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer, args)
                     val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
                     
                 run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
                 run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
                 run_writer.add_scalar('Gs_val_acc', val_acc, epoch)
-                run_writer.add_scalar('Gs_test_loss', test_loss, epoch)
-                run_writer.add_scalar('Gs_test_acc', test_acc, epoch)
-
                 if val_loss < best_val_loss_Gs or epoch == 0:
                     best_val_loss_Gs = val_loss
-                    best_test_loss = test_loss
-                    best_test_acc = test_acc
-                    best_test_time = test_time
                     torch.save(model.state_dict(), path+'/model.pt')
                     
-            all_loss.append(best_test_loss)
-            all_acc.append(best_test_acc)
-            all_time.append(best_test_time)
+            model.load_state_dict(torch.load(path+'/model.pt'))
+            if args.gradient_method == "GD":
+                test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
+            else:
+                test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+            
+            writer.add_scalar('Gs_test_loss', test_loss, run)
+            writer.add_scalar('Gs_test_acc', test_acc, run)
+                    
+            all_loss.append(test_loss)
+            all_acc.append(test_acc)
+            all_time.append(test_time)
         
         elif args.exp_setup == 'Gc_train_2_Gs_infer':
             best_val_loss_Gc =  float('inf')
             best_val_loss_Gs =  float('inf')
-            best_test_loss = float('inf')
-            best_test_acc = 0
-            best_test_time = 0
             #Train and Val on Gc
             for epoch in tqdm(range(args.epochs1), desc=f"Run {run+1}", colour='red'):
                 train_loss_gc = node_train_Gc(model, coarsen_features, coarsen_edge, coarsen_train_mask, coarsen_train_labels, loss_fn, optimizer)
                 val_loss_gc = node_val_Gc(model, coarsen_features, coarsen_edge, coarsen_val_mask, coarsen_val_labels, loss_fn)
                 
-                if args.gradient_method == "GD":
-                    val_loss_gs, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
-                else:
-                    val_loss_gs, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
-                
                 run_writer.add_scalar('Gc_val_loss', val_loss_gc, epoch)
                 run_writer.add_scalar('Gc_train_loss', train_loss_gc, epoch)
-                run_writer.add_scalar('Gs_val_loss', val_loss_gs, epoch)
-                run_writer.add_scalar('Gs_val_acc', val_acc, epoch)
-                run_writer.add_scalar('Gs_test_loss', test_loss, epoch)
-                run_writer.add_scalar('Gs_test_acc', test_acc, epoch)
                 if val_loss_gc < best_val_loss_Gc or epoch == 0:
                     best_val_loss_Gc = val_loss_gc
-                    best_test_loss = test_loss
-                    best_test_acc = test_acc
-                    best_test_time = test_time
                     torch.save(model.state_dict(), path+'/model.pt') 
-
-            all_loss.append(best_test_loss)
-            all_acc.append(best_test_acc)
-            all_time.append(best_test_time)
+                    
+            model.load_state_dict(torch.load(path+'/model.pt'))
+            if args.gradient_method == "GD":
+                val_loss_gs, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
+                test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
+            else:
+                val_loss_gs, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
+                test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+                
+            writer.add_scalar('Gs_val_loss', val_loss_gs, run)
+            writer.add_scalar('Gs_val_acc', val_acc, run)
+            writer.add_scalar('Gs_test_loss', test_loss, run)
+            writer.add_scalar('Gs_test_acc', test_acc, run)
+            all_loss.append(test_loss)
+            all_acc.append(test_acc)
+            all_time.append(test_time)
 
         elif args.exp_setup == 'Gs_train_2_Gs_infer':
             if run == 0:
                 del coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge
                 torch.cuda.empty_cache()
             best_val_loss_Gs =  float('inf')
-            best_test_loss = float('inf')
-            best_test_acc = 0
-            best_test_time = 0
             #Train on Gs
             for epoch in tqdm(range(args.epochs2), desc=f"Run {run+1}", colour='green'):
                 if args.gradient_method == "GD":
                     train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer,args)
                     val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
                 else:
                     train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer,args)
                     val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
-                    test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
-
                 run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
                 run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
                 run_writer.add_scalar('Gs_val_acc', val_acc, epoch)
-                run_writer.add_scalar('Gs_test_loss', test_loss, epoch)
-                run_writer.add_scalar('Gs_test_acc', test_acc, epoch)
 
                 if val_loss < best_val_loss_Gs or epoch == 0:
                     best_val_loss_Gs = val_loss
-                    best_test_loss = test_loss
-                    best_test_acc = test_acc
-                    best_test_time = test_time
                     torch.save(model.state_dict(), path+'/model.pt')
-                
-            all_loss.append(best_test_loss)
-            all_acc.append(best_test_acc)
-            all_time.append(best_test_time)
+                    
+            model.load_state_dict(path+'/model.pt')
+            if args.gradient_method == "GD":
+                test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
+            else:
+                test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+            writer.add_scalar('Gs_test_loss', test_loss, run)
+            writer.add_scalar('Gs_test_acc', test_acc, run)
+            all_loss.append(test_loss)
+            all_acc.append(test_acc)
+            all_time.append(test_time)
 
     top_acc = sorted(all_acc, reverse=True)[:10]
     top_loss = sorted(all_loss)[:10]
@@ -557,33 +492,36 @@ def node_regression(args, path, dataset, writer, subgraph_list):
         model.reset_parameters()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         
-        best_val_loss =  float('inf')
-        best_test_loss = float('inf')
-        best_test_acc = 0
-        best_test_time = 0
+        if run == 0:
+            del coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge
+            torch.cuda.empty_cache()
+        best_val_loss_Gs =  float('inf')
         #Train on Gs
         for epoch in tqdm(range(args.epochs2), desc=f"Run {run+1}", colour='green'):
             if args.gradient_method == "GD":
                 train_loss = node_train_Gs_GD(model, graph_data, loss_fn, optimizer,args)
                 val_loss, val_acc, val_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'val')
-                test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
             else:
                 train_loss = node_train_Gs_MB(model, graph_data, loss_fn, optimizer,args)
                 val_loss, val_acc, val_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'val')
-                test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
-                
             run_writer.add_scalar('Gs_train_loss', train_loss, epoch)
             run_writer.add_scalar('Gs_val_loss', val_loss, epoch)
-            run_writer.add_scalar('Gs_test_loss', test_loss, epoch)
+            run_writer.add_scalar('Gs_val_acc', val_acc, epoch)
 
-            if val_loss < best_val_loss or epoch == 0:
-                best_val_loss = val_loss
-                best_test_loss = test_loss
-                best_test_time = test_time
+            if val_loss < best_val_loss_Gs or epoch == 0:
+                best_val_loss_Gs = val_loss
                 torch.save(model.state_dict(), path+'/model.pt')
-        
-        all_loss.append(best_test_loss)
-        all_time.append(best_test_time)
+                
+        model.load_state_dict(path+'/model.pt')
+        if args.gradient_method == "GD":
+            test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
+        else:
+            test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+        writer.add_scalar('Gs_test_loss', test_loss, run)
+        writer.add_scalar('Gs_test_acc', test_acc, run)
+        all_loss.append(test_loss)
+        all_acc.append(test_acc)
+        all_time.append(test_time)
 
     top_loss = sorted(all_loss)[:10]
 
@@ -861,3 +799,278 @@ def graph_regression(args, path, writer, dataset):
     if args.multi_prop:
         print(f"property_idx: {args.property}")
     print("#####################################################################")
+    
+def node_classification_baseline(args, path, data, writer):
+    all_loss = []
+    all_acc = []
+    all_time = []
+    data = splits_classification(data, args.num_classes, args.exp_setup)
+    graph_data = G_DataLoader(data, batch_size=args.batch_size, shuffle=False)
+    model = Classify_node(args).to(device)
+    loss_fn = torch.nn.NLLLoss(reduction=args.loss_reduction).to(device)
+    model.reset_parameters()
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    for run in range(args.runs):
+        run_writer = SummaryWriter(path + "/run_"+str(run+1))
+        best_val_loss = float('inf')
+        avg_time = 0
+        for graph in graph_data:
+            for epoch in tqdm(range(args.epochs), desc=f"Run {run+1}", colour='orange'):
+                model.train()
+                optimizer.zero_grad()
+                graph = graph.to(device)
+                out = model(graph.x, graph.edge_index)
+                loss = loss_fn(out[graph.train_mask], graph.y[graph.train_mask].flatten())
+                loss.backward()
+                optimizer.step()
+                
+                model.eval()
+                with torch.no_grad():
+                    out = model(graph.x, graph.edge_index)
+                    val_loss = loss_fn(out[graph.val_mask], graph.y[graph.val_mask].flatten())
+                    if val_loss < best_val_loss or epoch == 0:
+                        best_val_loss = val_loss
+                        torch.save(model.state_dict(), path+'/model.pt')
+                run_writer.add_scalar('val_loss', val_loss, epoch)
+                run_writer.add_scalar('train_loss', loss, epoch)
+                    
+            model.load_state_dict(torch.load(path+'/model.pt'))
+            model.eval()
+            with torch.no_grad():
+                start = time.time()
+                out = model(graph.x, graph.edge_index)
+                avg_time += time.time() - start
+                test_loss = loss_fn(out[graph.test_mask], graph.y[graph.test_mask].flatten())
+            test_acc = int(torch.sum(torch.argmax(out[graph.test_mask], dim=1) == graph.y[graph.test_mask]).item()) / len(graph.y[graph.test_mask])
+            writer.add_scalar('test_loss', test_loss, run)
+            writer.add_scalar('test_acc', test_acc, run)
+            all_loss.append(test_loss)
+            all_acc.append(test_acc)
+            all_time.append(avg_time)
+    top_acc = sorted(all_acc, reverse=True)[:10]
+    top_loss = sorted(all_loss)[:10]
+    
+    if not os.path.exists(f"results/baseline/{args.dataset}.csv"):
+        with open(f"results/baseline/{args.dataset}.csv", 'w') as f:
+            f.write('dataset,eperiment,runs,num_layers,batch_size,lr,ave_acc,ave_time,top_10_acc,best_acc,top_10_loss,best_loss\n')
+    with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
+        f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_acc)} +/- {np.std(all_acc)},{np.mean(all_time)},{np.mean(top_acc)} +/- {np.std(top_acc)}, {top_acc[0]}, {np.mean(top_loss)} +/- {np.std(top_loss)}, {top_loss[0]}\n")
+    print("#####################################################################")
+    print(f"dataset: {args.dataset}")
+    print(f"experiment: {args.experiment}")
+    print(f"hidden: {args.hidden}")
+    print(f"runs: {args.runs}")
+    print(f"num_layers: {args.num_layers1}")
+    print(f"lr: {args.lr}")
+    print(f"ave_acc: {np.mean(all_acc)} +/- {np.std(all_acc)}")
+    print(f"ave_time: {np.mean(all_time)}")
+    print(f"top_10_acc: {np.mean(top_acc)} +/- {np.std(top_acc)}")
+    print(f"best_acc: {top_acc[0]}")
+    print(f"top_10_loss: {np.mean(top_loss)} +/- {np.std(top_loss)}")
+    print(f"best_loss: {top_loss[0]}")
+    print("#####################################################################")
+    
+def node_regression_baseline(args, path, data, writer):
+    all_loss = []
+    all_time = []
+    data = splits_regression(data, args.exp_setup)
+    graph_data = G_DataLoader(data, batch_size=args.batch_size, shuffle=False)
+    model = Regress_node(args).to(device)
+    loss_fn = torch.nn.L1Loss(reduction=args.loss_reduction).to(device)
+    model.reset_parameters()
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    for run in range(args.runs):
+        run_writer = SummaryWriter(path + "/run_"+str(run+1))
+        best_val_loss = float('inf')
+        avg_time = 0
+        for graph in graph_data:
+            for epoch in tqdm(range(args.epochs), desc=f"Run {run+1}", colour='orange'):
+                model.train()
+                optimizer.zero_grad()
+                graph = graph.to(device)
+                out = model(graph.x, graph.edge_index)
+                loss = loss_fn(out[graph.train_mask], graph.y[graph.train_mask].flatten())
+                loss.backward()
+                optimizer.step()
+                
+                model.eval()
+                with torch.no_grad():
+                    out = model(graph.x, graph.edge_index)
+                    val_loss = loss_fn(out[graph.val_mask], graph.y[graph.val_mask].flatten())
+                    if val_loss < best_val_loss or epoch == 0:
+                        best_val_loss = val_loss
+                        torch.save(model.state_dict(), path+'/model.pt')
+                run_writer.add_scalar('val_loss', val_loss, epoch)
+                run_writer.add_scalar('train_loss', loss, epoch)
+                    
+            model.load_state_dict(torch.load(path+'/model.pt'))
+            model.eval()
+            with torch.no_grad():
+                start = time.time()
+                out = model(graph.x, graph.edge_index)
+                avg_time += time.time() - start
+                test_loss = loss_fn(out[graph.test_mask], graph.y[graph.test_mask].flatten())
+            writer.add_scalar('test_loss', test_loss, run)
+            all_loss.append(test_loss)
+            all_time.append(avg_time)
+    top_loss = sorted(all_loss)[:10]
+    
+    if not os.path.exists(f"results/baseline/{args.dataset}.csv"):
+        with open(f"results/baseline/{args.dataset}.csv", 'w') as f:
+            f.write('dataset,experiment,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
+    with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
+        f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")
+    print("#####################################################################")
+    print(f"dataset: {args.dataset}")
+    print(f"experiment: {args.experiment}")
+    print(f"hidden: {args.hidden}")
+    print(f"runs: {args.runs}")
+    print(f"num_layers: {args.num_layers1}")
+    print(f"lr: {args.lr}")
+    print(f"ave_time: {np.mean(all_time)}")
+    print(f"top_10_loss: {np.mean(top_loss)} +/- {np.std(top_loss)}")
+    print(f"best_loss: {top_loss[0]}")
+    print("#####################################################################")
+    
+def graph_classification_baseline(args, path, data, writer):
+    train_split, test_split, val_split = train_test_val_split(data, shuffle=True)
+    train_loader = G_DataLoader(train_split, batch_size=args.batch_size, shuffle=True)
+    test_loader = G_DataLoader(test_split, batch_size=args.batch_size, shuffle=False)
+    val_loader = G_DataLoader(val_split, batch_size=args.batch_size, shuffle=False)
+
+    model = Classify_graph_gc(args).to(device)
+    loss_fn = torch.nn.CrossEntropyLoss().to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    best_val_loss = float('inf')
+    best_test_loss = float('inf')
+    best_test_acc = 0
+    for epoch in tqdm(range(args.epochs1), colour='orange'):
+        train_loss = 0
+        test_loss = 0
+        val_loss = 0
+        val_pred = []
+        val_true = []
+        test_pred = []
+        test_true = []
+        for batch in train_loader:
+            model.train()
+            optimizer.zero_grad()
+            batch = batch.to(device)
+            out = model(batch)
+            loss = loss_fn(out[batch.train_mask], batch.y[batch.train_mask])
+            train_loss += loss.item()
+            loss.backward()
+            optimizer.step()
+        model.eval()
+        with torch.no_grad():
+            for batch in val_loader:
+                batch = batch.to(device)
+                out = model(batch)
+                loss = loss_fn(out[batch.val_mask], batch.y[batch.val_mask])
+                val_loss += loss.item()
+                val_pred.append(torch.argmax(out[batch.val_mask], dim=1))
+                val_true.append(batch.y[batch.val_mask.cpu().numpy()])
+            for batch in test_loader:
+                batch = batch.to(device)
+                out = model(batch)
+                loss = loss_fn(out[batch.test_mask], batch.y[batch.test_mask])
+                test_loss += loss.item()
+                test_pred.append(torch.argmax(out[batch.test_mask], dim=1).cpu().numpy())
+                test_true.append(batch.y[batch.test_mask])
+                
+        val_acc = torch.sum(torch.cat(val_pred) == torch.cat(val_true)).item() / len(torch.cat(val_true))
+        test_acc = torch.sum(torch.cat(test_pred) == torch.cat(test_true)).item() / len(torch.cat(test_true))
+        writer.add_scalar('val_loss', val_loss/len(val_loader), epoch)
+        writer.add_scalar('train_loss', train_loss/len(train_loader), epoch)
+        writer.add_scalar('test_loss', test_loss/len(test_loader), epoch)
+        writer.add_scalar('val_acc', val_acc, epoch)
+        writer.add_scalar('test_acc', test_acc, epoch)
+        if val_loss < best_val_loss or epoch == 0:
+            best_val_loss = val_loss
+            best_test_loss = test_loss
+            best_test_acc = test_acc
+            torch.save(model.state_dict(), path+'/model.pt')
+    if not os.path.exists(f"results/baseline/{args.dataset}.csv"):
+        with open(f"results/baseline/{args.dataset}.csv", 'w') as f:
+            f.write('dataset,experiment,runs,num_layers,batch_size,lr,best_test_loss,best_test_acc\n')
+    with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
+        f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
+    print("#####################################################################")
+    print(f"dataset: {args.dataset}")
+    print(f"experiment: {args.experiment}")
+    print(f"hidden: {args.hidden}")
+    print(f"runs: {args.runs}")
+    print(f"num_layers: {args.num_layers1}")
+    print(f"lr: {args.lr}")
+    print(f"best_test_loss: {best_test_loss}")
+    print(f"best_test_acc: {best_test_acc}")
+    print("#####################################################################")
+    
+def graph_regression_baseline(args, path, data, writer):
+    train_split, test_split, val_split = train_test_val_split(data, shuffle=True)
+    train_loader = G_DataLoader(train_split, batch_size=args.batch_size, shuffle=True)
+    test_loader = G_DataLoader(test_split, batch_size=args.batch_size, shuffle=False)
+    val_loader = G_DataLoader(val_split, batch_size=args.batch_size, shuffle=False)
+
+    model = Regress_graph_gc(args).to(device)
+    loss_fn = torch.nn.L1Loss().to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    best_val_loss = float('inf')
+    best_test_loss = float('inf')
+    for epoch in tqdm(range(args.epochs1), colour='orange'):
+        train_loss = 0
+        test_loss = 0
+        val_loss = 0
+        test_true = []
+        val_true = []
+        train_true = []
+        for batch in train_loader:
+            model.train()
+            optimizer.zero_grad()
+            batch = batch.to(device)
+            out = model(batch)
+            loss = loss_fn(out[batch.train_mask], batch.y[batch.train_mask])
+            train_true.append(batch.y[batch.train_mask])
+            train_loss += loss.item()
+            loss.backward()
+            optimizer.step()
+        model.eval()
+        with torch.no_grad():
+            for batch in val_loader:
+                batch = batch.to(device)
+                out = model(batch)
+                loss = loss_fn(out[batch.val_mask], batch.y[batch.val_mask])
+                val_true.append(batch.y[batch.val_mask])
+                val_loss += loss.item()
+            for batch in test_loader:
+                batch = batch.to(device)
+                out = model(batch)
+                loss = loss_fn(out[batch.test_mask], batch.y[batch.test_mask])
+                test_true.append(batch.y[batch.test_mask])
+                test_loss += loss.item()
+        val_std = np.std(val_true)
+        test_std = np.std(test_true)
+        train_std = np.std(train_true)
+        writer.add_scalar('val_loss', val_loss/(len(val_loader)*val_std), epoch)
+        writer.add_scalar('train_loss', train_loss/(len(train_loader)*train_std), epoch)
+        writer.add_scalar('test_loss', test_loss/(len(test_loader)*test_std), epoch)
+        if val_loss < best_val_loss or epoch == 0:
+            best_val_loss = val_loss
+            best_test_loss = test_loss
+            torch.save(model.state_dict(), path+'/model.pt')
+    if not os.path.exists(f"results/baseline/{args.dataset}.csv"):
+        with open(f"results/baseline/{args.dataset}.csv", 'w') as f:
+            f.write('dataset,experiment,runs,num_layers,batch_size,lr,best_test_loss\n')
+    with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
+        f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss}\n")
+    print("#####################################################################")
+    print(f"dataset: {args.dataset}")
+    
+    
+    
+    
+            
+                
+            
+                
+    

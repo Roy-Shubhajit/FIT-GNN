@@ -4,7 +4,7 @@
 
 # python inference.py --dataset chameleon --num_test_samples 20 --coarsening_method variation_neighborhoods --coarsening_ratio 0.3 --exp_setup Gs_train_2_Gs_infer --extra_node --path_gs /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/node_reg/chameleon_Gs_train_2_Gs_infer_0.3_variation_neighborhoods_extra/ --model_name_gs model.pt
 
-python inference.py --experiment random --dataset ogbn-products --num_test_samples 1650000000 --coarsening_method variation_neighborhoods --coarsening_ratio 0.3 --exp_setup Gs_train_2_Gc_infer --cluster_node --path_gs /hdfs1/Data/Shubhajit/Project/CoPart-GNN/save/node_cls/ogbn_products_exp_6/ --model_name_gs model.pt
+python inference_baseline.py --experiment random --dataset ogbn-products --num_test_samples 1650 --path_b /hdfs1/Data/Shubhajit/Project/CoPart-GNN/save/node_cls/baselines_new/baseline_ogbn-products_new/ --model_name_b baseline_ogbn-products_random.pt
 
 # python inference.py --dataset AIDS --num_test_samples 20 --coarsening_method variation_neighborhoods --coarsening_ratio 0.5 --exp_setup Gc_train_2_Gs_infer --path_gs /hdfs1/Data/weather/CoarseGNN_Kishan/CoPart-GNN/save/graph_cls/AIDS_Gc_train_2_Gs_infer_0.5_variation_neighborhoods/ --model_name_gs model.pt
 

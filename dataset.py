@@ -1,8 +1,12 @@
 import os
 import torch
+import igraph as ig
+import leidenalg
+from utils import merge_communities
+from ogb.nodeproppred import PygNodePropPredDataset
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, ZINC, QM9
 
-dataset_names = ['dblp', 'Physics', 'cora', 'citeseer', 'pubmed', 'chameleon', 'squirrel', 'crocodile', 'PROTEINS',"AIDS","QM9","ZINC"]
+dataset_names = ['dblp', 'Physics', 'cora', 'citeseer', 'pubmed', 'ogbn-products(community)','chameleon', 'squirrel', 'crocodile', 'PROTEINS',"AIDS","QM9","ZINC"]
 
 for _ in dataset_names:
     if _ == 'dblp':
@@ -19,6 +23,23 @@ for _ in dataset_names:
         task = 'node_cls'
     elif _ == 'pubmed':
         dataset = Planetoid(root='./dataset', name=_)
+        task = 'node_cls'
+    elif _ == 'ogbn-products(community)':
+        if os.path.exists('./dataset/ogbn-products/saved/community_data.pt'):
+            data = torch.load('./dataset/ogbn-products/saved/community_data.pt')
+        else:
+            dataset = PygNodePropPredDataset(name="ogbn-products", root='/hdfs1/Data/weather/CoarseGNN_Hrriday/OGB/dataset/')
+            print("Using community detection")
+            g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
+            part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
+            mapping = {}
+            for i, c in enumerate(part.membership):
+                if int(c) not in mapping.keys():
+                    mapping[int(c)] = []
+                mapping[int(c)].append(i)
+            data = merge_communities(data, mapping, 165000)
+            torch.save(data, f'./dataset/ogbn-products/saved/community_data.pt')
+        dataset = [data]
         task = 'node_cls'
     elif _ == 'chameleon':
         dataset = WikipediaNetwork(root='./dataset', name=_, geom_gcn_preprocess=False)

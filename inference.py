@@ -8,6 +8,7 @@ from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coa
 from ogb.nodeproppred import PygNodePropPredDataset
 from utils import load_graph_data, coarsening_classification, coarsening_regression, coarsening_classification, coarsening_regression, load_data_classification, load_data_regression, colater 
 from torch.utils.data import DataLoader as T_DataLoader
+from torch_geometric.data import DataLoader as G_DataLoader
 from network import Classify_graph_gs, Regress_graph_gs, Classify_node, Regress_node, Classify_graph_gc, Regress_graph_gc
 from time import time
 import numpy as np
@@ -15,6 +16,7 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_max_pool, global_mean_pool
 from tqdm import tqdm
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 class Classify_graph(torch.nn.Module):
@@ -249,10 +251,6 @@ args = parser.parse_args()
 
 args = arg_correction(args)
 dataset, args = process_dataset(args)
-# for i in tqdm(range(len(dataset)), colour='blue'):
-#     dataset[i] = dataset[i].to(device)
-# print(dataset[0].x.device)
-# quit()
 
 if (args.task == 'node_cls' or args.task == 'node_reg') and dataset[0].num_nodes > 170000:
     args.use_community_detection = True
@@ -556,7 +554,7 @@ elif args.task == "node_cls":
         candidate = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl', 'rb'))
         C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
         Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
-        args.num_features = dataset[0].x.shape[1]
+        args.num_features = dataset[0].x.shape[1]     
         if args.use_community_detection:
             del dataset
             torch.cuda.empty_cache()
@@ -649,6 +647,28 @@ elif args.task == "node_cls":
     all_out_b = []
     all_label_gs = []
     all_out_gs = []
+    
+    if args.baseline:
+        # Baseline model
+        model_b = Net1(dataset[0].x.shape[1], args.hidden, args.num_layers2, args.num_classes).to(device)
+        loss_fn = torch.nn.NLLLoss().to(device)
+        model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
+        model_b.eval()
+        graph_data = G_DataLoader(dataset, batch_size=1)
+        fig = plt.figure()
+        for i in range(num):
+            for graph in graph_data:
+                graph = graph.to(device)
+                t3 = time()
+                out_b = model_b(graph.x, graph.edge_index).to(device)
+                t4 = time()
+                loss_b = loss_fn(out_b[indices[i][0]].reshape(1,-1), graph.y[indices[i][0]])
+                all_label_b.append(graph.y[indices[i][0]].item())
+                all_out_b.append(out_b[indices[i][0]].argmax().item())
+                losses_b.append(loss_b.item())
+                times_b.append(t4 - t3)
+            
+        print(f"Average time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
 
     # Subgraph based model
     model_gs = Net1(args.num_features, args.hidden, args.num_layers2, args.num_classes).to(device)
@@ -673,31 +693,9 @@ elif args.task == "node_cls":
         y = y.cpu()
         edge_index = edge_index.cpu()
         del x, y, edge_index
-    
-    if args.baseline:
-        # Baseline model
-        model_b = Net1(dataset[0].x.shape[1], args.hidden, args.num_layers2, args.num_classes).to(device)
-        loss_fn = torch.nn.NLLLoss().to(device)
-        model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
-        model_b.eval()
-        fig = plt.figure()
-        for i in range(num):
-            x_ = dataset[0].x.to(device)
-            y_ = dataset[0].y.to(device)
-            edge_index_ = dataset[0].edge_index.to(device)
-            t3 = time()
-            out_b = model_b(x_, edge_index_).to(device)
-            t4 = time()
-            loss_b = loss_fn(out_b[indices[i][0]], y_[indices[i][0]])
-            all_label_b.append(y_[indices[i][0]].item())
-            all_out_b.append(out_b[indices[i][0]].argmax().item())
-            losses_b.append(loss_b.item())
-            times_b.append(t4 - t3)
-            #print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]].argmax().item()}\nOutput: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
     print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAccuracy (subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
-    
-    if args.baseline:
-        print(f"Average time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
+            #print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]].argmax().item()}\nOutput: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
+        
 
 elif args.task == "node_reg":
     dataset = dataset.to(device)
@@ -781,7 +779,7 @@ elif args.task == "node_reg":
                 indices.append((ind, subgraph_list[itr[1]].map_dict[ind], itr[1]))
 
     num = len(indices)
-    
+    del true_indices, false_indices, maskie, permu
     if args.baseline:
         # Baseline model
         model_b = Regress_node(args).to(device)

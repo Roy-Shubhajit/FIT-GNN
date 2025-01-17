@@ -11,7 +11,7 @@ from tqdm import tqdm
 from ogb.nodeproppred import PygNodePropPredDataset
 import torch_scatter
 from torch.utils.tensorboard import SummaryWriter
-from utils import coarsening_classification, coarsening_regression, load_graph_data, merge_communities
+from utils import coarsening_classification, coarsening_regression, load_graph_data, merge_communities, node_classification_baseline, node_regression_baseline, graph_classification_baseline, graph_regression_baseline
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, ZINC, QM9
 import logging
 logging.disable(logging.INFO)
@@ -112,6 +112,10 @@ def arg_correction(args):
         args.cluster_node = False
     if args.experiment == 'fixed' and args.dataset == 'ogbn-products':
         args.experiment = 'random'
+    if args.train_fitgnn:
+        args.baseline = False
+    if args.train_fitgnn == False:
+        args.baseline = True
     return args
 
 def save(args, path, candidate = None, C_list = None, Gc_list = None, subgraph_list = None, saved_graph_list = None):
@@ -187,6 +191,8 @@ if __name__ == "__main__":
     parser.add_argument('--multi_prop', action='store_true')
     parser.add_argument('--loss_reduction', type = str, default = 'mean')
     parser.add_argument('--property', type = int, default = 0)
+    parser.add_argument('--train_fitgnn', action='store_true')
+    parser.add_argument('--baseline', action='store_true')
     args = parser.parse_args()
 
     args = arg_correction(args)
@@ -220,20 +226,12 @@ if __name__ == "__main__":
         data = dataset[0]
         args.num_classes = torch.unique(data.y).shape[0]
         
-        if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
-            print("Loading saved graphs...")
-            subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
-            candidate = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl', 'rb'))
-            C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
-            Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
-            if args.use_community_detection:
-                args.num_classes = torch.unique(dataset.y).shape[0]
+        if args.use_community_detection:
+            if os.path.exists(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt'):
                 del dataset
                 torch.cuda.empty_cache()
                 data = torch.load(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
-            args.num_features = data.x.shape[1] # data.x is a matrix (nodes, features)
-        else:
-            if args.use_community_detection:
+            else:
                 print("Using community detection")
                 g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
                 part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
@@ -246,24 +244,30 @@ if __name__ == "__main__":
                 del dataset
                 torch.cuda.empty_cache()
                 torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
-            print("Coarsening graphs...")
-            args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
-            save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
-        node_classification(args, path, data, writer, candidate, C_list, Gc_list, subgraph_list)
+        args.num_features = data.x.shape[1]
+        if args.train_fitgnn:
+            if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
+                print("Loading saved graphs...")
+                subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
+                candidate = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl', 'rb'))
+                C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
+                Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
+            else:
+                print("Coarsening graphs...")
+                args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
+                save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
+            node_classification(args, path, data, writer, candidate, C_list, Gc_list, subgraph_list)
+        elif args.baseline:
+            node_classification_baseline(args, path, data, writer)
     elif args.task == 'node_reg':
         dataset = dataset.to(device)
         data = dataset[0]
-
-        if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
-            print("Loading saved graphs...")
-            subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
-            if args.use_community_detection:
-                data = torch.load(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
+        if args.use_community_detection:
+            if os.path.exists(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt'):
                 del dataset
                 torch.cuda.empty_cache()
-            args.num_features = dataset[0].x.shape[1]
-        else:
-            if args.use_community_detection:
+                data = torch.load(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
+            else:
                 print("Using community detection")
                 g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
                 part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
@@ -276,71 +280,85 @@ if __name__ == "__main__":
                 del dataset
                 torch.cuda.empty_cache()
                 torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
-            print("Coarsening graphs...")
-            args.num_features, subgraph_list = coarsening_regression(args, data, 1-args.coarsening_ratio, args.coarsening_method)
-            save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', subgraph_list=subgraph_list)
-        node_regression(args, path, data, writer, subgraph_list)
+        args.num_features = data.x.shape[1]
+        if args.train_fitgnn:
+            if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
+                print("Loading saved graphs...")
+                subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
+            else:
+                print("Coarsening graphs...")
+                args.num_features, subgraph_list = coarsening_regression(args, data, 1-args.coarsening_ratio, args.coarsening_method)
+                save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', subgraph_list=subgraph_list)
+            node_regression(args, path, data, writer, subgraph_list)
+        elif args.baseline:
+            node_regression_baseline(args, path, data, writer)
     elif args.task == 'graph_cls':
-        new_dataset = []
-        Gc_ = []
-        Gs_ = []
-        saved_graph_list = []
-        classes = set()
-        if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
-            print("Loading saved graphs...")
-            Gc_ = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
-            Gs_ = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
-            saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
-            for i in range(len(saved_graph_list)):
-                classes.add(dataset[saved_graph_list[i]].y.item())
-                new_dataset.append((dataset[saved_graph_list[i]], Gc_[i], Gs_[i]))
-            args.num_features = dataset[0].x.shape[1]
-        else:
-            print("Coarsening graphs...")
-            for i in tqdm(range(len(dataset)), colour='blue'):
-                graph = dataset[i]
-                graph = graph.to(device)
-                args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
-                Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
-                Gs = subgraph_list
-                new_dataset.append((graph, Gc, Gs))
-                Gs_.append(Gs)
-                Gc_.append(Gc)
-                classes.add(graph.y.item())
-                saved_graph_list.append(i)
-                
-            save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
-        args.num_classes = len(classes)
-        del dataset
-        torch.cuda.empty_cache()
-        graph_classification(args, path, writer, new_dataset)    
-    else:
-        new_dataset = []
-        Gc_ = []
-        Gs_ = []
-        saved_graph_list = []
-        if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
-            print("Loading saved graphs...")
-            Gc_ = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
-            Gs_ = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
-            saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
-            for i in range(len(saved_graph_list)):
-                new_dataset.append((dataset[saved_graph_list[i]], Gc_[i], Gs_[i]))
-            args.num_features = dataset[0].x.shape[1]
-        else:
-            print("Coarsening graphs...")   
-            for i in tqdm(range(len(dataset)), colour='blue'):
-                try:
+        if args.train_fitgnn:
+            new_dataset = []
+            Gc_ = []
+            Gs_ = []
+            saved_graph_list = []
+            classes = set()
+            if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
+                print("Loading saved graphs...")
+                Gc_ = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
+                Gs_ = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
+                saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
+                for i in range(len(saved_graph_list)):
+                    classes.add(dataset[saved_graph_list[i]].y.item())
+                    new_dataset.append((dataset[saved_graph_list[i]], Gc_[i], Gs_[i]))
+                args.num_features = dataset[0].x.shape[1]
+            else:
+                print("Coarsening graphs...")
+                for i in tqdm(range(len(dataset)), colour='blue'):
                     graph = dataset[i]
                     graph = graph.to(device)
-                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+                    args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_classification(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
                     Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
                     Gs = subgraph_list
                     new_dataset.append((graph, Gc, Gs))
                     Gs_.append(Gs)
                     Gc_.append(Gc)
+                    classes.add(graph.y.item())
                     saved_graph_list.append(i)
-                except:
-                    pass
-            save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
-        graph_regression(args, path, writer, new_dataset)
+                    
+                save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
+            args.num_classes = len(classes)
+            del dataset
+            torch.cuda.empty_cache()
+            graph_classification(args, path, writer, new_dataset)    
+        elif args.baseline:
+            graph_classification_baseline(args, path, dataset, writer)
+    else:
+        if args.train_fitgnn:
+            new_dataset = []
+            Gc_ = []
+            Gs_ = []
+            saved_graph_list = []
+            if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
+                print("Loading saved graphs...")
+                Gc_ = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
+                Gs_ = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt')
+                saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
+                for i in range(len(saved_graph_list)):
+                    new_dataset.append((dataset[saved_graph_list[i]], Gc_[i], Gs_[i]))
+                args.num_features = dataset[0].x.shape[1]
+            else:
+                print("Coarsening graphs...")   
+                for i in tqdm(range(len(dataset)), colour='blue'):
+                    try:
+                        graph = dataset[i]
+                        graph = graph.to(device)
+                        args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
+                        Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
+                        Gs = subgraph_list
+                        new_dataset.append((graph, Gc, Gs))
+                        Gs_.append(Gs)
+                        Gc_.append(Gc)
+                        saved_graph_list.append(i)
+                    except:
+                        pass
+                save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', Gc_list=Gc_, subgraph_list=Gs_, saved_graph_list=saved_graph_list)
+            graph_regression(args, path, writer, new_dataset)
+        else:
+            graph_regression_baseline(args, path, dataset, writer)
