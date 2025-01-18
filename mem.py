@@ -79,7 +79,7 @@ def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
     for graph in graph_data:
         max_mem = max(max_mem, get_data_size(graph))
     with open('memory.csv', 'a') as f:
-        f.write(f"{args.dataset}, False, {args.coarsening_ratio}, {args.task}, {max_mem/(10**6)}\n")
+        f.write(f"{args.dataset}, False, {args.coarsening_ratio}, {args.task}, extra, {max_mem/(10**6)}\n")
     f.close()
     quit()
         
