@@ -436,7 +436,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                     best_val_loss_Gs = val_loss
                     torch.save(model.state_dict(), path+'/model.pt')
                     
-            model.load_state_dict(path+'/model.pt')
+            model.load_state_dict(torch.load(path+'/model.pt'))
             if args.gradient_method == "GD":
                 test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
             else:
@@ -456,7 +456,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
         f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.experiment},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_acc)} +/- {np.std(all_acc)},{np.mean(all_time)},{np.mean(top_acc)} +/- {np.std(top_acc)}, {top_acc[0]}, {np.mean(top_loss)} +/- {np.std(top_loss)}, {top_loss[0]}\n")
-    print("#####################################################################")
+    print("############################### FIT-GNN MODEL ###############################")
     print(f"dataset: {args.dataset}")
     print(f"experiment: {args.experiment}")
     print(f"exp_setup: {args.exp_setup}")
@@ -475,7 +475,7 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
     print(f"best_acc: {top_acc[0]}")
     print(f"top_10_loss: {np.mean(top_loss)} +/- {np.std(top_loss)}")
     print(f"best_loss: {top_loss[0]}")
-    print("#####################################################################")
+    print("#############################################################################")
 
 def node_regression(args, path, dataset, writer, subgraph_list):
     all_loss = []
@@ -491,10 +491,6 @@ def node_regression(args, path, dataset, writer, subgraph_list):
         loss_fn_np = L1Loss_numpy(reduction=args.loss_reduction)
         model.reset_parameters()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        
-        if run == 0:
-            del coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge
-            torch.cuda.empty_cache()
         best_val_loss_Gs =  float('inf')
         #Train on Gs
         for epoch in tqdm(range(args.epochs2), desc=f"Run {run+1}", colour='green'):
@@ -512,7 +508,7 @@ def node_regression(args, path, dataset, writer, subgraph_list):
                 best_val_loss_Gs = val_loss
                 torch.save(model.state_dict(), path+'/model.pt')
                 
-        model.load_state_dict(path+'/model.pt')
+        model.load_state_dict(torch.load(path+'/model.pt'))
         if args.gradient_method == "GD":
             test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
         else:
@@ -531,7 +527,7 @@ def node_regression(args, path, dataset, writer, subgraph_list):
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
         f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")
-    print("#####################################################################")
+    print("############################### FIT-GNN MODEL ###############################")
     print(f"dataset: {args.dataset}")
     print(f"extra_nodes: {args.extra_node}")
     print(f"cluster_node: {args.cluster_node}")
@@ -545,7 +541,7 @@ def node_regression(args, path, dataset, writer, subgraph_list):
     print(f"ave_time: {np.mean(all_time)}")
     print(f"top_10_loss: {np.mean(top_loss)} +/- {np.std(top_loss)}")
     print(f"best_loss: {top_loss[0]}")
-    print("#####################################################################")
+    print("#############################################################################")
 
 def graph_classification(args, path, writer, dataset):
     train_split, test_split, val_split = train_test_val_split(dataset, shuffle=True)
@@ -663,7 +659,8 @@ def graph_classification(args, path, writer, dataset):
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
         f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
-    print("#####################################################################")
+    print("############################### FIT-GNN MODEL ###############################")
+    print("FIT-GNN MODEL")
     print(f"dataset: {args.dataset}")
     print(f"exp_setup: {args.exp_setup}")
     print(f"extra_nodes: {args.extra_node}")
@@ -676,7 +673,7 @@ def graph_classification(args, path, writer, dataset):
     print(f"coarsening_method: {args.coarsening_method}")
     print(f"best_test_loss: {best_test_loss}")
     print(f"best_test_acc: {best_test_acc}")
-    print("#####################################################################")
+    print("#############################################################################")
 
 def graph_regression(args, path, writer, dataset):
     train_split, test_split, val_split = train_test_val_split(dataset, shuffle=True)
@@ -784,7 +781,7 @@ def graph_regression(args, path, writer, dataset):
             f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{args.property}\n")
         else:
             f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss}\n")
-    print("#####################################################################")
+    print("############################### FIT-GNN MODEL ###############################")
     print(f"dataset: {args.dataset}")
     print(f"exp_setup: {args.exp_setup}")
     print(f"extra_nodes: {args.extra_node}")
@@ -798,14 +795,14 @@ def graph_regression(args, path, writer, dataset):
     print(f"best_test_loss: {best_test_loss}")
     if args.multi_prop:
         print(f"property_idx: {args.property}")
-    print("#####################################################################")
+    print("#############################################################################")
     
 def node_classification_baseline(args, path, data, writer):
     all_loss = []
     all_acc = []
     all_time = []
-    data = splits_classification(data, args.num_classes, args.exp_setup)
-    graph_data = G_DataLoader(data, batch_size=args.batch_size, shuffle=False)
+    data = splits_classification(data, args.num_classes, args.experiment)
+    graph_data = G_DataLoader([data], batch_size=args.batch_size, shuffle=False)
     model = Classify_node(args).to(device)
     loss_fn = torch.nn.NLLLoss(reduction=args.loss_reduction).to(device)
     model.reset_parameters()
@@ -815,7 +812,7 @@ def node_classification_baseline(args, path, data, writer):
         best_val_loss = float('inf')
         avg_time = 0
         for graph in graph_data:
-            for epoch in tqdm(range(args.epochs), desc=f"Run {run+1}", colour='orange'):
+            for epoch in tqdm(range(args.epochs1), desc=f"Run {run+1}", colour='orange'):
                 model.train()
                 optimizer.zero_grad()
                 graph = graph.to(device)
@@ -841,10 +838,10 @@ def node_classification_baseline(args, path, data, writer):
                 out = model(graph.x, graph.edge_index)
                 avg_time += time.time() - start
                 test_loss = loss_fn(out[graph.test_mask], graph.y[graph.test_mask].flatten())
-            test_acc = int(torch.sum(torch.argmax(out[graph.test_mask], dim=1) == graph.y[graph.test_mask]).item()) / len(graph.y[graph.test_mask])
+            test_acc = np.sum(np.argmax(out[graph.test_mask].cpu().numpy(), axis=1) == graph.y[graph.test_mask].flatten().cpu().numpy()) / len(graph.y[graph.test_mask])
             writer.add_scalar('test_loss', test_loss, run)
             writer.add_scalar('test_acc', test_acc, run)
-            all_loss.append(test_loss)
+            all_loss.append(test_loss.item())
             all_acc.append(test_acc)
             all_time.append(avg_time)
     top_acc = sorted(all_acc, reverse=True)[:10]
@@ -855,7 +852,7 @@ def node_classification_baseline(args, path, data, writer):
             f.write('dataset,eperiment,runs,num_layers,batch_size,lr,ave_acc,ave_time,top_10_acc,best_acc,top_10_loss,best_loss\n')
     with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
         f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_acc)} +/- {np.std(all_acc)},{np.mean(all_time)},{np.mean(top_acc)} +/- {np.std(top_acc)}, {top_acc[0]}, {np.mean(top_loss)} +/- {np.std(top_loss)}, {top_loss[0]}\n")
-    print("#####################################################################")
+    print("############################## BASELINE MODEL ##############################")
     print(f"dataset: {args.dataset}")
     print(f"experiment: {args.experiment}")
     print(f"hidden: {args.hidden}")
@@ -868,13 +865,13 @@ def node_classification_baseline(args, path, data, writer):
     print(f"best_acc: {top_acc[0]}")
     print(f"top_10_loss: {np.mean(top_loss)} +/- {np.std(top_loss)}")
     print(f"best_loss: {top_loss[0]}")
-    print("#####################################################################")
+    print("############################################################################")
     
 def node_regression_baseline(args, path, data, writer):
     all_loss = []
     all_time = []
-    data = splits_regression(data, args.exp_setup)
-    graph_data = G_DataLoader(data, batch_size=args.batch_size, shuffle=False)
+    data = splits_regression(data, args.train_ratio, args.val_ratio)
+    graph_data = G_DataLoader([data], batch_size=args.batch_size, shuffle=False)
     model = Regress_node(args).to(device)
     loss_fn = torch.nn.L1Loss(reduction=args.loss_reduction).to(device)
     model.reset_parameters()
@@ -884,7 +881,7 @@ def node_regression_baseline(args, path, data, writer):
         best_val_loss = float('inf')
         avg_time = 0
         for graph in graph_data:
-            for epoch in tqdm(range(args.epochs), desc=f"Run {run+1}", colour='orange'):
+            for epoch in tqdm(range(args.epochs1), desc=f"Run {run+1}", colour='orange'):
                 model.train()
                 optimizer.zero_grad()
                 graph = graph.to(device)
@@ -902,7 +899,7 @@ def node_regression_baseline(args, path, data, writer):
                         torch.save(model.state_dict(), path+'/model.pt')
                 run_writer.add_scalar('val_loss', val_loss, epoch)
                 run_writer.add_scalar('train_loss', loss, epoch)
-                    
+        
             model.load_state_dict(torch.load(path+'/model.pt'))
             model.eval()
             with torch.no_grad():
@@ -911,7 +908,7 @@ def node_regression_baseline(args, path, data, writer):
                 avg_time += time.time() - start
                 test_loss = loss_fn(out[graph.test_mask], graph.y[graph.test_mask].flatten())
             writer.add_scalar('test_loss', test_loss, run)
-            all_loss.append(test_loss)
+            all_loss.append((test_loss/torch.std(graph.y[graph.test_mask])).item())
             all_time.append(avg_time)
     top_loss = sorted(all_loss)[:10]
     
@@ -920,7 +917,7 @@ def node_regression_baseline(args, path, data, writer):
             f.write('dataset,experiment,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
     with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
         f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")
-    print("#####################################################################")
+    print("############################## BASELINE MODEL ##############################")
     print(f"dataset: {args.dataset}")
     print(f"experiment: {args.experiment}")
     print(f"hidden: {args.hidden}")
@@ -930,14 +927,13 @@ def node_regression_baseline(args, path, data, writer):
     print(f"ave_time: {np.mean(all_time)}")
     print(f"top_10_loss: {np.mean(top_loss)} +/- {np.std(top_loss)}")
     print(f"best_loss: {top_loss[0]}")
-    print("#####################################################################")
+    print("############################################################################")
     
 def graph_classification_baseline(args, path, data, writer):
     train_split, test_split, val_split = train_test_val_split(data, shuffle=True)
     train_loader = G_DataLoader(train_split, batch_size=args.batch_size, shuffle=True)
     test_loader = G_DataLoader(test_split, batch_size=args.batch_size, shuffle=False)
     val_loader = G_DataLoader(val_split, batch_size=args.batch_size, shuffle=False)
-
     model = Classify_graph_gc(args).to(device)
     loss_fn = torch.nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -957,7 +953,7 @@ def graph_classification_baseline(args, path, data, writer):
             optimizer.zero_grad()
             batch = batch.to(device)
             out = model(batch)
-            loss = loss_fn(out[batch.train_mask], batch.y[batch.train_mask])
+            loss = loss_fn(out, batch.y)
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -966,20 +962,22 @@ def graph_classification_baseline(args, path, data, writer):
             for batch in val_loader:
                 batch = batch.to(device)
                 out = model(batch)
-                loss = loss_fn(out[batch.val_mask], batch.y[batch.val_mask])
+                loss = loss_fn(out, batch.y)
                 val_loss += loss.item()
-                val_pred.append(torch.argmax(out[batch.val_mask], dim=1))
-                val_true.append(batch.y[batch.val_mask.cpu().numpy()])
+                val_pred.append(torch.argmax(out, dim=1).cpu().numpy())
+                val_true.append(batch.y.cpu().numpy())
             for batch in test_loader:
                 batch = batch.to(device)
                 out = model(batch)
-                loss = loss_fn(out[batch.test_mask], batch.y[batch.test_mask])
+                loss = loss_fn(out, batch.y)
                 test_loss += loss.item()
-                test_pred.append(torch.argmax(out[batch.test_mask], dim=1).cpu().numpy())
-                test_true.append(batch.y[batch.test_mask])
+                test_pred.append(torch.argmax(out, dim=1).cpu().numpy())
+                test_true.append(batch.y.cpu().numpy())
                 
-        val_acc = torch.sum(torch.cat(val_pred) == torch.cat(val_true)).item() / len(torch.cat(val_true))
-        test_acc = torch.sum(torch.cat(test_pred) == torch.cat(test_true)).item() / len(torch.cat(test_true))
+        #val_acc = torch.sum(torch.cat(val_pred) == torch.cat(val_true)).item() / len(torch.cat(val_true))
+        val_acc = np.sum(np.concatenate(val_pred) == np.concatenate(val_true)) / len(np.concatenate(val_true))
+        #test_acc = torch.sum(torch.cat(test_pred) == torch.cat(test_true)).item() / len(torch.cat(test_true))
+        test_acc = np.sum(np.concatenate(test_pred) == np.concatenate(test_true)) / len(np.concatenate(test_true))
         writer.add_scalar('val_loss', val_loss/len(val_loader), epoch)
         writer.add_scalar('train_loss', train_loss/len(train_loader), epoch)
         writer.add_scalar('test_loss', test_loss/len(test_loader), epoch)
@@ -995,7 +993,7 @@ def graph_classification_baseline(args, path, data, writer):
             f.write('dataset,experiment,runs,num_layers,batch_size,lr,best_test_loss,best_test_acc\n')
     with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
         f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
-    print("#####################################################################")
+    print("############################## BASELINE MODEL ##############################")
     print(f"dataset: {args.dataset}")
     print(f"experiment: {args.experiment}")
     print(f"hidden: {args.hidden}")
@@ -1004,7 +1002,7 @@ def graph_classification_baseline(args, path, data, writer):
     print(f"lr: {args.lr}")
     print(f"best_test_loss: {best_test_loss}")
     print(f"best_test_acc: {best_test_acc}")
-    print("#####################################################################")
+    print("############################################################################")
     
 def graph_regression_baseline(args, path, data, writer):
     train_split, test_split, val_split = train_test_val_split(data, shuffle=True)
@@ -1028,9 +1026,10 @@ def graph_regression_baseline(args, path, data, writer):
             model.train()
             optimizer.zero_grad()
             batch = batch.to(device)
+            batch.x = batch.x.float()
             out = model(batch)
-            loss = loss_fn(out[batch.train_mask], batch.y[batch.train_mask])
-            train_true.append(batch.y[batch.train_mask])
+            loss = loss_fn(out, batch.y)
+            train_true.append(batch.y.cpu().numpy())
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -1038,15 +1037,17 @@ def graph_regression_baseline(args, path, data, writer):
         with torch.no_grad():
             for batch in val_loader:
                 batch = batch.to(device)
+                batch.x = batch.x.float()
                 out = model(batch)
-                loss = loss_fn(out[batch.val_mask], batch.y[batch.val_mask])
-                val_true.append(batch.y[batch.val_mask])
+                loss = loss_fn(out, batch.y)
+                val_true.append(batch.y.cpu().numpy())
                 val_loss += loss.item()
             for batch in test_loader:
                 batch = batch.to(device)
+                batch.x = batch.x.float()
                 out = model(batch)
-                loss = loss_fn(out[batch.test_mask], batch.y[batch.test_mask])
-                test_true.append(batch.y[batch.test_mask])
+                loss = loss_fn(out, batch.y)
+                test_true.append(batch.y.cpu().numpy())
                 test_loss += loss.item()
         val_std = np.std(val_true)
         test_std = np.std(test_true)
@@ -1054,17 +1055,24 @@ def graph_regression_baseline(args, path, data, writer):
         writer.add_scalar('val_loss', val_loss/(len(val_loader)*val_std), epoch)
         writer.add_scalar('train_loss', train_loss/(len(train_loader)*train_std), epoch)
         writer.add_scalar('test_loss', test_loss/(len(test_loader)*test_std), epoch)
-        if val_loss < best_val_loss or epoch == 0:
-            best_val_loss = val_loss
-            best_test_loss = test_loss
+        if val_loss/(val_std*len(val_loader)) < best_val_loss or epoch == 0:
+            best_val_loss = val_loss/(val_std*len(val_loader))
+            best_test_loss = test_loss/(test_std*len(test_loader))
             torch.save(model.state_dict(), path+'/model.pt')
     if not os.path.exists(f"results/baseline/{args.dataset}.csv"):
         with open(f"results/baseline/{args.dataset}.csv", 'w') as f:
             f.write('dataset,experiment,runs,num_layers,batch_size,lr,best_test_loss\n')
     with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
         f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss}\n")
-    print("#####################################################################")
+    print("############################## BASELINE MODEL ##############################")
     print(f"dataset: {args.dataset}")
+    print(f"experiment: {args.experiment}")
+    print(f"hidden: {args.hidden}")
+    print(f"runs: {args.runs}")
+    print(f"num_layers: {args.num_layers1}")
+    print(f"lr: {args.lr}")
+    print(f"best_test_loss: {best_test_loss}")
+    print("############################################################################")
     
     
     

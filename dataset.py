@@ -4,6 +4,7 @@ import igraph as ig
 import leidenalg
 from utils import merge_communities
 from ogb.nodeproppred import PygNodePropPredDataset
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, ZINC, QM9
 
 dataset_names = ['dblp', 'Physics', 'cora', 'citeseer', 'pubmed', 'ogbn-products(community)','chameleon', 'squirrel', 'crocodile', 'PROTEINS',"AIDS","QM9","ZINC"]
@@ -69,7 +70,10 @@ for _ in dataset_names:
         num_nodes = data.x.size(0)
         num_features = data.x.size(1)
         if task == 'node_cls':
-            num_classes = dataset.num_classes
+            if _ == 'ogbn-products(community)':
+                num_classes = 47
+            else:
+                num_classes = dataset.num_classes
             num_targets = None
         else:
             if len(data.y.size()) == 1:

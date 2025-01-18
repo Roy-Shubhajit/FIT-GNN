@@ -11,8 +11,9 @@ from tqdm import tqdm
 from ogb.nodeproppred import PygNodePropPredDataset
 import torch_scatter
 from torch.utils.tensorboard import SummaryWriter
-from utils import coarsening_classification, coarsening_regression, load_graph_data, merge_communities, node_classification_baseline, node_regression_baseline, graph_classification_baseline, graph_regression_baseline
+from utils import coarsening_classification, coarsening_regression, load_graph_data, merge_communities
 from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, ZINC, QM9
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import logging
 logging.disable(logging.INFO)
 logging.disable(logging.WARNING)
@@ -205,6 +206,8 @@ if __name__ == "__main__":
         os.makedirs('save')
     if not os.path.exists(path):
         os.makedirs(path)
+    if not os.path.exists(f"results/baseline"):
+        os.makedirs(f"results/baseline")
     writer = SummaryWriter(path)
 
     if not os.path.exists(f'./dataset/{args.dataset}/saved'):
@@ -224,7 +227,10 @@ if __name__ == "__main__":
     if args.task == 'node_cls':
         dataset = dataset.to(device)
         data = dataset[0]
-        args.num_classes = torch.unique(data.y).shape[0]
+        if args.dataset == 'ogbn-products':
+            args.num_classes = 47
+        else:
+            args.num_classes = torch.unique(data.y).shape[0]
         
         if args.use_community_detection:
             if os.path.exists(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt'):
@@ -293,6 +299,8 @@ if __name__ == "__main__":
         elif args.baseline:
             node_regression_baseline(args, path, data, writer)
     elif args.task == 'graph_cls':
+        args.num_features = dataset[0].x.shape[1]
+        args.num_classes = dataset.num_classes
         if args.train_fitgnn:
             new_dataset = []
             Gc_ = []
@@ -307,7 +315,6 @@ if __name__ == "__main__":
                 for i in range(len(saved_graph_list)):
                     classes.add(dataset[saved_graph_list[i]].y.item())
                     new_dataset.append((dataset[saved_graph_list[i]], Gc_[i], Gs_[i]))
-                args.num_features = dataset[0].x.shape[1]
             else:
                 print("Coarsening graphs...")
                 for i in tqdm(range(len(dataset)), colour='blue'):
@@ -330,6 +337,7 @@ if __name__ == "__main__":
         elif args.baseline:
             graph_classification_baseline(args, path, dataset, writer)
     else:
+        args.num_features = dataset[0].x.shape[1]
         if args.train_fitgnn:
             new_dataset = []
             Gc_ = []
@@ -342,7 +350,6 @@ if __name__ == "__main__":
                 saved_graph_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_saved_graph_list.pkl', 'rb'))
                 for i in range(len(saved_graph_list)):
                     new_dataset.append((dataset[saved_graph_list[i]], Gc_[i], Gs_[i]))
-                args.num_features = dataset[0].x.shape[1]
             else:
                 print("Coarsening graphs...")   
                 for i in tqdm(range(len(dataset)), colour='blue'):
