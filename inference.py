@@ -249,8 +249,12 @@ parser.add_argument('--model_name_gc', type = str, default = "model.pt")        
 parser.add_argument('--baseline', action='store_true')                                                                                 ### If True, baseline model results will be saved
 args = parser.parse_args()
 
+if(args.dataset == 'ogbn-products' and args.baseline == True):
+    raise Exception("For the ogbn-products dataset, please run inference_baseline.py file for the baseline.")
+
 args = arg_correction(args)
 dataset, args = process_dataset(args)
+
 
 if (args.task == 'node_cls' or args.task == 'node_reg') and dataset[0].num_nodes > 170000:
     args.use_community_detection = True
@@ -662,7 +666,7 @@ elif args.task == "node_cls":
                 t3 = time()
                 out_b = model_b(graph.x, graph.edge_index).to(device)
                 t4 = time()
-                loss_b = loss_fn(out_b[indices[i][0]].reshape(1,-1), graph.y[indices[i][0]])
+                loss_b = loss_fn(out_b[indices[i][0]].reshape(1,-1), graph.y[indices[i][0]].reshape(1))
                 all_label_b.append(graph.y[indices[i][0]].item())
                 all_out_b.append(out_b[indices[i][0]].argmax().item())
                 losses_b.append(loss_b.item())
