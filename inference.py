@@ -294,6 +294,7 @@ if args.task == "graph_cls":
     losses_gc = []
     times_gc = []
 
+    # FITGNN model
     if args.exp_setup == "Gc_train_2_Gc_infer":
         model_gc = Classify_graph_gc(args).to(device)
         loss_fn = torch.nn.CrossEntropyLoss().to(device)
@@ -345,8 +346,9 @@ if args.task == "graph_cls":
         colater_fn = colater()
         test_loader = T_DataLoader(new_datasets[j], batch_size=1, collate_fn=colater_fn)
 
+        # FITGNN model
         if args.exp_setup == 'Gc_train_2_Gc_infer':
-            # Coaarsened Graph based model
+            # FITGNN Coaarsened Graph Based model
             for batch in test_loader:
                 set_gc = batch[0].to(device)
                 y_ = batch[2].to(device).type(torch.long)
@@ -359,7 +361,7 @@ if args.task == "graph_cls":
                 loss_gc = loss_fn(out_gc, y_)
                 losses_gc.append(loss_gc.item())
         else:
-            # FITGNN model
+            # FITGNN Subgraph Based model
             for batch in test_loader:
                 set_gs = batch[1]
                 y_ = batch[2].to(device).type(torch.long)
@@ -386,6 +388,7 @@ if args.task == "graph_cls":
             loss_b = loss_fn(out_b, y)
             losses_b.append(loss_b.item())
 
+        # FITGNN model
         if args.exp_setup == "Gc_train_2_Gc_infer":
             print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.argmax().item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
         else:
@@ -403,10 +406,11 @@ if args.task == "graph_cls":
             y_ = y_.cpu()
             del set_gs, y_
     
+    # FITGNN
     if args.exp_setup == "Gc_train_2_Gc_infer":
-        print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAccuracy (coarsened graph): {np.sum(np.array(all_label_gc) == np.array(all_out_gc))}/{num}")
+        print(f"\nAverage time (FITGNN - coarsened graph): {np.mean(times_gc[1:])}\nAccuracy (FITGNN - coarsened graph): {np.sum(np.array(all_label_gc) == np.array(all_out_gc))}/{num}")
     else:
-        print(f"\nAverage time (FITGNN): {np.mean(times_gs[1:])}\nAccuracy (FITGNN): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
+        print(f"\nAverage time (FITGNN - subgraph): {np.mean(times_gs[1:])}\nAccuracy (FITGNN - subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
     
     if args.baseline:
         print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
@@ -420,6 +424,7 @@ elif args.task == "graph_reg":
     losses_gc = []
     times_gc = []
     
+    # FITGNN
     if args.exp_setup == "Gc_train_2_Gc_infer":
         model_gc = Regress_graph_gc(args).to(device)
         loss_fn = torch.nn.L1Loss().to(device)
@@ -472,8 +477,9 @@ elif args.task == "graph_reg":
         colater_fn = colater()
         test_loader = T_DataLoader(new_datasets[j], batch_size=1, collate_fn=colater_fn)
 
+        # FITGNN
         if args.exp_setup == "Gc_train_2_Gc_infer":
-            # Coarsened Graph based model
+            # FITGNN - Coarsened Graph based model
             for batch in test_loader:
                 set_gc = batch[0].to(device)
                 y_ = batch[2].to(device).type(torch.float)
@@ -488,7 +494,7 @@ elif args.task == "graph_reg":
                 losses_gc.append(loss_gc.item())
         else:
                 
-            # FITGNN model
+            # FITGNN - Sibgraph based model
             for batch in test_loader:
                 set_gs = batch[1]
                 y_ = batch[2].to(device).type(torch.float)
@@ -542,10 +548,12 @@ elif args.task == "graph_reg":
             y_ = y_.cpu()
             del set_gs, y_
 
+    # FITGNN
     if args.exp_setup == "Gc_train_2_Gc_infer":
-        print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAverage Loss (coarsened graph): {np.mean(losses_gc)}")
+        print(f"\nAverage time (FITGNN - coarsened graph): {np.mean(times_gc[1:])}\nAverage Loss (FITGNN - coarsened graph): {np.mean(losses_gc)}")
     else:
-        print(f"\nAverage time (FITGNN): {np.mean(times_gs[1:])}\nAverage Loss (FITGNN): {np.mean(losses_gs)}")
+        print(f"\nAverage time (FITGNN - subgraph): {np.mean(times_gs[1:])}\nAverage Loss (FITGNN - subgraph): {np.mean(losses_gs)}")
+
     if args.baseline:
         print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
 
