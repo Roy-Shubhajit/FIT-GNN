@@ -21,6 +21,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if not os.path.exists("results"):
     os.mkdir("results")
 
+### FITGNN Functions
+
 def node_train_Gc(model, x, edge_index, mask, y, loss_fn, optimizer):
     model.train()
     optimizer.zero_grad()
@@ -796,7 +798,9 @@ def graph_regression(args, path, writer, dataset):
     if args.multi_prop:
         print(f"property_idx: {args.property}")
     print("#############################################################################")
-    
+
+### Baseline Functions
+
 def node_classification_baseline(args, path, data, writer):
     all_loss = []
     all_acc = []
