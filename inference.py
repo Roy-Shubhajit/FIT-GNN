@@ -666,7 +666,7 @@ elif args.task == "node_cls":
                 t3 = time()
                 out_b = model_b(graph.x, graph.edge_index).to(device)
                 t4 = time()
-                loss_b = loss_fn(out_b[indices[i][0]].reshape(1,-1), graph.y[indices[i][0]])
+                loss_b = loss_fn(out_b[indices[i][0]].reshape(1,-1), graph.y[indices[i][0]].reshape(1))
                 all_label_b.append(graph.y[indices[i][0]].item())
                 all_out_b.append(out_b[indices[i][0]].argmax().item())
                 losses_b.append(loss_b.item())
