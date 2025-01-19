@@ -242,8 +242,8 @@ parser.add_argument('--property', type = int, default = 0)
 parser.add_argument('--num_test_samples', type = int, default = 20)                                                                             ### Number of test samples 
 parser.add_argument('--path_b', type = str, default = "./save/node_cls/baseline/")                                                             ### Path for baseline model
 parser.add_argument('--model_name_b', type = str, default = "baseline_cora_fixed.pt")                                                           ### Baseline model name
-parser.add_argument('--path_gs', type = str, default = "./save/node_cls/cora_fixed_Gc_train_2_Gs_infer_0.5_variation_neighborhoods_cluster/")   ### Path for subgraph model
-parser.add_argument('--model_name_gs', type = str, default = "model.pt")                                                                        ### Subgraph model name
+parser.add_argument('--path_gs', type = str, default = "./save/node_cls/cora_fixed_Gc_train_2_Gs_infer_0.5_variation_neighborhoods_cluster/")   ### Path for FITGNN model
+parser.add_argument('--model_name_gs', type = str, default = "model.pt")                                                                        ### FITGNN model name
 parser.add_argument('--path_gc', type = str, default = "./save/graph_cls/AIDS_Gc_train_2_Gc_infer_0.5_variation_neighborhoods_extra/")          ### Path for coarsened graph model
 parser.add_argument('--model_name_gc', type = str, default = "model.pt")                                                                        ### Coarsened graph model name
 parser.add_argument('--baseline', action='store_true')                                                                                 ### If True, baseline model results will be saved
@@ -359,7 +359,7 @@ if args.task == "graph_cls":
                 loss_gc = loss_fn(out_gc, y_)
                 losses_gc.append(loss_gc.item())
         else:
-            # Subgraph based model
+            # FITGNN model
             for batch in test_loader:
                 set_gs = batch[1]
                 y_ = batch[2].to(device).type(torch.long)
@@ -406,7 +406,7 @@ if args.task == "graph_cls":
     if args.exp_setup == "Gc_train_2_Gc_infer":
         print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAccuracy (coarsened graph): {np.sum(np.array(all_label_gc) == np.array(all_out_gc))}/{num}")
     else:
-        print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAccuracy (subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
+        print(f"\nAverage time (FITGNN): {np.mean(times_gs[1:])}\nAccuracy (FITGNN): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
     
     if args.baseline:
         print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
@@ -488,7 +488,7 @@ elif args.task == "graph_reg":
                 losses_gc.append(loss_gc.item())
         else:
                 
-            # Subgraph based model
+            # FITGNN model
             for batch in test_loader:
                 set_gs = batch[1]
                 y_ = batch[2].to(device).type(torch.float)
@@ -545,7 +545,7 @@ elif args.task == "graph_reg":
     if args.exp_setup == "Gc_train_2_Gc_infer":
         print(f"\nAverage time (coarsened graph): {np.mean(times_gc[1:])}\nAverage Loss (coarsened graph): {np.mean(losses_gc)}")
     else:
-        print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAverage Loss (subgraph): {np.mean(losses_gs)}")
+        print(f"\nAverage time (FITGNN): {np.mean(times_gs[1:])}\nAverage Loss (FITGNN): {np.mean(losses_gs)}")
     if args.baseline:
         print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
 
@@ -674,7 +674,7 @@ elif args.task == "node_cls":
             
         print(f"Average time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
 
-    # Subgraph based model
+    # FITGNN model
     model_gs = Net1(args.num_features, args.hidden, args.num_layers2, args.num_classes).to(device)
     loss_fn = torch.nn.NLLLoss().to(device)
     model_gs.load_state_dict(torch.load(args.path_gs + args.model_name_gs))
@@ -697,7 +697,7 @@ elif args.task == "node_cls":
         y = y.cpu()
         edge_index = edge_index.cpu()
         del x, y, edge_index
-    print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAccuracy (subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
+    print(f"\nAverage time (FITGNN): {np.mean(times_gs[1:])}\nAccuracy (FITGNN): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
             #print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]].argmax().item()}\nOutput: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
         
 
@@ -806,7 +806,7 @@ elif args.task == "node_reg":
             times_b.append(t4 - t3)
             #print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
 
-    # Subgraph based model
+    # FITGNN model
     model_gs = Regress_node(args).to(device)
     loss_fn = torch.nn.L1Loss().to(device)
     model_gs.load_state_dict(torch.load(args.path_gs + args.model_name_gs))
@@ -825,7 +825,7 @@ elif args.task == "node_reg":
         y_gs.append(y[j].item())
         losses_gs.append(loss_gs.item())
         times_gs.append(t2 - t1)
-        #print(f"Subgraph-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
+        #print(f"FITGNN-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
 
         # Remove x, y and edge_index from device memory
         x = x.cpu()
@@ -833,7 +833,7 @@ elif args.task == "node_reg":
         edge_index = edge_index.cpu()
         del x, y, edge_index
 
-    print(f"\nAverage time (subgraph): {np.mean(times_gs[1:])}\nAverage Loss (subgraph): {np.mean(losses_gs/np.std(y_gs))}")
+    print(f"\nAverage time (FITGNN): {np.mean(times_gs[1:])}\nAverage Loss (FITGNN): {np.mean(losses_gs/np.std(y_gs))}")
 
     if args.baseline:
         print(f"Average time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b/np.std(y_b))}")
