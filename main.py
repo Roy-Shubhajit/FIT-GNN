@@ -202,6 +202,8 @@ if __name__ == "__main__":
         args.use_community_detection = True
 
     path = f"save/{args.task}/"+args.output_dir+"/"
+    if args.baseline:
+        path = f"save/{args.task}/baseline/"+args.output_dir+"/"
     if not os.path.exists('save'):
         os.makedirs('save')
     if not os.path.exists(path):

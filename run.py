@@ -809,6 +809,7 @@ def node_classification_baseline(args, path, data, writer):
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
+        model.reset_parameters()
         best_val_loss = float('inf')
         avg_time = 0
         for graph in graph_data:
@@ -872,12 +873,12 @@ def node_regression_baseline(args, path, data, writer):
     all_time = []
     data = splits_regression(data, args.train_ratio, args.val_ratio)
     graph_data = G_DataLoader([data], batch_size=args.batch_size, shuffle=False)
-    model = Regress_node(args).to(device)
-    loss_fn = torch.nn.L1Loss(reduction=args.loss_reduction).to(device)
-    model.reset_parameters()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     for run in range(args.runs):
         run_writer = SummaryWriter(path + "/run_"+str(run+1))
+        model = Regress_node(args).to(device)
+        loss_fn = torch.nn.L1Loss(reduction=args.loss_reduction).to(device)
+        model.reset_parameters()
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
         best_val_loss = float('inf')
         avg_time = 0
         for graph in graph_data:
@@ -897,8 +898,8 @@ def node_regression_baseline(args, path, data, writer):
                     if val_loss < best_val_loss or epoch == 0:
                         best_val_loss = val_loss
                         torch.save(model.state_dict(), path+'/model.pt')
-                run_writer.add_scalar('val_loss', val_loss, epoch)
-                run_writer.add_scalar('train_loss', loss, epoch)
+                run_writer.add_scalar('val_loss', val_loss/torch.std(graph.y[graph.val_mask]), epoch)
+                run_writer.add_scalar('train_loss', loss/torch.std(graph.y[graph.train_mask]), epoch)
         
             model.load_state_dict(torch.load(path+'/model.pt'))
             model.eval()

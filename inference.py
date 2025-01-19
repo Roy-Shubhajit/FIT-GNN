@@ -240,7 +240,7 @@ parser.add_argument('--seed', type = int, default = None)
 parser.add_argument('--multi_prop', action='store_true')
 parser.add_argument('--property', type = int, default = 0)
 parser.add_argument('--num_test_samples', type = int, default = 20)                                                                             ### Number of test samples 
-parser.add_argument('--path_b', type = str, default = "./save/node_cls/baselines/")                                                             ### Path for baseline model
+parser.add_argument('--path_b', type = str, default = "./save/node_cls/baseline/")                                                             ### Path for baseline model
 parser.add_argument('--model_name_b', type = str, default = "baseline_cora_fixed.pt")                                                           ### Baseline model name
 parser.add_argument('--path_gs', type = str, default = "./save/node_cls/cora_fixed_Gc_train_2_Gs_infer_0.5_variation_neighborhoods_cluster/")   ### Path for subgraph model
 parser.add_argument('--model_name_gs', type = str, default = "model.pt")                                                                        ### Subgraph model name

@@ -29,7 +29,8 @@ underscore="_"
 cluster="cluster"
 extra="extra"
 MB="GD"
-for dataset in ogbn-products #ogbn-products    cora chameleon AIDS ZINC_subset
+baseline="baseline"
+for dataset in AIDS PROTEINS #ogbn-products    cora chameleon AIDS ZINC_subset
 do
     for coarsening_method in variation_neighborhoods 
     do
@@ -37,14 +38,14 @@ do
         do
             for coarsening_ratio in 0.3
             do
-                for lr in 0.01
+                for lr in 0.0001
                 do
                     for loss_reduction in mean
                     do
                         for batch_size in 1
                         do
-                            output_dir=$dataset$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$cluster$underscore$lr$underscore$batch_size$underscore$MB
-                            python main.py --experiment random --dataset $dataset --output_dir $output_dir --exp_setup $exp_setup --cluster_node --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio  --normalize_features --lr $lr --runs 5 --loss_reduction $loss_reduction --batch_size $batch_size --gradient_method $MB --epochs1 15 --epochs2 1 --baseline --use_community_detection
+                            output_dir=$dataset$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$cluster$underscore$lr$underscore$batch_size$underscore$MB$underscore$baseline
+                            python main.py --experiment random --dataset $dataset --output_dir $output_dir --exp_setup $exp_setup --cluster_node --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio  --normalize_features --lr $lr --runs 20 --loss_reduction $loss_reduction --batch_size $batch_size --gradient_method $MB --epochs1 300 --epochs2 1 --baseline
                             #output_dir=$dataset$underscore$exp_setup$underscore$coarsening_ratio$underscore$coarsening_method$underscore$extra$underscore$lr$underscore$batch_size$underscore$MB
                             #python main.py --dataset $dataset --output_dir $output_dir --exp_setup $exp_setup --extra_node --coarsening_method $coarsening_method --coarsening_ratio $coarsening_ratio  --normalize_features --lr $lr --runs 1 --loss_reduction $loss_reduction --batch_size $batch_size --gradient_method $MB --epochs1 2 --epochs2 2
                         done
