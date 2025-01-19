@@ -945,10 +945,10 @@ def graph_classification_baseline(args, path, data, writer):
         train_loss = 0
         test_loss = 0
         val_loss = 0
-        val_pred = []
-        val_true = []
-        test_pred = []
-        test_true = []
+        val_pred = np.array([])
+        val_true = np.array([])
+        test_pred = np.array([])
+        test_true = np.array([])
         for batch in train_loader:
             model.train()
             optimizer.zero_grad()
@@ -965,20 +965,18 @@ def graph_classification_baseline(args, path, data, writer):
                 out = model(batch)
                 loss = loss_fn(out, batch.y)
                 val_loss += loss.item()
-                val_pred.append(torch.argmax(out, dim=1).cpu().numpy())
-                val_true.append(batch.y.cpu().numpy())
+                val_pred = np.concatenate((val_pred, torch.argmax(out, dim=1).cpu().numpy()), axis=0)
+                val_true = np.concatenate((val_true, batch.y.cpu().numpy()), axis=0)
             for batch in test_loader:
                 batch = batch.to(device)
                 out = model(batch)
                 loss = loss_fn(out, batch.y)
                 test_loss += loss.item()
-                test_pred.append(torch.argmax(out, dim=1).cpu().numpy())
-                test_true.append(batch.y.cpu().numpy())
-                
-        #val_acc = torch.sum(torch.cat(val_pred) == torch.cat(val_true)).item() / len(torch.cat(val_true))
-        val_acc = np.sum(np.concatenate(val_pred) == np.concatenate(val_true)) / len(np.concatenate(val_true))
-        #test_acc = torch.sum(torch.cat(test_pred) == torch.cat(test_true)).item() / len(torch.cat(test_true))
-        test_acc = np.sum(np.concatenate(test_pred) == np.concatenate(test_true)) / len(np.concatenate(test_true))
+                test_pred = np.concatenate((test_pred, torch.argmax(out, dim=1).cpu().numpy()), axis=0)
+                test_true = np.concatenate((test_true, batch.y.cpu().numpy()), axis=0)
+        
+        val_acc = np.sum(val_pred == val_true) / len(val_true)
+        test_acc = np.sum(test_pred == test_true) / len(test_true)
         writer.add_scalar('val_loss', val_loss/len(val_loader), epoch)
         writer.add_scalar('train_loss', train_loss/len(train_loader), epoch)
         writer.add_scalar('test_loss', test_loss/len(test_loader), epoch)
@@ -1020,17 +1018,21 @@ def graph_regression_baseline(args, path, data, writer):
         train_loss = 0
         test_loss = 0
         val_loss = 0
-        test_true = []
-        val_true = []
-        train_true = []
+        test_true = np.array([])
+        val_true = np.array([])
+        train_true = np.array([])
         for batch in train_loader:
             model.train()
             optimizer.zero_grad()
             batch = batch.to(device)
             batch.x = batch.x.float()
             out = model(batch)
-            loss = loss_fn(out, batch.y)
-            train_true.append(batch.y.cpu().numpy())
+            if args.multi_prop:
+                loss = loss_fn(out, batch.y[:, args.property].view(-1, 1))
+                train_true = np.concatenate((train_true, batch.y[:, args.property].cpu().numpy()), axis=0)
+            else:
+                loss = loss_fn(out, batch.y)
+                train_true = np.concatenate((train_true, batch.y.cpu().numpy()), axis=0)
             train_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -1040,16 +1042,25 @@ def graph_regression_baseline(args, path, data, writer):
                 batch = batch.to(device)
                 batch.x = batch.x.float()
                 out = model(batch)
-                loss = loss_fn(out, batch.y)
-                val_true.append(batch.y.cpu().numpy())
+                if args.multi_prop:
+                    loss = loss_fn(out, batch.y[:, args.property].view(-1, 1))
+                    val_true = np.concatenate((val_true, batch.y[:, args.property].cpu().numpy()), axis=0)
+                else:    
+                    loss = loss_fn(out, batch.y)
+                    val_true = np.concatenate((val_true, batch.y.cpu().numpy()), axis=0)
                 val_loss += loss.item()
             for batch in test_loader:
                 batch = batch.to(device)
                 batch.x = batch.x.float()
                 out = model(batch)
-                loss = loss_fn(out, batch.y)
-                test_true.append(batch.y.cpu().numpy())
+                if args.multi_prop:
+                    loss = loss_fn(out, batch.y[:, args.property])
+                    test_true = np.concatenate((test_true, batch.y[:, args.property].cpu().numpy()), axis=0)
+                else:
+                    loss = loss_fn(out, batch.y)
+                    test_true = np.concatenate((test_true, batch.y.cpu().numpy()), axis=0)
                 test_loss += loss.item()
+
         val_std = np.std(val_true)
         test_std = np.std(test_true)
         train_std = np.std(train_true)
@@ -1062,9 +1073,15 @@ def graph_regression_baseline(args, path, data, writer):
             torch.save(model.state_dict(), path+'/model.pt')
     if not os.path.exists(f"results/baseline/{args.dataset}.csv"):
         with open(f"results/baseline/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,experiment,runs,num_layers,batch_size,lr,best_test_loss\n')
+            if args.multi_prop:
+                f.write('dataset,experiment,runs,num_layers,batch_size,lr,best_test_loss,property_idx\n')
+            else:
+                f.write('dataset,experiment,runs,num_layers,batch_size,lr,best_test_loss\n')
     with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss}\n")
+        if args.multi_prop:
+            f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss},{args.property}\n")
+        else:
+            f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss}\n")
     print("############################## BASELINE MODEL ##############################")
     print(f"dataset: {args.dataset}")
     print(f"experiment: {args.experiment}")
@@ -1072,6 +1089,8 @@ def graph_regression_baseline(args, path, data, writer):
     print(f"runs: {args.runs}")
     print(f"num_layers: {args.num_layers1}")
     print(f"lr: {args.lr}")
+    if args.multi_prop:
+        print(f"property_idx: {args.property}")
     print(f"best_test_loss: {best_test_loss}")
     print("############################################################################")
     
