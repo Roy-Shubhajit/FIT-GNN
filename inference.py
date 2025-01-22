@@ -494,11 +494,10 @@ elif args.task == "graph_reg":
                 losses_gc.append(loss_gc.item())
         else:
                 
-            # FIT-GNN - Sibgraph based model
+            # FIT-GNN - Subgraph based model
             for batch in test_loader:
                 set_gs = batch[1]
                 y_ = batch[2].to(device).type(torch.float)
-                print(y_)
                 batch_tensor = batch[3].to(device)
                 t1 = time()
                 out_gs = model_gs(set_gs, batch_tensor).to(device)
