@@ -29,7 +29,7 @@ for _ in dataset_names:
         if os.path.exists('./dataset/ogbn-products/saved/community_data.pt'):
             data = torch.load('./dataset/ogbn-products/saved/community_data.pt')
         else:
-            dataset = PygNodePropPredDataset(name="ogbn-products", root='/hdfs1/Data/weather/CoarseGNN_Hrriday/OGB/dataset/')
+            dataset = PygNodePropPredDataset(name="ogbn-products", root='./dataset/')
             print("Using community detection")
             g_ig = ig.Graph(n=data.num_nodes, edges=data.edge_index.t().tolist())
             part = leidenalg.find_partition(g_ig, leidenalg.ModularityVertexPartition)
