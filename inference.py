@@ -307,7 +307,7 @@ if args.task == "graph_cls":
         model_gs.eval()
     
     if args.baseline:
-        model_b = Classify_graph(args.num_layers2, args.num_features, args.hidden, args.num_classes).to(device)
+        model_b = Classify_graph_gc(args).to(device)
         loss_fn = torch.nn.CrossEntropyLoss().to(device)
         model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
         model_b.eval()
@@ -349,17 +349,17 @@ if args.task == "graph_cls":
         # FIT-GNN model
         if args.exp_setup == 'Gc_train_2_Gc_infer':
             # FIT-GNN Coaarsened Graph Based model
-            for batch in test_loader:
-                set_gc = batch[0].to(device)
-                y_ = batch[2].to(device).type(torch.long)
-                t1 = time()
-                out_gc = model_gc(set_gc).to(device)
-                t2 = time()
-                times_gc.append(t2-t1)
-                all_out_gc.append(out_gc.argmax().item())
-                all_label_gc.append(y_.item())
-                loss_gc = loss_fn(out_gc, y_)
-                losses_gc.append(loss_gc.item())
+            # for batch in test_loader:
+            set_gc = new_datasets[j][0][1].to(device)
+            y_ = set_gc.y.to(device).type(torch.long)
+            t1 = time()
+            out_gc = model_gc(set_gc).to(device)
+            t2 = time()
+            times_gc.append(t2-t1)
+            all_out_gc.append(out_gc.argmax().item())
+            all_label_gc.append(y_.item())
+            loss_gc = loss_fn(out_gc, y_)
+            losses_gc.append(loss_gc.item())
         else:
             # FIT-GNN Subgraph Based model
             for batch in test_loader:

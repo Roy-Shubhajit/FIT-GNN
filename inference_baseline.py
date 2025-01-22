@@ -265,10 +265,13 @@ if args.task == "graph_cls":
     perm_graphs = np.random.permutation(len(dataset))
     if args.num_test_samples > len(dataset):
         args.num_test_samples = len(dataset)
-    new_datasets = perm_graphs[:args.num_test_samples]
+    new_datasets = []
+    for i in perm_graphs[:args.num_test_samples]:
+        new_datasets.append(dataset[i])
     num = len(new_datasets)
     for j in range(num):
-        test_loader = G_DataLoader(new_datasets[j], batch_size=1)
+        # print(new_datasets[j])
+        test_loader = G_DataLoader([new_datasets[j]], batch_size=1)
         for graph in test_loader:
             graph = graph.to(device)
             t3 = time()
@@ -353,7 +356,7 @@ elif args.task == "node_cls":
             t4 = time()
             loss_b = loss_fn(out_b[i].view(1,-1), graph.y[i].flatten())
             losses_b.append(loss_b.item())
-            all_label_b.append(graph.y[i][0].item())
+            all_label_b.append(graph.y[i].item())
             all_out_b.append(out_b[i].argmax().item())
             times_b.append(t4 - t3)
 
@@ -361,6 +364,7 @@ elif args.task == "node_cls":
         
 elif args.task == "node_reg":
     dataset = dataset.to(device)
+    args.num_features = dataset[0].x.shape[1]
     perm_nodes = np.random.permutation(dataset[0].num_nodes)
     if args.num_test_samples > dataset[0].num_nodes:
         args.num_test_samples = dataset[0].num_nodes
@@ -380,9 +384,9 @@ elif args.task == "node_reg":
             t3 = time()
             out_b = model_b(graph.x, graph.edge_index).to(device)
             t4 = time()
-            loss_b = loss_fn(out_b[indices[i][0]][0], graph.y[indices[i][0]])
+            loss_b = loss_fn(out_b[indices[i]][0], graph.y[indices[i]])
             losses_b.append(loss_b.item())
-            y_b.append(graph.y[indices[i][0]].item())
+            y_b.append(graph.y[indices[i]].item())
             times_b.append(t4 - t3)
 
     print(f"Average time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b/np.std(y_b))}")
