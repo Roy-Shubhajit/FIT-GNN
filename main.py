@@ -48,17 +48,17 @@ def process_dataset(args):
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == "ogbn-products":
-        dataset = PygNodePropPredDataset(name="ogbn-products", root='/hdfs1/Data/weather/CoarseGNN_Hrriday/OGB/dataset/')
+        dataset = PygNodePropPredDataset(name="ogbn-products", root='./dataset/')
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == "ogbn-arxiv":
-        dataset = PygNodePropPredDataset(name="ogbn-arxiv", root='/hdfs1/Data/weather/CoarseGNN_Shubhajit/CoPart-GNN/dataset/')
+        dataset = PygNodePropPredDataset(name="ogbn-arxiv", root='./dataset/')
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == "ogbn-proteins":
-        dataset = PygNodePropPredDataset(name="ogbn-proteins", root='/hdfs1/Data/weather/CoarseGNN_Shubhajit/CoPart-GNN/dataset/')
+        dataset = PygNodePropPredDataset(name="ogbn-proteins", root='./dataset/')
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
     #Node Regression

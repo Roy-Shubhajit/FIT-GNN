@@ -150,7 +150,7 @@ def process_dataset(args):
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == "ogbn-products":
-        dataset = PygNodePropPredDataset(name="ogbn-products", root='/hdfs1/Data/weather/CoarseGNN_Hrriday/OGB/dataset/')
+        dataset = PygNodePropPredDataset(name="ogbn-products", root='./dataset/')
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
@@ -307,7 +307,7 @@ if args.task == "graph_cls":
         model_gs.eval()
     
     if args.baseline:
-        model_b = Classify_graph(args.num_layers2, args.num_features, args.hidden, args.num_classes).to(device)
+        model_b = Classify_graph_gc(args).to(device)
         loss_fn = torch.nn.CrossEntropyLoss().to(device)
         model_b.load_state_dict(torch.load(args.path_b + args.model_name_b))
         model_b.eval()
@@ -349,17 +349,17 @@ if args.task == "graph_cls":
         # FIT-GNN model
         if args.exp_setup == 'Gc_train_2_Gc_infer':
             # FIT-GNN Coaarsened Graph Based model
-            for batch in test_loader:
-                set_gc = batch[0].to(device)
-                y_ = batch[2].to(device).type(torch.long)
-                t1 = time()
-                out_gc = model_gc(set_gc).to(device)
-                t2 = time()
-                times_gc.append(t2-t1)
-                all_out_gc.append(out_gc.argmax().item())
-                all_label_gc.append(y_.item())
-                loss_gc = loss_fn(out_gc, y_)
-                losses_gc.append(loss_gc.item())
+            # for batch in test_loader:
+            set_gc = new_datasets[j][0][1].to(device)
+            y_ = set_gc.y.to(device).type(torch.long)
+            t1 = time()
+            out_gc = model_gc(set_gc).to(device)
+            t2 = time()
+            times_gc.append(t2-t1)
+            all_out_gc.append(out_gc.argmax().item())
+            all_label_gc.append(y_.item())
+            loss_gc = loss_fn(out_gc, y_)
+            losses_gc.append(loss_gc.item())
         else:
             # FIT-GNN Subgraph Based model
             for batch in test_loader:
@@ -387,15 +387,6 @@ if args.task == "graph_cls":
             all_label_b.append(y.item())
             loss_b = loss_fn(out_b, y)
             losses_b.append(loss_b.item())
-
-        # FIT-GNN model
-        if args.exp_setup == "Gc_train_2_Gc_infer":
-            print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.argmax().item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
-        else:
-            print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.argmax().item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-        
-        if args.baseline:
-            print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
 
         # Remove set_gc, set_gs and y_ from device memory
         if args.exp_setup == "Gc_train_2_Gc_infer":
@@ -530,13 +521,6 @@ elif args.task == "graph_reg":
                 print(f"\nSubgraph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
             if args.baseline:
                 print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
-        else:
-            if args.exp_setup == "Gc_train_2_Gc_infer":
-                print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
-            else:
-                print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-            if args.baseline:
-                print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
         
         # Remove set_gc, set_gs and y_ from device memory
         if args.exp_setup == "Gc_train_2_Gc_infer":
