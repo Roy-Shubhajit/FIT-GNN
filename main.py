@@ -248,7 +248,7 @@ if __name__ == "__main__":
                     if int(c) not in mapping.keys():
                         mapping[int(c)] = []
                     mapping[int(c)].append(i)
-                data = merge_communities(data, mapping, 100000)
+                data = merge_communities(data, mapping, 165000)
                 del dataset
                 torch.cuda.empty_cache()
                 torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
@@ -284,7 +284,7 @@ if __name__ == "__main__":
                     if int(c) not in mapping.keys():
                         mapping[int(c)] = []
                     mapping[int(c)].append(i)
-                data = merge_communities(data, mapping, 100000)
+                data = merge_communities(data, mapping, 165000)
                 del dataset
                 torch.cuda.empty_cache()
                 torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')

@@ -242,8 +242,8 @@ parser.add_argument('--property', type = int, default = 0)
 parser.add_argument('--num_test_samples', type = int, default = 20)                                                                             ### Number of test samples 
 parser.add_argument('--path_b', type = str, default = "./save/node_cls/baseline/")                                                             ### Path for baseline model
 parser.add_argument('--model_name_b', type = str, default = "baseline_cora_fixed.pt")                                                           ### Baseline model name
-parser.add_argument('--path_gs', type = str, default = "./save/node_cls/cora_fixed_Gc_train_2_Gs_infer_0.5_variation_neighborhoods_cluster/")   ### Path for FITGNN model
-parser.add_argument('--model_name_gs', type = str, default = "model.pt")                                                                        ### FITGNN model name
+parser.add_argument('--path_gs', type = str, default = "./save/node_cls/cora_fixed_Gc_train_2_Gs_infer_0.5_variation_neighborhoods_cluster/")   ### Path for FIT-GNN model
+parser.add_argument('--model_name_gs', type = str, default = "model.pt")                                                                        ### FIT-GNN model name
 parser.add_argument('--path_gc', type = str, default = "./save/graph_cls/AIDS_Gc_train_2_Gc_infer_0.5_variation_neighborhoods_extra/")          ### Path for coarsened graph model
 parser.add_argument('--model_name_gc', type = str, default = "model.pt")                                                                        ### Coarsened graph model name
 parser.add_argument('--baseline', action='store_true')                                                                                 ### If True, baseline model results will be saved
@@ -294,7 +294,7 @@ if args.task == "graph_cls":
     losses_gc = []
     times_gc = []
 
-    # FITGNN model
+    # FIT-GNN model
     if args.exp_setup == "Gc_train_2_Gc_infer":
         model_gc = Classify_graph_gc(args).to(device)
         loss_fn = torch.nn.CrossEntropyLoss().to(device)
@@ -346,9 +346,9 @@ if args.task == "graph_cls":
         colater_fn = colater()
         test_loader = T_DataLoader(new_datasets[j], batch_size=1, collate_fn=colater_fn)
 
-        # FITGNN model
+        # FIT-GNN model
         if args.exp_setup == 'Gc_train_2_Gc_infer':
-            # FITGNN Coaarsened Graph Based model
+            # FIT-GNN Coaarsened Graph Based model
             for batch in test_loader:
                 set_gc = batch[0].to(device)
                 y_ = batch[2].to(device).type(torch.long)
@@ -361,7 +361,7 @@ if args.task == "graph_cls":
                 loss_gc = loss_fn(out_gc, y_)
                 losses_gc.append(loss_gc.item())
         else:
-            # FITGNN Subgraph Based model
+            # FIT-GNN Subgraph Based model
             for batch in test_loader:
                 set_gs = batch[1]
                 y_ = batch[2].to(device).type(torch.long)
@@ -388,7 +388,7 @@ if args.task == "graph_cls":
             loss_b = loss_fn(out_b, y)
             losses_b.append(loss_b.item())
 
-        # FITGNN model
+        # FIT-GNN model
         if args.exp_setup == "Gc_train_2_Gc_infer":
             print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.argmax().item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
         else:
@@ -406,11 +406,11 @@ if args.task == "graph_cls":
             y_ = y_.cpu()
             del set_gs, y_
     
-    # FITGNN
+    # FIT-GNN
     if args.exp_setup == "Gc_train_2_Gc_infer":
-        print(f"\nAverage time (FITGNN - coarsened graph): {np.mean(times_gc[1:])}\nAccuracy (FITGNN - coarsened graph): {np.sum(np.array(all_label_gc) == np.array(all_out_gc))}/{num}")
+        print(f"\nAverage time (FIT-GNN - coarsened graph): {np.mean(times_gc[1:])}\nAccuracy (FIT-GNN - coarsened graph): {np.sum(np.array(all_label_gc) == np.array(all_out_gc))}/{num}")
     else:
-        print(f"\nAverage time (FITGNN - subgraph): {np.mean(times_gs[1:])}\nAccuracy (FITGNN - subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
+        print(f"\nAverage time (FIT-GNN - subgraph): {np.mean(times_gs[1:])}\nAccuracy (FIT-GNN - subgraph): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
     
     if args.baseline:
         print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
@@ -424,7 +424,7 @@ elif args.task == "graph_reg":
     losses_gc = []
     times_gc = []
     
-    # FITGNN
+    # FIT-GNN
     if args.exp_setup == "Gc_train_2_Gc_infer":
         model_gc = Regress_graph_gc(args).to(device)
         loss_fn = torch.nn.L1Loss().to(device)
@@ -477,9 +477,9 @@ elif args.task == "graph_reg":
         colater_fn = colater()
         test_loader = T_DataLoader(new_datasets[j], batch_size=1, collate_fn=colater_fn)
 
-        # FITGNN
+        # FIT-GNN
         if args.exp_setup == "Gc_train_2_Gc_infer":
-            # FITGNN - Coarsened Graph based model
+            # FIT-GNN - Coarsened Graph based model
             for batch in test_loader:
                 set_gc = batch[0].to(device)
                 y_ = batch[2].to(device).type(torch.float)
@@ -494,7 +494,7 @@ elif args.task == "graph_reg":
                 losses_gc.append(loss_gc.item())
         else:
                 
-            # FITGNN - Sibgraph based model
+            # FIT-GNN - Sibgraph based model
             for batch in test_loader:
                 set_gs = batch[1]
                 y_ = batch[2].to(device).type(torch.float)
@@ -548,11 +548,11 @@ elif args.task == "graph_reg":
             y_ = y_.cpu()
             del set_gs, y_
 
-    # FITGNN
+    # FIT-GNN
     if args.exp_setup == "Gc_train_2_Gc_infer":
-        print(f"\nAverage time (FITGNN - coarsened graph): {np.mean(times_gc[1:])}\nAverage Loss (FITGNN - coarsened graph): {np.mean(losses_gc)}")
+        print(f"\nAverage time (FIT-GNN - coarsened graph): {np.mean(times_gc[1:])}\nAverage Loss (FIT-GNN - coarsened graph): {np.mean(losses_gc)}")
     else:
-        print(f"\nAverage time (FITGNN - subgraph): {np.mean(times_gs[1:])}\nAverage Loss (FITGNN - subgraph): {np.mean(losses_gs)}")
+        print(f"\nAverage time (FIT-GNN - subgraph): {np.mean(times_gs[1:])}\nAverage Loss (FIT-GNN - subgraph): {np.mean(losses_gs)}")
 
     if args.baseline:
         print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
@@ -682,7 +682,7 @@ elif args.task == "node_cls":
             
         print(f"Average time (baseline): {np.mean(times_b[1:])}\nAccuracy (baseline): {np.sum(np.array(all_label_b) == np.array(all_out_b))}/{num}")
 
-    # FITGNN model
+    # FIT-GNN model
     model_gs = Net1(args.num_features, args.hidden, args.num_layers2, args.num_classes).to(device)
     loss_fn = torch.nn.NLLLoss().to(device)
     model_gs.load_state_dict(torch.load(args.path_gs + args.model_name_gs))
@@ -705,7 +705,7 @@ elif args.task == "node_cls":
         y = y.cpu()
         edge_index = edge_index.cpu()
         del x, y, edge_index
-    print(f"\nAverage time (FITGNN): {np.mean(times_gs[1:])}\nAccuracy (FITGNN): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
+    print(f"\nAverage time (FIT-GNN): {np.mean(times_gs[1:])}\nAccuracy (FIT-GNN): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
             #print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]].argmax().item()}\nOutput: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
         
 
@@ -814,7 +814,7 @@ elif args.task == "node_reg":
             times_b.append(t4 - t3)
             #print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
 
-    # FITGNN model
+    # FIT-GNN model
     model_gs = Regress_node(args).to(device)
     loss_fn = torch.nn.L1Loss().to(device)
     model_gs.load_state_dict(torch.load(args.path_gs + args.model_name_gs))
@@ -833,7 +833,7 @@ elif args.task == "node_reg":
         y_gs.append(y[j].item())
         losses_gs.append(loss_gs.item())
         times_gs.append(t2 - t1)
-        #print(f"FITGNN-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
+        #print(f"FIT-GNN-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
 
         # Remove x, y and edge_index from device memory
         x = x.cpu()
@@ -841,7 +841,7 @@ elif args.task == "node_reg":
         edge_index = edge_index.cpu()
         del x, y, edge_index
 
-    print(f"\nAverage time (FITGNN): {np.mean(times_gs[1:])}\nAverage Loss (FITGNN): {np.mean(losses_gs/np.std(y_gs))}")
+    print(f"\nAverage time (FIT-GNN): {np.mean(times_gs[1:])}\nAverage Loss (FIT-GNN): {np.mean(losses_gs/np.std(y_gs))}")
 
     if args.baseline:
         print(f"Average time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b/np.std(y_b))}")

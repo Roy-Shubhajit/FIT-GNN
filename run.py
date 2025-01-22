@@ -21,7 +21,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if not os.path.exists("results"):
     os.mkdir("results")
 
-### FITGNN Functions
+### FIT-GNN Functions
 
 def node_train_Gc(model, x, edge_index, mask, y, loss_fn, optimizer):
     model.train()
@@ -203,7 +203,6 @@ def node_train_Gs_GD(model, graph_data, loss_fn, optimizer, args):
     loss.backward()
     optimizer.step()
     total_loss += loss.item()
-    print(f"Max memory allocated: {max_mem}")
     if args.loss_reduction == 'mean':
         if args.task == 'node_cls':
             return total_loss
