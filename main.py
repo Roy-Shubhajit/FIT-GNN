@@ -61,6 +61,7 @@ def process_dataset(args):
         dataset = PygNodePropPredDataset(name="ogbn-proteins", root='./dataset/')
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
+
     #Node Regression
     elif args.dataset == 'chameleon':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
@@ -77,6 +78,7 @@ def process_dataset(args):
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_reg'
+
     #Graph Classification
     elif args.dataset == 'ENZYMES':
         dataset = TUDataset(root='./dataset', name=args.dataset)
@@ -93,6 +95,7 @@ def process_dataset(args):
     elif args.dataset == 'AIDS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
         args.task = 'graph_cls'
+
     #Graph Regression
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
@@ -215,11 +218,11 @@ if __name__ == "__main__":
     if not os.path.exists(f'./dataset/{args.dataset}/saved'):
         os.makedirs(f'./dataset/{args.dataset}/saved')
 
-    node_type = "d" # by default it's d
+    node_type = "d"
     if args.extra_node:
-        node_type = "e" # extra nodes
+        node_type = "e"
     elif args.cluster_node:
-        node_type = "c" # cluster node
+        node_type = "c"
 
     if args.use_community_detection:
         graph_type = "community"

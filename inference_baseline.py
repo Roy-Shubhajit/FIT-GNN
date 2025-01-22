@@ -147,6 +147,7 @@ def process_dataset(args):
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
+
     #Node Regression
     elif args.dataset == 'chameleon':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
@@ -163,6 +164,7 @@ def process_dataset(args):
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_reg'
+
     #Graph Classification
     elif args.dataset == 'ENZYMES':
         dataset = TUDataset(root='./dataset', name=args.dataset)
@@ -188,6 +190,7 @@ def process_dataset(args):
         args.task = 'graph_cls'
         args.num_classes = 2
         args.num_features = dataset[0].x.shape[1]
+
     #Graph Regression
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
@@ -270,7 +273,6 @@ if args.task == "graph_cls":
         new_datasets.append(dataset[i])
     num = len(new_datasets)
     for j in range(num):
-        # print(new_datasets[j])
         test_loader = G_DataLoader([new_datasets[j]], batch_size=1)
         for graph in test_loader:
             graph = graph.to(device)
@@ -318,10 +320,6 @@ elif args.task == "graph_reg":
                 loss_b = loss_fn(out_b, graph.y)
             losses_b.append(loss_b.item())
         
-        #if args.dataset == 'QM9':
-            #print(f"\nBaseline Model:\nGround Truth: {graph.y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
-        #else:
-            #print(f"\nBaseline Model:\nGround Truth: {graph.y.item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
     print(f"\nAverage time (baseline): {np.mean(times_b[1:])}\nAverage Loss (baseline): {np.mean(losses_b)}")
 
 elif args.task == "node_cls":

@@ -49,6 +49,7 @@ def process_dataset(args):
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
+
     #Node Regression
     elif args.dataset == 'chameleon':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
@@ -65,6 +66,7 @@ def process_dataset(args):
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_reg'
+
     #Graph Classification
     elif args.dataset == 'ENZYMES':
         dataset = TUDataset(root='./dataset', name=args.dataset)
@@ -81,6 +83,7 @@ def process_dataset(args):
     elif args.dataset == 'AIDS':
         dataset = TUDataset(root='./dataset', name=args.dataset)
         args.task = 'graph_cls'
+
     #Graph Regression
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
@@ -93,8 +96,7 @@ def process_dataset(args):
         dataset = ZINC(root='./dataset/ZINC', subset=True)
         args.task = 'graph_reg'
     elif args.dataset == 'random':
-        print("Here\nNum Random Nodes: ", args.num_random_nodes)
-        # create a cyclic graph with args.num_random_nodes nodes
+        print("Num Random Nodes: ", args.num_random_nodes)
         x = torch.randint(0, 10, (args.num_random_nodes, 1), dtype=torch.float64)
         edge_index = torch.zeros(2, 4*args.num_random_nodes, dtype=torch.long)
         for i in tqdm(range(args.num_random_nodes)):
@@ -246,8 +248,6 @@ else:
             args.num_features, candidate, subgraph_list, CLIST, GcLIST = coarsening_regression(args, graph, 1-args.coarsening_ratio, args.coarsening_method)
             Gc = load_graph_data(graph, CLIST, GcLIST, candidate)
             saved_graph_list.append(i)
-            # Gs = subgraph_list
-            # new_dataset.append((dataset[i], Gc, Gs))
             Gc_.append(Gc)
             Gs_.append(subgraph_list)
         except:

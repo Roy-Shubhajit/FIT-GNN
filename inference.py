@@ -154,6 +154,7 @@ def process_dataset(args):
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
+
     #Node Regression
     elif args.dataset == 'chameleon':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
@@ -170,6 +171,7 @@ def process_dataset(args):
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_reg'
+
     #Graph Classification
     elif args.dataset == 'ENZYMES':
         dataset = TUDataset(root='./dataset', name=args.dataset)
@@ -195,6 +197,7 @@ def process_dataset(args):
         args.task = 'graph_cls'
         args.num_classes = 2
         args.num_features = dataset[0].x.shape[1]
+
     #Graph Regression
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
@@ -388,7 +391,6 @@ if args.task == "graph_cls":
             loss_b = loss_fn(out_b, y)
             losses_b.append(loss_b.item())
 
-        # Remove set_gc, set_gs and y_ from device memory
         if args.exp_setup == "Gc_train_2_Gc_infer":
             set_gc = set_gc.cpu()
             y_ = y_.cpu()
@@ -522,7 +524,6 @@ elif args.task == "graph_reg":
             if args.baseline:
                 print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
         
-        # Remove set_gc, set_gs and y_ from device memory
         if args.exp_setup == "Gc_train_2_Gc_infer":
             set_gc = set_gc.cpu()
             y_ = y_.cpu()
@@ -682,14 +683,11 @@ elif args.task == "node_cls":
         all_out_gs.append(out_gs[j].argmax().item())
         losses_gs.append(loss_gs.item())
         times_gs.append(t2 - t1)
-        #print(f"\nSubgraph-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j].argmax().item()}\nOutput: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
-        # Remove x, y and edge_index from device memory
         x = x.cpu()
         y = y.cpu()
         edge_index = edge_index.cpu()
         del x, y, edge_index
     print(f"\nAverage time (FIT-GNN): {np.mean(times_gs[1:])}\nAccuracy (FIT-GNN): {np.sum(np.array(all_label_gs) == np.array(all_out_gs))}/{num}")
-            #print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]].argmax().item()}\nOutput: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
         
 
 elif args.task == "node_reg":
@@ -795,7 +793,6 @@ elif args.task == "node_reg":
             losses_b.append(loss_b.item())
             y_b.append(y_[indices[i][0]].item())
             times_b.append(t4 - t3)
-            #print(f"\nBaseline Model:\nGround Truth: {y_[indices[i][0]]}\nPredicted: {out_b[indices[i][0]]}\nLoss: {loss_b.item()}\nTime: {t4 - t3}s\n")
 
     # FIT-GNN model
     model_gs = Regress_node(args).to(device)
@@ -816,9 +813,7 @@ elif args.task == "node_reg":
         y_gs.append(y[j].item())
         losses_gs.append(loss_gs.item())
         times_gs.append(t2 - t1)
-        #print(f"FIT-GNN-Based Model:\nGround Truth: {y[j]}\nPredicted: {out_gs[j]}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s\n")
 
-        # Remove x, y and edge_index from device memory
         x = x.cpu()
         y = y.cpu()
         edge_index = edge_index.cpu()

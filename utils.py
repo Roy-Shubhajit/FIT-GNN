@@ -232,11 +232,7 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                         value = torch.tensor(value).to(device)
                         actual_ext = extra_node[~torch.isin(extra_node, value)]
                         value = torch.cat((value, actual_ext), dim=0)
-                        
-                        
-                    #if value is not tensor, convert it into tensor
 
-                    #if value is not tensor, convert it into tensor
                     if not torch.is_tensor(value):
                         value = torch.tensor(value).to(device)
                     value, _ = torch.sort(value)
@@ -554,7 +550,6 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                         value = torch.tensor(value).to(device)
                         actual_ext = extra_node[~torch.isin(extra_node, value)]
                         value = torch.cat((value, actual_ext), dim=0)
-                        #value = np.unique(value)
                         
                     if not torch.is_tensor(value):
                         value = torch.tensor(value).to(device)

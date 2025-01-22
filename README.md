@@ -52,12 +52,18 @@
 
 ### Important File Locations:
 - Training
-    - Baseline:
-        1) Node Classification - `baselines/node_classification_baseline.ipynb`
-        2) Node Regression - `baselines/node_regression_baseline.ipynb`
-        3) Graph Classification - `baselines/graph_classification_baseline.ipynb`
-        4) Graph Regression - `baselines/graph_regression_baseline.ipynb`
+    - Baseline: `main.py` with baseline set to true (alternatively `run_main.sh`)
     - Subgraph: `main.py` (alternatively `run_main.sh`)
-- Inference: `inference.py` (alternatively `run_inference.sh`)
+- Inference: 
+    - Baseline: `inference_baseline.py` (alternatively `run_inference_baseline.sh`)
+    - Subgraph: `inference.py` (alternatively `run_inference.sh`)
 - Saved Models: Models stored in the following directory: `./save/`
 
+### Examples
+Refer to the following `.sh` files for examples:
+- Training (both subgraph and baseline): `run_main.sh`
+- Inference for baselines: `run_inference_baseline.sh`
+- Inference for subgraphs: `run_inference.sh`
+
+### Dataset Info
+Refer to the csv file: `dataset_info.csv`
