@@ -388,15 +388,6 @@ if args.task == "graph_cls":
             loss_b = loss_fn(out_b, y)
             losses_b.append(loss_b.item())
 
-        # FIT-GNN model
-        if args.exp_setup == "Gc_train_2_Gc_infer":
-            print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.argmax().item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
-        else:
-            print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.argmax().item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-        
-        if args.baseline:
-            print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.argmax().item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
-
         # Remove set_gc, set_gs and y_ from device memory
         if args.exp_setup == "Gc_train_2_Gc_infer":
             set_gc = set_gc.cpu()
@@ -530,13 +521,6 @@ elif args.task == "graph_reg":
                 print(f"\nSubgraph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
             if args.baseline:
                 print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
-        else:
-            if args.exp_setup == "Gc_train_2_Gc_infer":
-                print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gc.item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
-            else:
-                print(f"\nSubgraph-Based Model:\nGround Truth: {y_.item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-            if args.baseline:
-                print(f"\nBaseline Model:\nGround Truth: {y.item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
         
         # Remove set_gc, set_gs and y_ from device memory
         if args.exp_setup == "Gc_train_2_Gc_infer":
