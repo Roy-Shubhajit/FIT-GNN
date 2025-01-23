@@ -563,7 +563,6 @@ elif args.task == "node_cls":
 
     if test_num > dataset[0].x.shape[0]:
         print("Number of test nodes exceeds the maximum number of nodes in the graph. Hence, all nodes will be used as test nodes.")
-    # To do: check for default nodes
 
     permu = np.random.permutation(no_graphs)
     maskie = [False]*no_graphs
@@ -704,7 +703,6 @@ elif args.task == "node_reg":
     
     if test_num > dataset[0].x.shape[0]:
         print("Number of test nodes exceeds the maximum number of nodes in the graph. Hence, all nodes will be used as test nodes.")
-    # To do: check for default nodes
 
     permu = np.random.permutation(no_graphs)
     maskie = [False]*no_graphs
