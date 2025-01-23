@@ -87,7 +87,7 @@ squirrel                 ,True     ,-                ,node_reg ,-       ,       
 crocodile                ,True     ,-                ,node_reg ,-       ,       11.561716
 dblp                     ,True     ,-                ,node_cls ,-       ,      118.121312
 Physics                  ,True     ,-                ,node_cls ,-       ,     1169.521068
+ogbn-products(community) ,False    ,0.1              ,node_cls ,cluster ,        6.047345
 ogbn-products(community) ,False    ,0.3              ,node_cls ,cluster ,        5.613298
 ogbn-products(community) ,False    ,0.5              ,node_cls ,cluster ,        8.636460
 ogbn-products(community) ,True     ,-                ,node_cls ,-       ,      208.028712
-
