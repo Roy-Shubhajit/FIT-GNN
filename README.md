@@ -1,5 +1,29 @@
-# FIT-GNN: Faster Inference Time for GNNs using coarsening
+# FIT-GNN: Faster Inference Time for GNNs Using Coarsening
 ---
+
+### Important File Locations:
+- Training
+    - Baseline: `main.py` with baseline set to true (alternatively `run_main.sh`)
+    - Subgraph: `main.py` (alternatively `run_main.sh`)
+- Inference: 
+    - Baseline: `inference_baseline.py` (alternatively `run_inference_baseline.sh`)
+    - Subgraph: `inference.py` (alternatively `run_inference.sh`)
+- Saved Models: Models stored in the following directory: `./save/`
+
+### Examples
+Refer to the following `.sh` files for examples:
+- Training (both subgraph and baseline): `run_main.sh`
+- Inference for baselines: `run_inference_baseline.sh`
+- Inference for subgraphs: `run_inference.sh`
+
+### Dataset Info
+Refer to the csv file: `dataset_info.csv`
+
+### Requirements
+```console
+pip install -r requirements.txt
+```
+
 ### Parameter Description:
 - `dataset`:
     - Dataset name
@@ -14,6 +38,11 @@
         3) random: dblp, Physics
 - `runs`: default = 20
     - Number of times to run node-level task
+- `baseline`: default = True
+    - To train the baseline model
+- `train_fitgnn`: default = False
+    - To train the FIT_GNN model
+    - Note: If both `baseline` and `train_fitgnn` are set to be true, then `train_fitgnn` will be considered.
 - `exp_setup`: {Gc_train_2_Gs_infer, Gs_tran_2_Gs_infer, Gc_train_2_Gs_train}
     - Type of experiment setup to run
         1) Gc_train_2_Gs_infer: Train and val on Gc >> Test on Gs
@@ -49,21 +78,5 @@
     - Parameter specific to graph-level tasks. Ratio of graphs reserved for training to total number of graphs in dataset.
 - `val_ratio`: [0, 1], default = 0.2
     - Parameter specific to graph-level tasks. Ratio of graphs reserved for validation to total number of graphs in dataset.
-
-### Important File Locations:
-- Training
-    - Baseline: `main.py` with baseline set to true (alternatively `run_main.sh`)
-    - Subgraph: `main.py` (alternatively `run_main.sh`)
-- Inference: 
-    - Baseline: `inference_baseline.py` (alternatively `run_inference_baseline.sh`)
-    - Subgraph: `inference.py` (alternatively `run_inference.sh`)
-- Saved Models: Models stored in the following directory: `./save/`
-
-### Examples
-Refer to the following `.sh` files for examples:
-- Training (both subgraph and baseline): `run_main.sh`
-- Inference for baselines: `run_inference_baseline.sh`
-- Inference for subgraphs: `run_inference.sh`
-
-### Dataset Info
-Refer to the csv file: `dataset_info.csv`
+- `use_community_detection`: default = False
+    - Leiden algorithm is used to detect the top k communities to construct a proxy graph of a large graph.
