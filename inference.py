@@ -570,10 +570,10 @@ elif args.task == "node_cls":
     if test_num <= no_graphs:
         for i in np.random.permutation(len(graphs)):
             if num != args.num_test_samples:
-                if args.cluster_node:
-                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), 1)[0]
-                elif args.extra_node:
+                if args.extra_node:
                     index = np.random.choice(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())], 1)[0]
+                else:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), 1)[0]
                 j = subgraph_list[i].map_dict[index]
                 indices.append((index, j, i))
                 num += 1
@@ -582,12 +582,12 @@ elif args.task == "node_cls":
     else:
         for i in permu:
             if test_num > 0:
-                if args.cluster_node:
-                    if len(subgraph_list[i].orig_idx.cpu()) >= rat:
+                if args.extra_node:
+                    if len(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())]) >= rat:
                         maskie[i] = True
                         test_num = test_num - rat
-                elif args.extra_node:
-                    if len(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())]) >= rat:
+                else:
+                    if len(subgraph_list[i].orig_idx.cpu()) >= rat:
                         maskie[i] = True
                         test_num = test_num - rat
             else:
@@ -595,17 +595,17 @@ elif args.task == "node_cls":
 
         for i in permu:
             if maskie[i] == True:
-                if args.cluster_node:
-                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), rat)
-                elif args.extra_node:
+                if args.extra_node:
                     index = np.random.choice(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())], rat)
+                else:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), rat)
                 true_indices.append((index, i)) # one test sample: index = original node index in community graph, j = renamed index of node in that subgraph, i = index of subgraph in subgraph list
             else:
                 if test_num > 0:
-                    if args.cluster_node:
-                        index = subgraph_list[i].orig_idx.cpu()
-                    elif args.extra_node:
+                    if args.extra_node:
                         index = subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())]
+                    else:
+                        index = subgraph_list[i].orig_idx.cpu()
                     test_num = test_num - len(index)
                     for ind in index:
                         ind = ind.item()
@@ -613,10 +613,10 @@ elif args.task == "node_cls":
         
         for itr in true_indices:
             if test_num > 0:
-                if args.cluster_node:
-                    index = subgraph_list[itr[1]].orig_idx.cpu()[~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), itr[0])]
-                elif args.extra_node:
+                if args.extra_node:
                     index = subgraph_list[itr[1]].orig_idx.cpu()[~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), subgraph_list[itr[1]].actual_ext.cpu()) & ~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), itr[0])]
+                else:
+                    index = subgraph_list[itr[1]].orig_idx.cpu()[~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), itr[0])]
                 test_num = test_num - len(index)
                 for ind in index:
                     ind = ind.item()
@@ -710,10 +710,10 @@ elif args.task == "node_reg":
     if test_num <= no_graphs:
         for i in np.random.permutation(len(graphs)):
             if num != args.num_test_samples:
-                if args.cluster_node:
-                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), 1)[0]
-                elif args.extra_node:
+                if args.extra_node:
                     index = np.random.choice(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())], 1)[0]
+                else:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), 1)[0]
                 j = subgraph_list[i].map_dict[index]
                 indices.append((index, j, i))
                 num += 1
@@ -722,12 +722,12 @@ elif args.task == "node_reg":
     else:
         for i in permu:
             if test_num > 0:
-                if args.cluster_node:
-                    if len(subgraph_list[i].orig_idx.cpu()) >= rat:
+                if args.extra_node:
+                    if len(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())]) >= rat:
                         maskie[i] = True
                         test_num = test_num - rat
-                elif args.extra_node:
-                    if len(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())]) >= rat:
+                else:
+                    if len(subgraph_list[i].orig_idx.cpu()) >= rat:
                         maskie[i] = True
                         test_num = test_num - rat
             else:
@@ -735,17 +735,17 @@ elif args.task == "node_reg":
 
         for i in permu:
             if maskie[i] == True:
-                if args.cluster_node:
-                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), rat)
-                elif args.extra_node:
+                if args.extra_node:
                     index = np.random.choice(subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())], rat)
+                else:
+                    index = np.random.choice(subgraph_list[i].orig_idx.cpu(), rat)
                 true_indices.append((index, i)) # one test sample: index = original node index in community graph, j = renamed index of node in that subgraph, i = index of subgraph in subgraph list
             else:
                 if test_num > 0:
-                    if args.cluster_node:
-                        index = subgraph_list[i].orig_idx.cpu()
-                    elif args.extra_node:
+                    if args.extra_node:
                         index = subgraph_list[i].orig_idx.cpu()[~np.isin(subgraph_list[i].orig_idx.cpu(), subgraph_list[i].actual_ext.cpu())]
+                    else:
+                        index = subgraph_list[i].orig_idx.cpu()
                     test_num = test_num - len(index)
                     for ind in index:
                         ind = ind.item()
@@ -753,10 +753,10 @@ elif args.task == "node_reg":
         
         for itr in true_indices:
             if test_num > 0:
-                if args.cluster_node:
-                    index = subgraph_list[itr[1]].orig_idx.cpu()[~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), itr[0])]
-                elif args.extra_node:
+                if args.extra_node:
                     index = subgraph_list[itr[1]].orig_idx.cpu()[~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), subgraph_list[itr[1]].actual_ext.cpu()) & ~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), itr[0])]
+                else:
+                    index = subgraph_list[itr[1]].orig_idx.cpu()[~np.isin(subgraph_list[itr[1]].orig_idx.cpu(), itr[0])]
                 test_num = test_num - len(index)
                 for ind in index:
                     ind = ind.item()
