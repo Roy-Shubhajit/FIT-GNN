@@ -150,11 +150,10 @@ def process_dataset(args):
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == "ogbn-products":
-        dataset = PygNodePropPredDataset(name="ogbn-products", root='./dataset/')
+        dataset = PygNodePropPredDataset(name="ogbn-products", root='./dataset')
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
-
     #Node Regression
     elif args.dataset == 'chameleon':
         dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
@@ -171,7 +170,6 @@ def process_dataset(args):
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_reg'
-
     #Graph Classification
     elif args.dataset == 'ENZYMES':
         dataset = TUDataset(root='./dataset', name=args.dataset)
@@ -197,7 +195,6 @@ def process_dataset(args):
         args.task = 'graph_cls'
         args.num_classes = 2
         args.num_features = dataset[0].x.shape[1]
-
     #Graph Regression
     elif args.dataset == 'QM9':
         dataset = QM9(root='./dataset/QM9')
@@ -247,7 +244,7 @@ parser.add_argument('--path_b', type = str, default = "./save/node_cls/baseline/
 parser.add_argument('--model_name_b', type = str, default = "baseline_cora_fixed.pt")                                                           ### Baseline model name
 parser.add_argument('--path_gs', type = str, default = "./save/node_cls/cora_fixed_Gc_train_2_Gs_infer_0.5_variation_neighborhoods_cluster/")   ### Path for FIT-GNN model
 parser.add_argument('--model_name_gs', type = str, default = "model.pt")                                                                        ### FIT-GNN model name
-parser.add_argument('--path_gc', type = str, default = "./save/graph_cls/AIDS_Gc_train_2_Gc_infer_0.5_variation_neighborhoods_extra/")          ### Path for coarsened graph model
+parser.add_argument('--path_gc', type = str, default = "./save/node_cls/cora_Gc_train_2_Gc_infer_0.5_variation_neighborhoods_extra/")          ### Path for coarsened graph model
 parser.add_argument('--model_name_gc', type = str, default = "model.pt")                                                                        ### Coarsened graph model name
 parser.add_argument('--baseline', action='store_true')                                                                                 ### If True, baseline model results will be saved
 args = parser.parse_args()
@@ -345,14 +342,14 @@ if args.task == "graph_cls":
             else:
                 break
 
-    for j in range(num):
+    for j in tqdm(range(num)):
         colater_fn = colater()
         test_loader = T_DataLoader(new_datasets[j], batch_size=1, collate_fn=colater_fn)
+        test_loader_baseline = G_DataLoader([new_datasets[j][0][0]], batch_size=1)
 
         # FIT-GNN model
         if args.exp_setup == 'Gc_train_2_Gc_infer':
             # FIT-GNN Coaarsened Graph Based model
-            # for batch in test_loader:
             set_gc = new_datasets[j][0][1].to(device)
             y_ = set_gc.y.to(device).type(torch.long)
             t1 = time()
@@ -380,17 +377,19 @@ if args.task == "graph_cls":
 
         if args.baseline:
             # Baseline model
-            G = new_datasets[j][0][0].to(device)
-            y = G.y.to(device).type(torch.long)
-            t3 = time()
-            out_b = model_b(G)
-            t4 = time()
-            times_b.append(t4-t3)
-            all_out_b.append(out_b.argmax().item())
-            all_label_b.append(y.item())
-            loss_b = loss_fn(out_b, y)
-            losses_b.append(loss_b.item())
+            for batch in test_loader_baseline:
+                G = batch.to(device)
+                y = G.y.to(device).type(torch.long)
+                t3 = time()
+                out_b = model_b(G)
+                t4 = time()
+                times_b.append(t4-t3)
+                all_out_b.append(out_b.argmax().item())
+                all_label_b.append(y.item())
+                loss_b = loss_fn(out_b, y)
+                losses_b.append(loss_b.item())
 
+        # Remove set_gc, set_gs and y_ from device memory
         if args.exp_setup == "Gc_train_2_Gc_infer":
             set_gc = set_gc.cpu()
             y_ = y_.cpu()
@@ -466,27 +465,26 @@ elif args.task == "graph_reg":
             else:
                 break
                 
-    for j in range(num):
+    for j in tqdm(range(num)):
         colater_fn = colater()
         test_loader = T_DataLoader(new_datasets[j], batch_size=1, collate_fn=colater_fn)
-
+        test_loader_baseline = G_DataLoader([new_datasets[j][0][0]], batch_size=1)
         # FIT-GNN
         if args.exp_setup == "Gc_train_2_Gc_infer":
             # FIT-GNN - Coarsened Graph based model
-            for batch in test_loader:
-                set_gc = batch[0].to(device)
-                y_ = batch[2].to(device).type(torch.float)
-                t1 = time()
-                out_gc = model_gc(set_gc).to(device)
-                t2 = time()
-                times_gc.append(t2-t1)
-                if args.dataset == 'QM9':
-                    loss_gc = loss_fn(out_gc, y_[:, args.property].view(-1, 1))
-                else:
-                    loss_gc = loss_fn(out_gc, y_)
-                losses_gc.append(loss_gc.item())
+            set_gc = new_datasets[j][0][1].to(device)
+            y_ = new_datasets[j][0][0].y.to(device).type(torch.float)
+            t1 = time()
+            out_gc = model_gc(set_gc).to(device)
+            t2 = time()
+            times_gc.append(t2-t1)
+            if args.dataset == 'QM9':
+                loss_gc = loss_fn(out_gc, y_[:, args.property].view(-1, 1))
+            else:
+                loss_gc = loss_fn(out_gc, y_)
+            losses_gc.append(loss_gc.item())
         else:
-                
+            
             # FIT-GNN - Subgraph based model
             for batch in test_loader:
                 set_gs = batch[1]
@@ -504,26 +502,19 @@ elif args.task == "graph_reg":
         
         if args.baseline:
             # Baseline model
-            G = new_datasets[j][0][0].to(device)
-            y = G.y.to(device).type(torch.float)
-            t3 = time()
-            out_b = model_b(G)
-            t4 = time()
-            times_b.append(t4-t3)
-            if args.dataset == 'QM9':
-                loss_b = loss_fn(out_b, y[:, args.property].view(-1, 1))
-            else:
-                loss_b = loss_fn(out_b, y)
-            losses_b.append(loss_b.item())
-        
-        if args.dataset == 'QM9':
-            if args.exp_setup == "Gc_train_2_Gc_infer":
-                print(f"\nCoarsened Graph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gc.item()}\nOutput: {out_gc}\nLoss: {loss_gc.item()}\nTime: {t2-t1}s")
-            else:
-                print(f"\nSubgraph-Based Model:\nGround Truth: {y_[:, args.property].item()}\nPredicted: {out_gs.item()}\nOutput: {out_gs}\nLoss: {loss_gs.item()}\nTime: {t2-t1}s")
-            if args.baseline:
-                print(f"\nBaseline Model:\nGround Truth: {y[:, args.property].item()}\nPredicted: {out_b.item()}\nOutput: {out_b}\nLoss: {loss_b.item()}\nTime: {t4-t3}s")
-        
+            for batch in test_loader_baseline:
+                G = batch.to(device)
+                y = G.y.to(device).type(torch.float)
+                t3 = time()
+                out_b = model_b(G)
+                t4 = time()
+                times_b.append(t4-t3)
+                if args.dataset == 'QM9':
+                    loss_b = loss_fn(out_b, y[:, args.property].view(-1, 1))
+                else:
+                    loss_b = loss_fn(out_b, y)
+                losses_b.append(loss_b.item())
+                
         if args.exp_setup == "Gc_train_2_Gc_infer":
             set_gc = set_gc.cpu()
             y_ = y_.cpu()
@@ -569,8 +560,6 @@ elif args.task == "node_cls":
     test_num = args.num_test_samples
     no_graphs = len(graphs)
     rat = test_num // no_graphs
-    # To do: assert if arg.num_test_samples > total nodes in the graphs
-    # To do: check for default nodes
     permu = np.random.permutation(no_graphs)
     maskie = [False]*no_graphs
 
@@ -707,8 +696,6 @@ elif args.task == "node_reg":
     test_num = args.num_test_samples
     no_graphs = len(graphs)
     rat = test_num // no_graphs
-    # To do: assert if arg.num_test_samples > total nodes in the graphs
-    # To do: check for default nodes
     permu = np.random.permutation(no_graphs)
     maskie = [False]*no_graphs
 
@@ -813,7 +800,6 @@ elif args.task == "node_reg":
         y_gs.append(y[j].item())
         losses_gs.append(loss_gs.item())
         times_gs.append(t2 - t1)
-
         x = x.cpu()
         y = y.cpu()
         edge_index = edge_index.cpu()
