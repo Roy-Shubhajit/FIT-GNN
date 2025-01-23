@@ -298,11 +298,13 @@ elif args.task == "graph_reg":
     perm_graphs = np.random.permutation(len(dataset))
     if args.num_test_samples > len(dataset):
         args.num_test_samples = len(dataset)
-    new_datasets = perm_graphs[:args.num_test_samples]
+    new_datasets = []
+    for i in perm_graphs[:args.num_test_samples]:
+        new_datasets.append(dataset[i])
     num = len(new_datasets)
     
     for j in range(num):
-        test_loader = G_DataLoader(new_datasets[j], batch_size=1)
+        test_loader = G_DataLoader([new_datasets[j]], batch_size=1)
         for graph in test_loader:
             graph = graph.to(device)
             graph.y = graph.y.type(torch.float)
