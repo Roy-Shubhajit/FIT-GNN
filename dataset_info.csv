@@ -1,0 +1,14 @@
+dataset                  ,task      ,num_graphs ,num_nodes/avg_num_nodes ,num_edges/avg_num_edges ,num_features ,num_classes ,num_targets
+dblp                     ,node_cls  ,         1 ,  17716                 ,  52867                 ,        1639 ,4           ,None
+Physics                  ,node_cls  ,         1 ,  34493                 , 247962                 ,        8415 ,5           ,None
+cora                     ,node_cls  ,         1 ,   2708                 ,   5278                 ,        1433 ,7           ,None
+citeseer                 ,node_cls  ,         1 ,   3327                 ,   4552                 ,        3703 ,6           ,None
+pubmed                   ,node_cls  ,         1 ,  19717                 ,  44324                 ,         500 ,3           ,None
+ogbn-products(community) ,node_cls  ,         1 , 165000                 ,4340428                 ,         100 ,47          ,None
+chameleon                ,node_reg  ,         1 ,   2277                 ,  31396                 ,         128 ,None        ,1
+squirrel                 ,node_reg  ,         1 ,   5201                 , 198423                 ,         128 ,None        ,1
+crocodile                ,node_reg  ,         1 ,  11631                 , 170845                 ,         128 ,None        ,1
+PROTEINS                 ,graph_cls ,      1113 ,     19.323450088500977 ,     72.81581115722656  ,           3 ,2           ,None
+AIDS                     ,graph_cls ,      2000 ,      7.610000133514404 ,     16.19499969482422  ,          38 ,2           ,None
+QM9                      ,graph_reg ,    130831 ,      8.739357948303223 ,     18.6634521484375   ,          11 ,None        ,19
+ZINC                     ,graph_reg ,     10000 ,     11.332200050354004 ,     24.927900314331055 ,           1 ,None        ,1

@@ -1,0 +1,7 @@
+python inference.py --dataset cora --num_test_samples 10 --coarsening_method variation_neighborhoods --coarsening_ratio 0.3 --experiment random --exp_setup Gs_train_2_Gs_infer --extra_node --path_gs ./save/node_cls/cora_Gs_train_2_Gs_infer_0.3_variation_neighborhoods_extra_0.01_128_GD/ --model_name_gs model.pt
+
+python inference.py --dataset chameleon --num_test_samples 10 --coarsening_method variation_neighborhoods --coarsening_ratio 0.3 --experiment random --exp_setup Gs_train_2_Gs_infer --extra_node --path_gs ./save/node_reg/chameleon_Gs_train_2_Gs_infer_0.3_variation_neighborhoods_extra_0.01_128_GD/ --model_name_gs model.pt
+
+python inference.py --dataset PROTEINS --num_test_samples 10 --coarsening_method variation_neighborhoods --coarsening_ratio 0.3 --experiment random --exp_setup Gs_train_2_Gs_infer --extra_node --path_gs ./save/graph_cls/PROTEINS_Gs_train_2_Gs_infer_0.3_variation_neighborhoods_extra_0.01_128_GD/ --model_name_gs model.pt
+
+python inference.py --dataset ZINC_subset --num_test_samples 10 --coarsening_method variation_neighborhoods --coarsening_ratio 0.3 --experiment random --exp_setup Gs_train_2_Gs_infer --extra_node --path_gs ./save/graph_reg/ZINC_subset_Gs_train_2_Gs_infer_0.3_variation_neighborhoods_extra_0.01_128_GD/ --model_name_gs model.pt

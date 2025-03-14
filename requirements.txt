@@ -1,0 +1,13 @@
+torch
+torch_geometric
+numpy
+scipy
+tqdm
+matplotlib
+pygsp
+sortedcontainers
+networkx
+igraph
+torch_sparse
+torch_scatter
+leidenalg
