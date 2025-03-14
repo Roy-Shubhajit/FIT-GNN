@@ -1,4 +1,4 @@
-# FIT-GNN: Faster Inference Time for GNNs Using Coarsening
+# FIT-GNN: Faster Inference Time for GNNs that 'FIT' in Memory Using Coarsening
 ---
 
 ### Important File Locations:
