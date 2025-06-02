@@ -1,7 +1,7 @@
 import numpy as np
 import pygsp as gsp
 
-def to_networkx():
+def to_networkx(G):
     import networkx as nx
     return nx.from_scipy_sparse_matrix(G.W)
     
