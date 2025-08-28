@@ -1,0 +1,5 @@
+Dataset,Experiment,Layer,Coarsening Ratio,Accuracy (mean +/- std)
+Physics,random,GATConv,0.1,0.8571 +/- 0.0185
+Physics,random,GATConv,0.3,0.8705 +/- 0.0169
+Physics,random,GATConv,0.5,0.8429 +/- 0.0180
+Physics,random,GATConv,0.7,0.8519 +/- 0.0267
