@@ -1,0 +1,42 @@
+/hdfs1/Data/Shubhajit/Project/Bonsai/bonsai_env/lib/python3.12/site-packages/outdated/__init__.py:36: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import parse_version
+Traceback (most recent call last):
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/saved_ours/train_bonsai.py", line 255, in <module>
+    main(vars(args))
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/saved_ours/train_bonsai.py", line 225, in main
+    data_syn = load_syn_dataset(args["ds"], args["tf"], args["sr"], data["scaler"])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/saved_ours/train_bonsai.py", line 62, in load_syn_dataset
+    data_syn = torch.load(path, map_location="cpu", weights_only=False)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/bonsai_env/lib/python3.12/site-packages/torch/serialization.py", line 1479, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/bonsai_env/lib/python3.12/site-packages/torch/serialization.py", line 759, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/bonsai_env/lib/python3.12/site-packages/torch/serialization.py", line 740, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/hdfs1/Data/Shubhajit/Project/Bonsai/saved_ours/products-0.5/data_m_0.9.pt'
+/hdfs1/Data/Shubhajit/Project/Bonsai/bonsai_env/lib/python3.12/site-packages/outdated/__init__.py:36: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import parse_version
+Traceback (most recent call last):
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/saved_ours/train_bonsai.py", line 255, in <module>
+    main(vars(args))
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/saved_ours/train_bonsai.py", line 225, in main
+    data_syn = load_syn_dataset(args["ds"], args["tf"], args["sr"], data["scaler"])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/saved_ours/train_bonsai.py", line 62, in load_syn_dataset
+    data_syn = torch.load(path, map_location="cpu", weights_only=False)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/bonsai_env/lib/python3.12/site-packages/torch/serialization.py", line 1479, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/bonsai_env/lib/python3.12/site-packages/torch/serialization.py", line 759, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/hdfs1/Data/Shubhajit/Project/Bonsai/bonsai_env/lib/python3.12/site-packages/torch/serialization.py", line 740, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/hdfs1/Data/Shubhajit/Project/Bonsai/saved_ours/products-0.5/data_m_0.9.pt'

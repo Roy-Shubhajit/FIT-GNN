@@ -119,7 +119,7 @@ def metanode_to_node_mapping_new(comp_node_2_meta_node, comp_node_2_node):
     metanode_2_node = {}
     for comp_node, metanode in comp_node_2_meta_node.items():
         if metanode not in metanode_2_node.keys():
-            metanode_2_node[metanode] = np.array([comp_node_2_node[comp_node]], dtype=np.compat.long)
+            metanode_2_node[metanode] = np.array([comp_node_2_node[comp_node]], dtype=np.int32)
         else:
             metanode_2_node[metanode] = np.append(metanode_2_node[metanode], comp_node_2_node[comp_node])
     return metanode_2_node
@@ -180,11 +180,11 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
             if args.task == "node_cls":
                 for key, value in tqdm(meta_node_2_node.items(), colour='blue'):
                     value = np.sort(value)
-                    actual_ext = np.array([], dtype=np.compat.long)
+                    actual_ext = np.array([], dtype=np.int32)
                     num_nodes = len(value)
                     if args.cluster_node:
                         node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
-                        new_edges = np.array([], dtype=np.compat.long)
+                        new_edges = np.array([], dtype=np.int32)
                         new_features = np.array([])
                         meta_node_2_new_node = {}
                         for node in value:
@@ -206,8 +206,8 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                                     else:
                                         new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
                                     num_nodes += 1
-                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
-                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
+                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.int32)
+                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.int32)
                                 if len(new_edges.shape) <= 1:
                                     new_edges = np.concatenate((new_edges, e1), axis=0)
                                     new_edges = new_edges.reshape(1, 2)
@@ -221,8 +221,8 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                             for i in range(len(cluster_keys)-1):
                                 for j in range(i+1, len(cluster_keys)):
                                     if adj[cluster_keys[i], cluster_keys[j]] or adj[cluster_keys[j], cluster_keys[i]]:
-                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.compat.long)
-                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.compat.long)
+                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.int32)
+                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.int32)
                                         new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
                                         new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
                         value = np.unique(np.sort(value))
@@ -263,11 +263,11 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
             else:
                 for key, value in meta_node_2_node.items():
                     value = np.sort(value)
-                    actual_ext = np.array([], dtype=np.compat.long)
+                    actual_ext = np.array([], dtype=np.int32)
                     num_nodes = len(value)
                     if args.cluster_node:
                         node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
-                        new_edges = np.array([], dtype=np.compat.long)
+                        new_edges = np.array([], dtype=np.int32)
                         new_features = np.array([])
                         meta_node_2_new_node = {}
                         for node in value:
@@ -289,8 +289,8 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                                     else:
                                         new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
                                     num_nodes += 1
-                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
-                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
+                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.int32)
+                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.int32)
                                 if len(new_edges.shape) <= 1:
                                     new_edges = np.concatenate((new_edges, e1), axis=0)
                                     new_edges = new_edges.reshape(1, 2)
@@ -304,8 +304,8 @@ def coarsening_classification(args, data, coarsening_ratio, coarsening_method):
                             for i in range(len(cluster_keys)-1):
                                 for j in range(i+1, len(cluster_keys)):
                                     if adj[cluster_keys[i], cluster_keys[j]] or adj[cluster_keys[j], cluster_keys[i]]:
-                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.compat.long)
-                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.compat.long)
+                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.int32)
+                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.int32)
                                         new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
                                         new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
                         value = np.unique(np.sort(value))
@@ -412,10 +412,10 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                 for key, value in meta_node_2_node.items():
                     value = np.sort(value)
                     node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
-                    actual_ext = np.array([], dtype=np.compat.long)
+                    actual_ext = np.array([], dtype=np.int32)
                     num_nodes = len(value)
                     if args.cluster_node:
-                        new_edges = np.array([], dtype=np.compat.long)
+                        new_edges = np.array([], dtype=np.int32)
                         new_features = np.array([])
                         meta_node_2_new_node = {}
                         for node in value:
@@ -437,8 +437,8 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                                     else:
                                         new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
                                     num_nodes += 1
-                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
-                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
+                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.int32)
+                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.int32)
                                 if len(new_edges.shape) <= 1:
                                     new_edges = np.concatenate((new_edges, e1), axis=0)
                                     new_edges = new_edges.reshape(1, 2)
@@ -452,8 +452,8 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                             for i in range(len(cluster_keys)-1):
                                 for j in range(i+1, len(cluster_keys)):
                                     if adj[cluster_keys[i], cluster_keys[j]] or adj[cluster_keys[j], cluster_keys[i]]:
-                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.compat.long)
-                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.compat.long)
+                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.int32)
+                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.int32)
                                         new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
                                         new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
 
@@ -498,10 +498,10 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                 for key, value in tqdm(meta_node_2_node.items(), colour='blue'):
                     value = np.sort(value)
                     node_2_subgraph_node = {v.item(): i for i, v in enumerate(value)}
-                    actual_ext = np.array([], dtype=np.compat.long)
+                    actual_ext = np.array([], dtype=np.int32)
                     num_nodes = len(value)
                     if args.cluster_node:
-                        new_edges = np.array([], dtype=np.compat.long)
+                        new_edges = np.array([], dtype=np.int32)
                         new_features = np.array([])
                         meta_node_2_new_node = {}
                         for node in value:
@@ -523,8 +523,8 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                                     else:
                                         new_features = np.concatenate((new_features, new_feature.reshape(1,-1)), axis=0)
                                     num_nodes += 1
-                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.compat.long)
-                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.compat.long)
+                                e1 = np.array([node_2_subgraph_node[node], meta_node_2_new_node[cluster][0]], dtype=np.int32)
+                                e2 = np.array([meta_node_2_new_node[cluster][0], node_2_subgraph_node[node]], dtype=np.int32)
                                 if len(new_edges.shape) <= 1:
                                     new_edges = np.concatenate((new_edges, e1), axis=0)
                                     new_edges = new_edges.reshape(1, 2)
@@ -538,8 +538,8 @@ def coarsening_regression(args, data, coarsening_ratio, coarsening_method):
                             for i in range(len(cluster_keys)-1):
                                 for j in range(i+1, len(cluster_keys)):
                                     if adj[cluster_keys[i], cluster_keys[j]] or adj[cluster_keys[j], cluster_keys[i]]:
-                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.compat.long)
-                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.compat.long)
+                                        e1 = np.array([meta_node_2_new_node[cluster_keys[i]][0], meta_node_2_new_node[cluster_keys[j]][0]], dtype=np.int32)
+                                        e2 = np.array([meta_node_2_new_node[cluster_keys[j]][0], meta_node_2_new_node[cluster_keys[i]][0]], dtype=np.int32)
                                         new_edges = np.concatenate((new_edges, e1.reshape(1,-1)), axis=0)
                                         new_edges = np.concatenate((new_edges, e2.reshape(1,-1)), axis=0)
 

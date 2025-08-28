@@ -373,6 +373,19 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                     best_val_loss_Gs = val_loss
                     torch.save(model.state_dict(), path+'/model.pt')
                     
+                if args.run_intermediate_inference and epoch % args.intermediate_inference_freq == 0:
+                    model.load_state_dict(torch.load(path+'/model.pt'))
+                    if args.gradient_method == "GD":
+                        test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
+                    else:
+                        test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+                    run_writer.add_scalar('Gs_test_loss_intermediate', test_loss, epoch)
+                    if not os.path.exists(f"results/{args.dataset}_intermediate_inference.csv"):
+                        with open(f"results/{args.dataset}_intermediate_inference.csv", 'w') as f:
+                            f.write('epoch,test_loss,test_acc,test_time\n')
+                    with open(f"results/{args.dataset}_intermediate_inference.csv", 'a') as f:
+                        f.write(f"{epoch},{test_loss},{test_acc},{test_time}\n")
+
             model.load_state_dict(torch.load(path+'/model.pt'))
             if args.gradient_method == "GD":
                 test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
@@ -437,6 +450,19 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
                     best_val_loss_Gs = val_loss
                     torch.save(model.state_dict(), path+'/model.pt')
                     
+                if args.run_intermediate_inference and epoch % args.intermediate_inference_freq == 0:
+                    model.load_state_dict(torch.load(path+'/model.pt'))
+                    if args.gradient_method == "GD":
+                        test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
+                    else:
+                        test_loss, test_acc, test_time = node_infer_Gs_MB(args, model, graph_data, loss_fn, 'test')
+                    run_writer.add_scalar('Gs_test_loss_intermediate', test_loss, epoch)
+                    if not os.path.exists(f"results/{args.dataset}_intermediate_inference.csv"):
+                        with open(f"results/{args.dataset}_intermediate_inference.csv", 'w') as f:
+                            f.write('epoch,test_loss,test_acc,test_time\n')
+                    with open(f"results/{args.dataset}_intermediate_inference.csv", 'a') as f:
+                        f.write(f"{epoch},{test_loss},{test_acc},{test_time}\n")
+                    
             model.load_state_dict(torch.load(path+'/model.pt'))
             if args.gradient_method == "GD":
                 test_loss, test_acc, test_time = node_infer_Gs_GD(args, model, graph_data, loss_fn_np, 'test')
@@ -453,14 +479,15 @@ def node_classification(args, path, dataset, writer, candidate, C_list, Gc_list,
 
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,coarsening_method,coarsening_ratio,experiment,exp_setup,extra_nodes,cluster_node,community_used,hidden,runs,num_layers,batch_size,lr,ave_acc,ave_time,top_10_acc,best_acc,top_10_loss,best_loss\n')
+            f.write('dataset,coarsening_method,coarsening_ratio,experiment,exp_setup,layer_name,extra_nodes,cluster_node,community_used,hidden,runs,num_layers,batch_size,lr,ave_acc,ave_time,top_10_acc,best_acc,top_10_loss,best_loss\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.experiment},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_acc)} +/- {np.std(all_acc)},{np.mean(all_time)},{np.mean(top_acc)} +/- {np.std(top_acc)}, {top_acc[0]}, {np.mean(top_loss)} +/- {np.std(top_loss)}, {top_loss[0]}\n")
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.experiment},{args.exp_setup},{args.layer_name},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_acc)} +/- {np.std(all_acc)},{np.mean(all_time)},{np.mean(top_acc)} +/- {np.std(top_acc)}, {top_acc[0]}, {np.mean(top_loss)} +/- {np.std(top_loss)}, {top_loss[0]}\n")
     print("############################### FIT-GNN MODEL ###############################")
     print(f"dataset: {args.dataset}")
     print(f"experiment: {args.experiment}")
     print(f"exp_setup: {args.exp_setup}")
+    print(f"layer_name: {args.layer_name}")
     print(f"extra_nodes: {args.extra_node}")
     print(f"cluster_node: {args.cluster_node}")
     print(f"hidden: {args.hidden}")
@@ -524,12 +551,13 @@ def node_regression(args, path, dataset, writer, subgraph_list):
 
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,coarsening_method,coarsening_ratio,extra_nodes,cluster_node,community_used,hidden,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
+            f.write('dataset,coarsening_method,coarsening_ratio,layer_name,extra_nodes,cluster_node,community_used,hidden,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.layer_name},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")
     print("############################### FIT-GNN MODEL ###############################")
     print(f"dataset: {args.dataset}")
+    print(f"Layer_name: {args.layer_name}")
     print(f"extra_nodes: {args.extra_node}")
     print(f"cluster_node: {args.cluster_node}")
     print(f"hidden: {args.hidden}")
@@ -656,14 +684,15 @@ def graph_classification(args, path, writer, dataset):
 
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,community_used,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,best_test_acc\n')
+            f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,layer_name,extra_nodes,cluster_node,community_used,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,best_test_acc\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
+        f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.layer_name},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
     print("############################### FIT-GNN MODEL ###############################")
     print("FIT-GNN MODEL")
     print(f"dataset: {args.dataset}")
     print(f"exp_setup: {args.exp_setup}")
+    print(f"layer_name: {args.layer_name}")
     print(f"extra_nodes: {args.extra_node}")
     print(f"cluster_node: {args.cluster_node}")
     print(f"hidden: {args.hidden}")
@@ -773,18 +802,19 @@ def graph_regression(args, path, writer, dataset):
     if not os.path.exists(f"results/{args.dataset}.csv"):
         with open(f"results/{args.dataset}.csv", 'w') as f:
             if args.multi_prop:
-                f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,community_used,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,property_idx}\n')
+                f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,layer_name,extra_nodes,cluster_node,community_used,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss,property_idx}\n')
             else:
-                f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,extra_nodes,cluster_node,community_used,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss}\n')
+                f.write('dataset,coarsening_method,coarsening_ratio,exp_setup,layer_name,extra_nodes,cluster_node,community_used,hidden,num_layers1,num_layers2,epochs1,epochs2,batch_size,lr,best_test_loss\n')
 
     with open(f"results/{args.dataset}.csv", 'a') as f:
         if args.multi_prop:
-            f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{args.property}\n")
+            f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.layer_name},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss},{args.property}\n")
         else:
-            f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss}\n")
+            f.write(f"{args.dataset},{args.coarsening_method},{args.coarsening_ratio},{args.exp_setup},{args.layer_name},{args.extra_node},{args.cluster_node},{args.use_community_detection},{args.hidden},{args.num_layers1},{args.num_layers2},{args.epochs1},{args.epochs2},{args.batch_size},{args.lr},{best_test_loss}\n")
     print("############################### FIT-GNN MODEL ###############################")
     print(f"dataset: {args.dataset}")
     print(f"exp_setup: {args.exp_setup}")
+    print(f"layer_name: {args.layer_name}")
     print(f"extra_nodes: {args.extra_node}")
     print(f"cluster_node: {args.cluster_node}")
     print(f"hidden: {args.hidden}")
@@ -853,12 +883,13 @@ def node_classification_baseline(args, path, data, writer):
     
     if not os.path.exists(f"results/baseline/{args.dataset}.csv"):
         with open(f"results/baseline/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,eperiment,runs,num_layers,batch_size,lr,ave_acc,ave_time,top_10_acc,best_acc,top_10_loss,best_loss\n')
+            f.write('dataset,eperiment,layer_name,runs,num_layers,batch_size,lr,ave_acc,ave_time,top_10_acc,best_acc,top_10_loss,best_loss\n')
     with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_acc)} +/- {np.std(all_acc)},{np.mean(all_time)},{np.mean(top_acc)} +/- {np.std(top_acc)}, {top_acc[0]}, {np.mean(top_loss)} +/- {np.std(top_loss)}, {top_loss[0]}\n")
+        f.write(f"{args.dataset},{args.experiment},{args.layer_name},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_acc)} +/- {np.std(all_acc)},{np.mean(all_time)},{np.mean(top_acc)} +/- {np.std(top_acc)}, {top_acc[0]}, {np.mean(top_loss)} +/- {np.std(top_loss)}, {top_loss[0]}\n")
     print("############################## BASELINE MODEL ##############################")
     print(f"dataset: {args.dataset}")
     print(f"experiment: {args.experiment}")
+    print(f"layer_name: {args.layer_name}")
     print(f"hidden: {args.hidden}")
     print(f"runs: {args.runs}")
     print(f"num_layers: {args.num_layers1}")
@@ -918,12 +949,13 @@ def node_regression_baseline(args, path, data, writer):
     
     if not os.path.exists(f"results/baseline/{args.dataset}.csv"):
         with open(f"results/baseline/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,experiment,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
+            f.write('dataset,experiment,layer_name,runs,num_layers,batch_size,lr,ave_time,top_10_loss,best_loss\n')
     with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")
+        f.write(f"{args.dataset},{args.experiment},{args.layer_name},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{np.mean(all_time)},{np.mean(top_loss)} +/- {np.std(top_loss)},{top_loss[0]}\n")
     print("############################## BASELINE MODEL ##############################")
     print(f"dataset: {args.dataset}")
     print(f"experiment: {args.experiment}")
+    print(f"layer_name: {args.layer_name}")
     print(f"hidden: {args.hidden}")
     print(f"runs: {args.runs}")
     print(f"num_layers: {args.num_layers1}")
@@ -992,12 +1024,13 @@ def graph_classification_baseline(args, path, data, writer):
             torch.save(model.state_dict(), path+'/model.pt')
     if not os.path.exists(f"results/baseline/{args.dataset}.csv"):
         with open(f"results/baseline/{args.dataset}.csv", 'w') as f:
-            f.write('dataset,experiment,runs,num_layers,batch_size,lr,best_test_loss,best_test_acc\n')
+            f.write('dataset,experiment,layer_name,runs,num_layers,batch_size,lr,best_test_loss,best_test_acc\n')
     with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
-        f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
+        f.write(f"{args.dataset},{args.experiment},{args.layer_name},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss},{best_test_acc}\n")
     print("############################## BASELINE MODEL ##############################")
     print(f"dataset: {args.dataset}")
     print(f"experiment: {args.experiment}")
+    print(f"layer_name: {args.layer_name}")
     print(f"hidden: {args.hidden}")
     print(f"runs: {args.runs}")
     print(f"num_layers: {args.num_layers1}")
@@ -1077,17 +1110,18 @@ def graph_regression_baseline(args, path, data, writer):
     if not os.path.exists(f"results/baseline/{args.dataset}.csv"):
         with open(f"results/baseline/{args.dataset}.csv", 'w') as f:
             if args.multi_prop:
-                f.write('dataset,experiment,runs,num_layers,batch_size,lr,best_test_loss,property_idx\n')
+                f.write('dataset,experiment,layer_name,runs,num_layers,batch_size,lr,best_test_loss,property_idx\n')
             else:
-                f.write('dataset,experiment,runs,num_layers,batch_size,lr,best_test_loss\n')
+                f.write('dataset,experiment,layer_name,runs,num_layers,batch_size,lr,best_test_loss\n')
     with open(f"results/baseline/{args.dataset}.csv", 'a') as f:
         if args.multi_prop:
-            f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss},{args.property}\n")
+            f.write(f"{args.dataset},{args.experiment},{args.layer_name},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss},{args.property}\n")
         else:
-            f.write(f"{args.dataset},{args.experiment},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss}\n")
+            f.write(f"{args.dataset},{args.experiment},{args.layer_name},{args.runs},{args.num_layers1},{args.batch_size},{args.lr},{best_test_loss}\n")
     print("############################## BASELINE MODEL ##############################")
     print(f"dataset: {args.dataset}")
     print(f"experiment: {args.experiment}")
+    print(f"layer_name: {args.layer_name}")
     print(f"hidden: {args.hidden}")
     print(f"runs: {args.runs}")
     print(f"num_layers: {args.num_layers1}")

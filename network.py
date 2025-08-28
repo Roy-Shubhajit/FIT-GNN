@@ -1,6 +1,7 @@
 import torch
 import torch_scatter
 import torch.nn.functional as F
+import torch_geometric.nn as pyg_nn
 from torch_geometric.nn import GCNConv
 from torch_geometric.nn import global_max_pool, global_mean_pool
 
@@ -9,9 +10,15 @@ class Classify_node(torch.nn.Module):
         super(Classify_node, self).__init__()
         self.num_layers = args.num_layers1
         self.conv = torch.nn.ModuleList()
-        self.conv.append(GCNConv(args.num_features, args.hidden))
-        for i in range(self.num_layers - 1):
-            self.conv.append(GCNConv(args.hidden, args.hidden))
+        LayerClass = getattr(pyg_nn, args.layer_name, None)
+        if args.layer_name != 'GINConv':
+            self.conv.append(LayerClass(args.num_features, args.hidden))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(args.hidden, args.hidden))
+        else:
+            self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.num_features, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
         self.lt1 = torch.nn.Linear(args.hidden, args.num_classes)
 
     def reset_parameters(self):
@@ -31,10 +38,16 @@ class Regress_node(torch.nn.Module):
     def __init__(self, args):
         super(Regress_node, self).__init__()
         self.num_layers = args.num_layers1
+        LayerClass = getattr(pyg_nn, args.layer_name, None)
         self.conv = torch.nn.ModuleList()
-        self.conv.append(GCNConv(args.num_features, args.hidden))
-        for i in range(self.num_layers - 1):
-            self.conv.append(GCNConv(args.hidden, args.hidden))
+        if args.layer_name != 'GINConv':
+            self.conv.append(LayerClass(args.num_features, args.hidden))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(args.hidden, args.hidden))
+        else:
+            self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.num_features, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
         self.lt1 = torch.nn.Linear(args.hidden, 1)
 
     def reset_parameters(self):
@@ -54,10 +67,16 @@ class Classify_graph_gc(torch.nn.Module):
     def __init__(self, args):
         super(Classify_graph_gc, self).__init__()
         self.num_layers = args.num_layers1
+        LayerClass = getattr(pyg_nn, args.layer_name, None)
         self.conv = torch.nn.ModuleList()
-        self.conv.append(GCNConv(args.num_features, args.hidden))
-        for i in range(self.num_layers - 1):
-            self.conv.append(GCNConv(args.hidden, args.hidden))
+        if args.layer_name != 'GINConv':
+            self.conv.append(LayerClass(args.num_features, args.hidden))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(args.hidden, args.hidden))
+        else:
+            self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.num_features, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
         self.lt1 = torch.nn.Linear(args.hidden, args.num_classes)
 
     def reset_parameters(self):
@@ -79,10 +98,16 @@ class Classify_graph_gs(torch.nn.Module):
     def __init__(self, args):
         super(Classify_graph_gs, self).__init__()
         self.num_layers = args.num_layers1
+        LayerClass = getattr(pyg_nn, args.layer_name, None)
         self.conv = torch.nn.ModuleList()
-        self.conv.append(GCNConv(args.num_features, args.hidden))
-        for i in range(self.num_layers - 1):
-            self.conv.append(GCNConv(args.hidden, args.hidden))
+        if args.layer_name != 'GINConv':
+            self.conv.append(LayerClass(args.num_features, args.hidden))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(args.hidden, args.hidden))
+        else:
+            self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.num_features, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
         self.lt1 = torch.nn.Linear(args.hidden, args.num_classes)
 
     def reset_parameters(self):
@@ -113,10 +138,16 @@ class Regress_graph_gc(torch.nn.Module):
     def __init__(self, args):
         super(Regress_graph_gc, self).__init__()
         self.num_layers = args.num_layers1
+        LayerClass = getattr(pyg_nn, args.layer_name, None)
         self.conv = torch.nn.ModuleList()
-        self.conv.append(GCNConv(args.num_features, args.hidden))
-        for i in range(self.num_layers - 1):
-            self.conv.append(GCNConv(args.hidden, args.hidden))
+        if args.layer_name != 'GINConv':
+            self.conv.append(LayerClass(args.num_features, args.hidden))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(args.hidden, args.hidden))
+        else:
+            self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.num_features, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
         self.lt1 = torch.nn.Linear(args.hidden, 1)
 
     def reset_parameters(self):
@@ -138,10 +169,16 @@ class Regress_graph_gs(torch.nn.Module):
     def __init__(self, args):
         super(Regress_graph_gs, self).__init__()
         self.num_layers = args.num_layers1
+        LayerClass = getattr(pyg_nn, args.layer_name, None)
         self.conv = torch.nn.ModuleList()
-        self.conv.append(GCNConv(args.num_features, args.hidden))
-        for i in range(self.num_layers - 1):
-            self.conv.append(GCNConv(args.hidden, args.hidden))
+        if args.layer_name != 'GINConv':
+            self.conv.append(LayerClass(args.num_features, args.hidden))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(args.hidden, args.hidden))
+        else:
+            self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.num_features, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
+            for i in range(self.num_layers - 1):
+                self.conv.append(LayerClass(torch.nn.Sequential(torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU(), torch.nn.Linear(args.hidden, args.hidden), torch.nn.ReLU()), train_eps=True))
         self.lt1 = torch.nn.Linear(args.hidden, 1)
 
     def reset_parameters(self):

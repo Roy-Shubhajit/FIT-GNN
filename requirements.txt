@@ -11,3 +11,5 @@ igraph
 torch_sparse
 torch_scatter
 leidenalg
+tensorboard
+ogb

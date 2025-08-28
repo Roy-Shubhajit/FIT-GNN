@@ -4,7 +4,7 @@ import os
 import torch
 import pickle
 import argparse
-from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM9, ZINC
+from torch_geometric.datasets import WikipediaNetwork, TUDataset, Planetoid, Coauthor, CitationFull, QM9, ZINC, Flickr
 from ogb.nodeproppred import PygNodePropPredDataset
 from utils import load_graph_data, coarsening_classification, coarsening_regression, coarsening_classification, coarsening_regression, load_data_classification, load_data_regression, colater 
 from torch.utils.data import DataLoader as T_DataLoader
@@ -139,6 +139,11 @@ def process_dataset(args):
         args.task = 'node_cls'
     elif args.dataset == 'pubmed':
         dataset = Planetoid(root='./dataset', name=args.dataset)
+        if args.normalize_features:
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
+        args.task = 'node_cls'
+    elif args.dataset == "Flickr":
+        dataset = Flickr(root='./dataset')
         if args.normalize_features:
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'

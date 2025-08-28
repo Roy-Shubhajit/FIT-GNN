@@ -1,14 +1,14 @@
-dataset                  ,task      ,num_graphs ,num_nodes/avg_num_nodes ,num_edges/avg_num_edges ,num_features ,num_classes ,num_targets
-dblp                     ,node_cls  ,         1 ,  17716                 ,  52867                 ,        1639 ,4           ,None
-Physics                  ,node_cls  ,         1 ,  34493                 , 247962                 ,        8415 ,5           ,None
-cora                     ,node_cls  ,         1 ,   2708                 ,   5278                 ,        1433 ,7           ,None
-citeseer                 ,node_cls  ,         1 ,   3327                 ,   4552                 ,        3703 ,6           ,None
-pubmed                   ,node_cls  ,         1 ,  19717                 ,  44324                 ,         500 ,3           ,None
-ogbn-products(community) ,node_cls  ,         1 , 165000                 ,4340428                 ,         100 ,47          ,None
-chameleon                ,node_reg  ,         1 ,   2277                 ,  31396                 ,         128 ,None        ,1
-squirrel                 ,node_reg  ,         1 ,   5201                 , 198423                 ,         128 ,None        ,1
-crocodile                ,node_reg  ,         1 ,  11631                 , 170845                 ,         128 ,None        ,1
-PROTEINS                 ,graph_cls ,      1113 ,     19.323450088500977 ,     72.81581115722656  ,           3 ,2           ,None
-AIDS                     ,graph_cls ,      2000 ,      7.610000133514404 ,     16.19499969482422  ,          38 ,2           ,None
-QM9                      ,graph_reg ,    130831 ,      8.739357948303223 ,     18.6634521484375   ,          11 ,None        ,19
-ZINC                     ,graph_reg ,     10000 ,     11.332200050354004 ,     24.927900314331055 ,           1 ,None        ,1
+dataset                  ,task      ,num_graphs ,num_nodes/avg_num_nodes ,num_edges/num_edges    ,num_features ,num_classes ,num_targets ,std                ,homophily(edge)    ,homophily(node)     ,homophily(edge_insensitive)
+WikiCS                   ,node_cls  ,         1 ,  11701                 ,215863                 ,         300 ,10          ,None        ,None               ,0.6547393202781677 ,0.658848762512207   ,0.5681414008140564
+dblp                     ,node_cls  ,         1 ,  17716                 , 52867                 ,        1639 ,4           ,None        ,None               ,0.8279266953468323 ,0.8128054141998291  ,0.6522444486618042
+Physics                  ,node_cls  ,         1 ,  34493                 ,247962                 ,        8415 ,5           ,None        ,None               ,0.9314451217651367 ,0.9152769446372986  ,0.847388744354248
+cora                     ,node_cls  ,         1 ,   2708                 ,  5278                 ,        1433 ,7           ,None        ,None               ,0.8099659085273743 ,0.8251578211784363  ,0.7657181620597839
+citeseer                 ,node_cls  ,         1 ,   3327                 ,  4552                 ,        3703 ,6           ,None        ,None               ,0.7355008721351624 ,0.7062491774559021  ,0.6267310380935669
+pubmed                   ,node_cls  ,         1 ,  19717                 , 44324                 ,         500 ,3           ,None        ,None               ,0.8023869395256042 ,0.792412281036377   ,0.6641403436660767
+chameleon                ,node_reg  ,         1 ,   2277                 , 31396                 ,         128 ,None        ,1           ,2.133340358734131  ,None               ,None                ,None
+squirrel                 ,node_reg  ,         1 ,   5201                 ,198423                 ,         128 ,None        ,1           ,1.7640742063522339 ,None               ,None                ,None
+crocodile                ,node_reg  ,         1 ,  11631                 ,170845                 ,         128 ,None        ,1           ,2.2391340732574463 ,None               ,None                ,None
+PROTEINS                 ,graph_cls ,      1113 ,     19.323450088500977 ,    72.81581115722656  ,           3 ,2           ,None        ,None               ,None               ,None                ,None
+AIDS                     ,graph_cls ,      2000 ,      7.610000133514404 ,    16.19499969482422  ,          38 ,2           ,None        ,None               ,None               ,None                ,None
+QM9                      ,graph_reg ,    130831 ,      8.739357948303223 ,    18.6634521484375   ,          11 ,None        ,19          ,None               ,None               ,None                ,None
+ZINC                     ,graph_reg ,     10000 ,     11.332200050354004 ,    24.927900314331055 ,           1 ,None        ,1           ,None               ,None               ,None                ,None
