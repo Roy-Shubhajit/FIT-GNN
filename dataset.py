@@ -64,6 +64,9 @@ elif args.dataset== 'ogbn-products(community)':
         torch.save(data, f'./dataset/ogbn_products/saved/community_data.pt')
     dataset = [data]
     task = 'node_cls'
+elif args.dataset == 'OGBN-Products':
+    dataset = PygNodePropPredDataset(name="ogbn-products", root='./dataset/')
+    task = 'node_cls'
 elif args.dataset== 'chameleon':
     dataset = WikipediaNetwork(root='./dataset', name=args.dataset, geom_gcn_preprocess=False)
     task = 'node_reg'

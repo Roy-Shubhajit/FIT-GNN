@@ -1,6 +1,8 @@
 import warnings
 warnings.simplefilter("ignore")
 import torch
+import os
+import csv
 from torch_geometric.utils import to_dense_adj
 from graph_coarsening.coarsening_utils import *
 from torch_geometric.data import Data, Batch
@@ -10,6 +12,9 @@ from torch_geometric.utils import subgraph, to_scipy_sparse_matrix, degree
 from tqdm import tqdm
 import igraph as ig
 import leidenalg
+from torch.utils.data import DataLoader as T_DataLoader
+from torch_geometric.loader import DataLoader as G_DataLoader
+from torch_geometric.profile import get_data_size
 import logging
 logging.disable(logging.INFO)
 logging.disable(logging.WARNING)
@@ -981,3 +986,39 @@ class L1Loss_numpy:
             return np.mean(np.abs(predictions - targets))
         elif self.reduction == 'sum':
             return np.sum(np.abs(predictions - targets))
+
+def node_mem_save(args, data, candidate=None, C_list=None, Gc_list=None, subgraph_list=None):
+    if args.task == "node_cls":
+        args.num_classes, coarsen_features, coarsen_train_labels, coarsen_train_mask, coarsen_val_labels, coarsen_val_mask, coarsen_edge, graphs = load_data_classification(args, data, candidate, C_list, Gc_list, args.experiment, subgraph_list)
+        graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=True)
+        max_mem = 0
+        for graph in tqdm(graph_data):
+            max_mem = max(max_mem, get_data_size(graph))
+    if args.task == "node_reg":
+        graphs = load_data_regression(args, data, subgraph_list)
+        graph_data = G_DataLoader(graphs, batch_size=args.batch_size, shuffle=True)
+        max_mem = 0
+        for graph in tqdm(graph_data):
+            max_mem = max(max_mem, get_data_size(graph))
+        #convert to MB
+    max_mem = max_mem / (1024 * 1024)
+    #check if  memory_uage.csv exists
+    if not os.path.exists("memory_usage.csv"):
+        with open("memory_usage.csv", mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Dataset", "Coarsening_Method", "Coarsening_Ratio", "Task", "Type", "Max_Memory_Usage_Graphs(MB)"])
+            if args.extra_node:
+                writer.writerow([args.dataset, args.coarsening_method, args.coarsening_ratio, args.task, "Extra_Node", max_mem])
+            elif args.cluster_node:
+                writer.writerow([args.dataset, args.coarsening_method, args.coarsening_ratio, args.task, "Cluster_Node", max_mem])
+            else:
+                writer.writerow([args.dataset, args.coarsening_method, args.coarsening_ratio, args.task, "None", max_mem])
+    else:
+        with open("memory_usage.csv", mode='a', newline='') as file:
+            writer = csv.writer(file)
+            if args.extra_node:
+                writer.writerow([args.dataset, args.coarsening_method, args.coarsening_ratio, args.task, "Extra_Node", max_mem])
+            elif args.cluster_node:
+                writer.writerow([args.dataset, args.coarsening_method, args.coarsening_ratio, args.task, "Cluster_Node", max_mem])
+            else:
+                writer.writerow([args.dataset, args.coarsening_method, args.coarsening_ratio, args.task, "None", max_mem])

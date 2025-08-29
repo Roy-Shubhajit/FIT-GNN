@@ -48,14 +48,9 @@ def process_dataset(args):
             dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == "ogbn-products":
-        dataset = [torch.load(
-            "/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/community_data.pt",
-            map_location="cpu",
-            weights_only=False,
-        )]
-        '''dataset = PygNodePropPredDataset(name="ogbn-products", root='./dataset/')
+        dataset = PygNodePropPredDataset(name="ogbn-products", root='./dataset/')
         if args.normalize_features:
-            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)'''
+            dataset.x = torch.nn.functional.normalize(dataset.x, p=1)
         args.task = 'node_cls'
     elif args.dataset == "ogbn-arxiv":
         dataset = PygNodePropPredDataset(name="ogbn-arxiv", root='./dataset/')
@@ -215,8 +210,6 @@ if __name__ == "__main__":
 
     args = arg_correction(args)
     dataset, args = process_dataset(args)
-    #if (args.task == 'node_cls' or args.task == 'node_reg') and dataset[0].num_nodes > 170000:
-        #args.use_community_detection = True
 
     path = f"save/{args.task}/"+args.output_dir+"/"
     if args.baseline:
@@ -252,14 +245,9 @@ if __name__ == "__main__":
             args.num_classes = torch.unique(data.y).shape[0]
         
         if args.use_community_detection:
-            data = torch.load(
-            "/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/community_data.pt",
-            map_location="cpu",
-            weights_only=False,
-        )
             if isinstance(data.y, torch.Tensor) and data.y.dim() > 1:
                 data.y = data.y.squeeze(1)
-            '''
+            
             if os.path.exists(f'./dataset/{args.dataset}/saved/{graph_type}_data.pt'):
                 del dataset
                 torch.cuda.empty_cache()
@@ -276,25 +264,19 @@ if __name__ == "__main__":
                 data = merge_communities(data, mapping, 165000)
                 del dataset
                 torch.cuda.empty_cache()
-                torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')'''
+                torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
         args.num_features = data.x.shape[1]
         if args.train_fitgnn:
-            if args.dataset != 'ogbn-products':
-                if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
-                    print("Loading saved graphs...")
-                    subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt', weights_only=False)
-                    candidate = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl', 'rb'))
-                    C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
-                    Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
-                else:
-                    print("Coarsening graphs...")
-                    args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
-                    save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
+            if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
+                print("Loading saved graphs...")
+                subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt', weights_only=False)
+                candidate = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl', 'rb'))
+                C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
+                Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
             else:
-                subgraph_list = torch.load(f"/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt", map_location="cpu", weights_only=False)
-                candidate = pickle.load(open(f"/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl", 'rb'))
-                C_list = pickle.load(open(f"/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl", 'rb'))
-                Gc_list = pickle.load(open(f"/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl", 'rb'))
+                print("Coarsening graphs...")
+                args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
+                save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
             node_classification(args, path, data, writer, candidate, C_list, Gc_list, subgraph_list)
         elif args.baseline:
             node_classification_baseline(args, path, data, writer)

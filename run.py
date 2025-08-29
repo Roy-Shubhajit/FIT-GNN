@@ -578,7 +578,6 @@ def graph_classification(args, path, writer, dataset):
     train_loader = T_DataLoader(train_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn)
     test_loader = T_DataLoader(test_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn)
     val_loader = T_DataLoader(val_split, batch_size=args.batch_size, shuffle=True, collate_fn=colater_fn)
-
     model_gc = Classify_graph_gc(args).to(device)
     model_gs = Classify_graph_gs(args).to(device)
     loss_fn = torch.nn.CrossEntropyLoss().to(device)
