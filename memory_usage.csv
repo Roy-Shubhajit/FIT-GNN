@@ -1,0 +1,75 @@
+Dataset      , Coarsening_Method      , Coarsening_Ratio, Task    , Type        , Max_Memory_Usage_Graphs(MB)
+cora         , variation_neighborhoods,              0.1, node_cls, Cluster_Node,         1.2497787475585938
+cora         , variation_neighborhoods,              0.1, node_cls, Extra_Node  ,         1.906005859375
+cora         , variation_neighborhoods,              0.3, node_cls, Cluster_Node,         0.6182107925415039
+cora         , variation_neighborhoods,              0.3, node_cls, Extra_Node  ,         1.1035089492797852
+cora         , variation_neighborhoods,              0.5, node_cls, Cluster_Node,         0.6619348526000977
+cora         , variation_neighborhoods,              0.5, node_cls, Extra_Node  ,         0.9702005386352539
+cora         , variation_neighborhoods,              0.7, node_cls, Cluster_Node,         0.827662467956543
+cora         , variation_neighborhoods,              0.7, node_cls, Extra_Node  ,         0.9702005386352539
+citeseer     , variation_neighborhoods,              0.1, node_cls, Cluster_Node,        30.097457885742188
+citeseer     , variation_neighborhoods,              0.1, node_cls, Extra_Node  ,        30.097457885742188
+citeseer     , variation_neighborhoods,              0.3, node_cls, Cluster_Node,         2.0488967895507812
+citeseer     , variation_neighborhoods,              0.3, node_cls, Extra_Node  ,         2.490715980529785
+citeseer     , variation_neighborhoods,              0.5, node_cls, Cluster_Node,         1.1953468322753906
+citeseer     , variation_neighborhoods,              0.5, node_cls, Extra_Node  ,         1.8355779647827148
+citeseer     , variation_neighborhoods,              0.7, node_cls, Cluster_Node,         1.6075048446655273
+citeseer     , variation_neighborhoods,              0.7, node_cls, Extra_Node  ,         1.8355779647827148
+pubmed       , variation_neighborhoods,              0.1, node_cls, Cluster_Node,         0.5849809646606445
+pubmed       , variation_neighborhoods,              0.1, node_cls, Extra_Node  ,         0.7784233093261719
+pubmed       , variation_neighborhoods,              0.3, node_cls, Cluster_Node,         0.5424270629882812
+pubmed       , variation_neighborhoods,              0.3, node_cls, Extra_Node  ,         0.5628013610839844
+pubmed       , variation_neighborhoods,              0.5, node_cls, Cluster_Node,         0.5443525314331055
+pubmed       , variation_neighborhoods,              0.5, node_cls, Extra_Node  ,         0.5628013610839844
+pubmed       , variation_neighborhoods,              0.7, node_cls, Cluster_Node,         0.5460948944091797
+pubmed       , variation_neighborhoods,              0.7, node_cls, Extra_Node  ,         0.5628013610839844
+dblp         , variation_neighborhoods,              0.1, node_cls, Cluster_Node,         5.785863876342773
+dblp         , variation_neighborhoods,              0.1, node_cls, Extra_Node  ,        28.271268844604492
+dblp         , variation_neighborhoods,              0.3, node_cls, Cluster_Node,         2.8038082122802734
+dblp         , variation_neighborhoods,              0.3, node_cls, Extra_Node  ,         6.008434295654297
+dblp         , variation_neighborhoods,              0.5, node_cls, Cluster_Node,         1.7615413665771484
+dblp         , variation_neighborhoods,              0.5, node_cls, Extra_Node  ,         2.3084096908569336
+dblp         , variation_neighborhoods,              0.7, node_cls, Cluster_Node,         1.8751859664916992
+dblp         , variation_neighborhoods,              0.7, node_cls, Extra_Node  ,         2.207578659057617
+Physics      , variation_neighborhoods,              0.1, node_cls, Cluster_Node,        22.91185474395752
+Physics      , variation_neighborhoods,              0.1, node_cls, Extra_Node  ,        41.066776275634766
+Physics      , variation_neighborhoods,              0.3, node_cls, Cluster_Node,        12.481348037719727
+Physics      , variation_neighborhoods,              0.3, node_cls, Extra_Node  ,        19.936111450195312
+Physics      , variation_neighborhoods,              0.5, node_cls, Cluster_Node,        12.767914772033691
+Physics      , variation_neighborhoods,              0.5, node_cls, Extra_Node  ,        19.936111450195312
+Physics      , variation_neighborhoods,              0.7, node_cls, Cluster_Node,        13.68847942352295
+Physics      , variation_neighborhoods,              0.7, node_cls, Extra_Node  ,        19.936111450195312
+ogbn-products, variation_neighborhoods,              0.5, node_cls, Cluster_Node,        28.399160385131836
+chameleon    , variation_neighborhoods,              0.1, node_reg, Cluster_Node,         0.20171546936035156
+chameleon    , variation_neighborhoods,              0.1, node_reg, Extra_Node  ,         0.6224231719970703
+chameleon    , variation_neighborhoods,              0.3, node_reg, Cluster_Node,         0.2350473403930664
+chameleon    , variation_neighborhoods,              0.3, node_reg, Extra_Node  ,         0.6224231719970703
+chameleon    , variation_neighborhoods,              0.5, node_reg, Cluster_Node,         0.27784156799316406
+chameleon    , variation_neighborhoods,              0.5, node_reg, Extra_Node  ,         0.6224231719970703
+chameleon    , variation_neighborhoods,              0.7, node_reg, Cluster_Node,         0.41806983947753906
+chameleon    , variation_neighborhoods,              0.7, node_reg, Extra_Node  ,         0.5642118453979492
+crocodile    , variation_neighborhoods,              0.1, node_reg, Cluster_Node,         1.127950668334961
+crocodile    , variation_neighborhoods,              0.1, node_reg, Extra_Node  ,         4.586616516113281
+crocodile    , variation_neighborhoods,              0.3, node_reg, Cluster_Node,         1.1327037811279297
+crocodile    , variation_neighborhoods,              0.3, node_reg, Extra_Node  ,         4.586616516113281
+crocodile    , variation_neighborhoods,              0.5, node_reg, Cluster_Node,         1.6541690826416016
+crocodile    , variation_neighborhoods,              0.5, node_reg, Extra_Node  ,         4.586616516113281
+crocodile    , variation_neighborhoods,              0.7, node_reg, Cluster_Node,         1.779454231262207
+crocodile    , variation_neighborhoods,              0.7, node_reg, Extra_Node  ,         4.586616516113281
+squirrel     , variation_neighborhoods,              0.1, node_reg, Cluster_Node,         1.4367790222167969
+squirrel     , variation_neighborhoods,              0.1, node_reg, Extra_Node  ,         7.190876007080078
+squirrel     , variation_neighborhoods,              0.3, node_reg, Cluster_Node,         1.5327739715576172
+squirrel     , variation_neighborhoods,              0.3, node_reg, Extra_Node  ,         7.190876007080078
+squirrel     , variation_neighborhoods,              0.5, node_reg, Cluster_Node,         1.815232276916504
+squirrel     , variation_neighborhoods,              0.5, node_reg, Extra_Node  ,         7.190876007080078
+squirrel     , variation_neighborhoods,              0.7, node_reg, Cluster_Node,         2.869542121887207
+squirrel     , variation_neighborhoods,              0.7, node_reg, Extra_Node  ,         7.190876007080078
+cora         , None                   ,              1.0, node_cls, None        ,        14.992656707763672
+citeseer     , None                   ,              1.0, node_cls, None        ,        47.17043399810791
+pubmed       , None                   ,              1.0, node_cls, None        ,        39.166693687438965
+dblp         , None                   ,              1.0, node_cls, None        ,       112.51408386230469
+Physics      , None                   ,              1.0, node_cls, None        ,      1115.079029083252
+ogbn-products, None                   ,              1.0, node_cls, None        ,      2840.706169128418
+chameleon    , None                   ,              1.0, node_reg, None        ,         2.078632354736328
+crocodile    , None                   ,              1.0, node_reg, None        ,        10.937358856201172
+squirrel     , None                   ,              1.0, node_reg, None        ,         8.61478042602539
