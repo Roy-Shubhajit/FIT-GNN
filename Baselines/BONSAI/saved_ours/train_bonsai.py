@@ -43,7 +43,6 @@ def load_dataset(dataset_name, root):
         elif dataset_name == "WikiCS" or dataset_name == "wikics":
             data = WikiCS(root=root+"/WikiCS")._data
         elif dataset_name == "products":
-            #data = torch.load("/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/community_data.pt", map_location="cpu", weights_only=False)
             data = PygNodePropPredDataset(
             name="ogbn-products", root=root+"/ogbn-products"
         )._data
@@ -221,7 +220,7 @@ def train_model(args, model_type, model, nepochs, data, data_syn, splits, writer
 
 def main(args):
     global saint_datasets
-    data = load_dataset(args["ds"].lower(), "/hdfs1/Data/Shubhajit/Project/Bonsai/datasets")
+    data = load_dataset(args["ds"].lower(), "/datasets")
     data_syn = load_syn_dataset(args["ds"], args["tf"], args["sr"], data["scaler"])
     data["data"].x = data["data"].x[:,data_syn["features_used"]]
     nnodes = data["data"].x.shape[0]
@@ -243,7 +242,7 @@ def main(args):
 
 if __name__=="__main__":
     root = (Path('..') / 'datasets').absolute()
-    synthetic_root = "/hdfs1/Data/Shubhajit/Project/Bonsai/saved_ours"
+    synthetic_root = "/saved_ours"
     parser = argparse.ArgumentParser()
     parser.add_argument("-ds", required=True) # dataset
     parser.add_argument("-tf", required=True) # target_frac
