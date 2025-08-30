@@ -237,22 +237,16 @@ if __name__ == "__main__":
                 torch.save(data, f'./dataset/{args.dataset}/saved/{graph_type}_data.pt')
         args.num_features = data.x.shape[1]
         if args.fitgnn:
-            if args.dataset != 'ogbn-products':
-                if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
-                    print("Loading saved graphs...")
-                    subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt', weights_only=False)
-                    candidate = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl', 'rb'))
-                    C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
-                    Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
-                else:
-                    print("Coarsening graphs...")
-                    args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
-                    save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
+            if os.path.exists(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt'):
+                print("Loading saved graphs...")
+                subgraph_list = torch.load(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt', weights_only=False)
+                candidate = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl', 'rb'))
+                C_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl', 'rb'))
+                Gc_list = pickle.load(open(f'./dataset/{args.dataset}/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl', 'rb'))
             else:
-                subgraph_list = torch.load(f"/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_subgraph_list.pt", map_location="cpu", weights_only=False)
-                candidate = pickle.load(open(f"/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_candidate.pkl", 'rb'))
-                C_list = pickle.load(open(f"/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_C_list.pkl", 'rb'))
-                Gc_list = pickle.load(open(f"/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/{args.coarsening_method}/{args.coarsening_ratio}_{node_type}_{graph_type}_Gc_list.pkl", 'rb'))
+                print("Coarsening graphs...")
+                args.num_features, candidate, C_list, Gc_list, subgraph_list = coarsening_classification(args, data, 1-args.coarsening_ratio, args.coarsening_method)
+                save(args, path = f'./dataset/{args.dataset}/saved/{args.coarsening_method}/', candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
             node_mem_save(args=args, data=data, candidate=candidate, C_list=C_list, Gc_list=Gc_list, subgraph_list=subgraph_list)
         else:
             max_mem = get_data_size(data)
