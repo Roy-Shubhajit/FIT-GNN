@@ -81,12 +81,6 @@ def load_dataset(dataset_name: str, root: t.Union[str, Path]) -> dict:
     elif dataset_name == "WikiCS":
         data = WikiCS(root=root+"/WikiCS")._data
     elif dataset_name == "products":
-        # Assuming products dataset is stored in a specific path
-        #data = torch.load(
-            #"/hdfs1/Data/Shubhajit/Project/CoPart-GNN/dataset/ogbn-products/saved/community_data.pt",
-            #map_location="cpu",
-           # weights_only=False,
-        #)
         data = PygNodePropPredDataset(
             name="ogbn-products", root=root+"/ogbn-products"
         )._data
