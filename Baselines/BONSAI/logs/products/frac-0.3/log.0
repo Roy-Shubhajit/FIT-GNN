@@ -1,3 +1,0 @@
-products-0.3
-err: /hdfs1/Data/Shubhajit/Project/Bonsai/main.py:842: SyntaxWarning: invalid escape sequence 'p'
-err: f"{args.dataset},{model_type},{args.target_size_frac},{acc*100:.2f}pm {std*100:.2f}n"
